@@ -1,0 +1,38 @@
+name: Capture compiler ESLint diagnostics
+
+on:
+  push:
+    branches:
+      - feature/mv3-compiler
+    paths:
+      - .github/workflows/capture-eslint.yml
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+jobs:
+  capture:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: feature/mv3-compiler
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - name: Capture ESLint
+        run: npx eslint src/main/backends/dnr/compiler.js test/dnr-compiler.test.js > /tmp/eslint.txt 2>&1 || true
+      - name: Post diagnostics
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          {
+            echo '```text'
+            cat /tmp/eslint.txt
+            echo '```'
+          } > /tmp/comment.md
+          gh pr comment 9 --repo HyperCriSiS/requestcontrol --body-file /tmp/comment.md
