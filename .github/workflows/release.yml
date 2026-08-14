@@ -11,6 +11,9 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
+      WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}
     steps:
       - uses: actions/checkout@v7
       - uses: actions/setup-node@v7
@@ -20,6 +23,7 @@ jobs:
       - run: sudo apt-get update && sudo apt-get install -y pandoc
       - run: npm ci
       - run: npm test -- --ci
+      - run: npm run lint
       - run: npm run build
       - run: npm run lint-build
 
@@ -31,8 +35,12 @@ jobs:
           files: web-ext-artifacts/*.zip
           body: ${{ steps.extract_notes.outputs.release_notes }}
 
-      - run: npm run deploy
+      - name: Sign and publish to Mozilla Add-ons
+        if: env.WEB_EXT_API_KEY != '' && env.WEB_EXT_API_SECRET != ''
+        run: npm run deploy
         env:
           WEB_EXT_CHANNEL: listed
-          WEB_EXT_API_KEY: ${{ secrets.WEB_EXT_API_KEY }}
-          WEB_EXT_API_SECRET: ${{ secrets.WEB_EXT_API_SECRET }}
+
+      - name: Note skipped Mozilla signing
+        if: env.WEB_EXT_API_KEY == '' || env.WEB_EXT_API_SECRET == ''
+        run: echo "Mozilla signing skipped because WEB_EXT_API_KEY/WEB_EXT_API_SECRET are not configured." >> "$GITHUB_STEP_SUMMARY"
