@@ -272,7 +272,19 @@ async function setupImportsTab() {
         });
     }
 
-    await setupCommunityCatalog(imports || {});
+    const importTab = document.querySelector('a[href="#tab-imports"]');
+    const loadCommunityCatalog = async () => {
+        if (importTab.dataset.communityLoaded === "true") {
+            return;
+        }
+        importTab.dataset.communityLoaded = "true";
+        await setupCommunityCatalog(imports || {});
+    };
+    importTab.addEventListener("click", loadCommunityCatalog);
+    if (location.hash === "#tab-imports") {
+        loadCommunityCatalog();
+    }
+
     document.getElementById("import-source-form").addEventListener("submit", onImportSourceAdded);
     document.getElementById("new-import-source").addEventListener("input", checkImportSourceValidity);
 }
