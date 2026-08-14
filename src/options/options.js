@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { reconcileManagedRules } from "../main/catalog.js";
 import { exportObject, importFile } from "../util/import-export.js";
 import { Toc } from "../util/toc.js";
 import { uuid } from "../util/uuid.js";
@@ -188,7 +189,6 @@ document.addEventListener("rule-import-import-list", async (e) => {
     let { imports } = await browser.storage.local.get("imports");
     const src = input.getAttribute("src");
     const rulesToImport = input.rules.filter((rule) => rule.uuid);
-    const uuids = rulesToImport.map((rule) => rule.uuid);
 
     if (!imports) {
         imports = {};
@@ -199,28 +199,59 @@ document.addEventListener("rule-import-import-list", async (e) => {
     }
 
     const data = imports[src];
+    const source = {
+        id: src,
+        url: src,
+        revision: input.etag || input.digest,
+    };
 
-    if (data.imported && data.imported.uuids) {
-        const { rules } = await browser.storage.local.get("rules");
-
-        if (rules) {
-            const removed = new Set(data.imported.uuids.filter((uuid) => !uuids.includes(uuid)));
-            await browser.storage.local.set({ rules: rules.filter((rule) => !removed.has(rule.uuid)) });
-        }
+    let { rules } = await browser.storage.local.get("rules");
+    if (!rules) {
+        rules = [];
     }
 
-    importRules(rulesToImport);
+    rules = markLegacyImportedRules(rules, data.imported, source);
+    const reconciliation = await reconcileManagedRules(rules, rulesToImport, source);
+
+    await browser.storage.local.set({ rules: reconciliation.rules });
+    document.querySelectorAll("rule-list").forEach((list) => list.removeAll());
+    createRuleInputs(reconciliation.rules);
+
+    const managedUuids = reconciliation.rules
+        .filter((rule) => rule.source && rule.source.id === source.id)
+        .map((rule) => rule.uuid);
+    const hasConflicts = reconciliation.conflicts.length > 0;
 
     imports[src].imported = {
-        uuids,
+        uuids: managedUuids,
         etag: input.etag,
-        digest: input.digest,
+        digest: hasConflicts ? data.imported && data.imported.digest : input.digest,
+        availableDigest: input.digest,
         timestamp: Date.now(),
+        conflicts: reconciliation.conflicts,
     };
 
     await browser.storage.local.set({ imports });
     input.data = imports[src];
 });
+
+function markLegacyImportedRules(rules, imported, source) {
+    if (!imported || !Array.isArray(imported.uuids)) {
+        return rules;
+    }
+
+    const importedUuids = new Set(imported.uuids);
+    return rules.map((rule) => {
+        if (!importedUuids.has(rule.uuid) || rule.source) {
+            return rule;
+        }
+        return {
+            ...rule,
+            managed: true,
+            source: { ...source },
+        };
+    });
+}
 
 async function setupImportsTab() {
     const { imports } = await browser.storage.local.get("imports");
