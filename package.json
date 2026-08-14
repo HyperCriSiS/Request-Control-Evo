@@ -8,7 +8,7 @@
     "value": "git+https://github.com/tumpio/requestcontrol.git"
   },
   "config": {
-    "ignore": "test/ coverage/ README* **/manual.wiki package*.json"
+    "ignore": "test/ coverage/ docs/ .github/ .node-version README* **/manual.wiki package*.json"
   },
   "scripts": {
     "start": "web-ext run -i=$npm_package_config_ignore --bc --url about:debugging#addons",

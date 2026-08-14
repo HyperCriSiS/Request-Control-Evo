@@ -173,7 +173,7 @@ document.addEventListener("rule-import-delete-imported", onRemoveImportedRules);
 document.addEventListener("rule-import-show-imported", (e) => {
     const { uuids } = e.target.data.imported;
     uuids.forEach((uuid) => {
-        const input = document.querySelector(`[data-uuid="${uuid}"`);
+        const input = document.querySelector(`[data-uuid="${uuid}"]`);
         if (input) {
             input.select();
         }
@@ -261,7 +261,7 @@ async function setupImportsTab() {
             if (data.deletable) {
                 createImportInput(src, data);
             } else {
-                const input = document.querySelector(`rule-import-input[src="${src}"`);
+                const input = document.querySelector(`rule-import-input[src="${src}"]`);
                 if (input) {
                     input.data = data;
                 }
