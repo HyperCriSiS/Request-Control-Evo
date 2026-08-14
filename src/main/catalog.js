@@ -103,7 +103,7 @@ export async function reconcileManagedRules(localRules, incomingRules, source) {
                 result.push(localRule);
                 changes.conflicts.push({
                     uuid: localRule.uuid,
-                    reason: "removed-upstream-local-modified",
+                    reason: modified === null ? "removed-upstream-baseline-unknown" : "removed-upstream-local-modified",
                 });
             }
             continue;
@@ -120,6 +120,12 @@ export async function reconcileManagedRules(localRules, incomingRules, source) {
                 changes.conflicts.push({
                     uuid: localRule.uuid,
                     reason: "local-modified",
+                });
+            } else if (modified === null && localDigest !== incomingDigest) {
+                result.push(localRule);
+                changes.conflicts.push({
+                    uuid: localRule.uuid,
+                    reason: "baseline-unknown",
                 });
             } else if (localDigest === incomingDigest) {
                 result.push(await createManagedRule(incomingRule, source));
