@@ -1,0 +1,51 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Request Control — URL Analyzer</title>
+  <link rel="stylesheet" href="analyzer.css">
+  <script defer type="module" src="analyzer.js"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1>URL Analyzer</h1>
+        <p>Local analysis only. No browsing data is uploaded.</p>
+      </div>
+      <button id="open-options" type="button">Rules</button>
+    </header>
+
+    <section class="card">
+      <form id="analyzer-form">
+        <label for="url">URL</label>
+        <div class="input-row">
+          <input id="url" type="url" required autocomplete="off" spellcheck="false" placeholder="https://example.com/?utm_source=news">
+          <button type="submit" class="primary">Analyze</button>
+        </div>
+      </form>
+      <p id="error" class="error hidden">Enter a valid URL.</p>
+    </section>
+
+    <section id="results" class="card hidden">
+      <dl>
+        <div><dt>Host</dt><dd id="host"></dd></div>
+        <div><dt>Path</dt><dd id="path"></dd></div>
+        <div><dt>Query parameters</dt><dd id="parameter-count"></dd></div>
+      </dl>
+
+      <h2>Suggestions</h2>
+      <div id="suggestions"></div>
+      <p id="no-suggestions" class="muted hidden">No conservative automatic suggestion was found.</p>
+      <div class="actions">
+        <button id="create-rule" class="primary" type="button" disabled>Create disabled rule</button>
+      </div>
+      <p class="muted">Generated rules are disabled. Review them in Rules and run the existing tester before enabling them.</p>
+    </section>
+  </main>
+</body>
+</html>
