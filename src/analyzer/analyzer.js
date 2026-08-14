@@ -7,6 +7,7 @@ import { buildSuggestedFilterRule } from "../main/analysis/rule-suggestions.js";
 import { uuid } from "../util/uuid.js";
 
 let state = null;
+document.title = browser.i18n.getMessage("analyzer_title");
 
 const form = document.getElementById("analyzer-form");
 const input = document.getElementById("url");
@@ -75,10 +76,10 @@ function analyzeInput() {
         const details = document.createElement("small");
 
         if (suggestion.type === "remove-query-parameter") {
-            title.textContent = `Remove query parameter “${suggestion.parameter}”`;
-            details.textContent = `Matched catalog pattern: ${suggestion.matchedPattern}`;
+            title.textContent = browser.i18n.getMessage("analyzer_remove_parameter", suggestion.parameter);
+            details.textContent = browser.i18n.getMessage("analyzer_catalog_match", suggestion.matchedPattern);
         } else {
-            title.textContent = `Unwrap destination from “${suggestion.parameter}”`;
+            title.textContent = browser.i18n.getMessage("analyzer_unwrap_parameter", suggestion.parameter);
             details.textContent = suggestion.targetUrl;
         }
 

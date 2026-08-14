@@ -5,7 +5,7 @@
   "type": "module",
   "repository": {
     "type": "git",
-    "value": "git+https://github.com/tumpio/requestcontrol.git"
+    "value": "git+https://github.com/HyperCriSiS/requestcontrol.git"
   },
   "config": {
     "ignore": "test/ coverage/ docs/ .github/ .node-version README* **/manual.wiki package*.json"

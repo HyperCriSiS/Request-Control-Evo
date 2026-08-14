@@ -8,43 +8,44 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Request Control — URL Analyzer</title>
   <link rel="stylesheet" href="analyzer.css">
+  <script defer type="module" src="../util/i18n.js"></script>
   <script defer type="module" src="analyzer.js"></script>
 </head>
 <body>
   <main>
     <header>
       <div>
-        <h1>URL Analyzer</h1>
-        <p>Local analysis only. No browsing data is uploaded.</p>
+        <h1 data-i18n="analyzer_title"></h1>
+        <p data-i18n="analyzer_privacy_note"></p>
       </div>
-      <button id="open-options" type="button">Rules</button>
+      <button id="open-options" type="button" data-i18n="rules"></button>
     </header>
 
     <section class="card">
       <form id="analyzer-form">
-        <label for="url">URL</label>
+        <label for="url" data-i18n="analyzer_url_label"></label>
         <div class="input-row">
-          <input id="url" type="url" required autocomplete="off" spellcheck="false" placeholder="https://example.com/?utm_source=news">
-          <button type="submit" class="primary">Analyze</button>
+          <input id="url" type="url" required autocomplete="off" spellcheck="false" data-i18n-placeholder="analyzer_url_placeholder">
+          <button type="submit" class="primary" data-i18n="analyze"></button>
         </div>
       </form>
-      <p id="error" class="error hidden">Enter a valid URL.</p>
+      <p id="error" class="error hidden" data-i18n="analyzer_invalid_url"></p>
     </section>
 
     <section id="results" class="card hidden">
       <dl>
-        <div><dt>Host</dt><dd id="host"></dd></div>
-        <div><dt>Path</dt><dd id="path"></dd></div>
-        <div><dt>Query parameters</dt><dd id="parameter-count"></dd></div>
+        <div><dt data-i18n="host"></dt><dd id="host"></dd></div>
+        <div><dt data-i18n="path"></dt><dd id="path"></dd></div>
+        <div><dt data-i18n="analyzer_query_parameters"></dt><dd id="parameter-count"></dd></div>
       </dl>
 
-      <h2>Suggestions</h2>
+      <h2 data-i18n="analyzer_suggestions"></h2>
       <div id="suggestions"></div>
-      <p id="no-suggestions" class="muted hidden">No conservative automatic suggestion was found.</p>
+      <p id="no-suggestions" class="muted hidden" data-i18n="analyzer_no_suggestions"></p>
       <div class="actions">
-        <button id="create-rule" class="primary" type="button" disabled>Create disabled rule</button>
+        <button id="create-rule" class="primary" type="button" data-i18n="analyzer_create_rule" disabled></button>
       </div>
-      <p class="muted">Generated rules are disabled. Review them in Rules and run the existing tester before enabling them.</p>
+      <p class="muted" data-i18n="analyzer_rule_disabled_note"></p>
     </section>
   </main>
 </body>

@@ -299,6 +299,9 @@ async function setupCommunityCatalog(imports) {
             }
             const input = document.createElement("rule-import-input");
             input.textContent = `${entry.category || "community"} - ${entry.name}`;
+            if (entry.sha256) {
+                input.setAttribute("expected-sha256", entry.sha256);
+            }
             input.setAttribute("src", entry.url);
             input.data = imports[entry.url] || {};
             list.append(input);
