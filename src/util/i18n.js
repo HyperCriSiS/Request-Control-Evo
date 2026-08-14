@@ -4,8 +4,8 @@
 
 /**
  * i18n WebExt-API HTML document translator
- * Translates nodes marked with dataset (data-i18n, data-i18n-title, data-i18n-placeholder)
- * attributes on DOMContentLoaded.
+ * Translates nodes marked with dataset (data-i18n, data-i18n-title,
+ * data-i18n-placeholder, data-i18n-aria-label) attributes on DOMContentLoaded.
  * @param documentNode
  */
 export function translateDocument(documentNode) {
@@ -17,6 +17,9 @@ export function translateDocument(documentNode) {
     });
     documentNode.querySelectorAll("[data-i18n-placeholder]").forEach((node) => {
         node.placeholder = browser.i18n.getMessage(node.dataset.i18nPlaceholder);
+    });
+    documentNode.querySelectorAll("[data-i18n-aria-label]").forEach((node) => {
+        node.setAttribute("aria-label", browser.i18n.getMessage(node.dataset.i18nAriaLabel));
     });
 }
 
