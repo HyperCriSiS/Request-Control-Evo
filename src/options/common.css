@@ -14,75 +14,113 @@
 .c {
     padding-top: 0;
     padding-bottom: 0;
-    max-width: 70em;
+    max-width: 76em;
 }
 
 hr {
-    border-color: var(--light);
-    border-width: 1px;
-    border-bottom: none;
+    border: 0;
+    border-top: 1px solid var(--border-color);
+    margin: 1.5rem 0;
 }
 
 code {
-    color: brown;
+    color: var(--code-color);
 }
 
 .btn {
     display: inline-flex;
     align-items: center;
-    border: 1px solid transparent;
+    justify-content: center;
+    gap: 0.4rem;
+    min-height: 2.25rem;
+    border: 1px solid var(--button-border);
     cursor: pointer;
-    padding: 0.4em 0.5em;
+    padding: 0.45rem 0.75rem;
     text-transform: initial;
     letter-spacing: initial;
-    font-size: 0.9em;
-    border-radius: 2px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    font-weight: 600;
+    border-radius: var(--radius-sm);
     vertical-align: middle;
-    background: #e6e6e6;
-    color: rgb(12, 12, 13);
+    background: var(--button-background);
+    color: var(--text-color);
+    box-shadow: 0 1px 1px var(--shadow-color);
+    transition: background-color 120ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+
+.btn:hover:not(:disabled):not(.disabled) {
+    background: var(--button-background-hover);
+    border-color: var(--border-color-strong);
+}
+
+.btn:focus-visible,
+a:focus-visible,
+input:focus-visible,
+summary:focus-visible {
+    outline: 2px solid var(--focus-color);
+    outline-offset: 2px;
 }
 
 .btn.text {
     background: none;
-    display: inline;
+    display: inline-flex;
     border: none;
-    padding: 0;
+    padding: 0.2rem;
+    min-height: auto;
+    box-shadow: none;
     font-size: inherit;
     color: var(--primary-color);
     font: inherit;
     vertical-align: inherit;
 }
 
+.btn.text:hover:not(:disabled):not(.disabled) {
+    background: var(--primary-muted);
+}
+
 .btn:disabled,
 .btn.disabled,
 a.disabled {
-    opacity: 0.6;
+    opacity: 0.5;
     cursor: default;
     pointer-events: none;
 }
 
 .btn-danger {
-    background: #ff3d33;
-    border-color: #ff3d33;
+    background: var(--danger-color);
+    border-color: var(--danger-color);
     color: white;
+}
+
+.btn-danger:hover:not(:disabled):not(.disabled) {
+    background: var(--danger-color-hover);
+    border-color: var(--danger-color-hover);
 }
 
 .btn.primary {
     background: var(--primary-color);
-    border: none;
-    font-weight: bold;
+    border-color: var(--primary-color);
+    color: white;
+    font-weight: 700;
+}
+
+.btn.primary:hover:not(:disabled):not(.disabled) {
+    background: var(--primary-color-hover);
+    border-color: var(--primary-color-hover);
 }
 
 .btn.active {
-    border-color: #3d7e9a;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 2px var(--primary-muted);
 }
 
 .btn > img {
-    margin-right: 0.5em;
+    margin: 0;
 }
 
 .btn > .badge {
-    margin-left: 0.5em;
+    margin-left: 0.2rem;
 }
 
 .btn > span {
@@ -94,36 +132,49 @@ input:not(:checked):not(:hover) + .icon {
 }
 
 input:disabled + span {
-    opacity: 0.4;
+    opacity: 0.45;
+}
+
+input[type="text"],
+input[type="url"],
+select,
+textarea {
+    background: var(--surface-color);
+    color: var(--text-color);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
 }
 
 pre {
-    padding: 0.6em;
-    border-width: 1px;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    background: var(--surface-subtle);
 }
 
 .collapse-button:hover {
     cursor: pointer;
-    color: #343a40;
+    color: var(--text-color);
     -moz-user-select: none;
+    user-select: none;
 }
 
 .collapse-button:before {
     content: "";
     display: inline-block;
-    border-left: 0.4em solid transparent;
-    border-right: 0.4em solid transparent;
-    border-top: 0.4em solid #343a40;
+    border-left: 0.35rem solid transparent;
+    border-right: 0.35rem solid transparent;
+    border-top: 0.35rem solid currentColor;
     border-bottom: none;
     vertical-align: super;
-    margin-right: 0.3em;
+    margin-right: 0.35rem;
 }
 
 .collapse-button.collapsed:before {
-    border-left: 0.4em solid transparent;
-    border-right: 0.4em solid transparent;
+    border-left: 0.35rem solid transparent;
+    border-right: 0.35rem solid transparent;
     border-top: none;
-    border-bottom: 0.4em solid #343a40;
+    border-bottom: 0.35rem solid currentColor;
 }
 
 .collapse-button.plus:before {
