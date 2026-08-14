@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     document.getElementById("showRules").addEventListener("click", openOptionsPage);
+    document.getElementById("analyzeCurrent").addEventListener("click", openAnalyzer);
     document.getElementById("toggleActive").addEventListener("click", toggleActive);
     document.getElementById("editLink").addEventListener("click", editRule);
 
@@ -72,6 +73,16 @@ function showDetails(details) {
     }
     const optionsUrl = browser.runtime.getURL("src/options/options.html");
     document.getElementById("editLink").href = `${optionsUrl}?edit=${details.rule.uuid}`;
+}
+
+async function openAnalyzer() {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    const currentUrl = tabs.length > 0 && tabs[0].url ? tabs[0].url : "";
+    const analyzerUrl = browser.runtime.getURL(
+        `src/analyzer/analyzer.html?url=${encodeURIComponent(currentUrl)}`
+    );
+    await browser.tabs.create({ url: analyzerUrl });
+    window.close();
 }
 
 function openOptionsPage() {
