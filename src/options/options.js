@@ -200,9 +200,12 @@ document.addEventListener("rule-import-import-list", async (e) => {
 
     const data = imports[src];
     const source = {
-        id: src,
+        id: input.dataset.entry ? `${input.dataset.catalog}/${input.dataset.entry}` : src,
         url: src,
         revision: input.etag || input.digest,
+        catalog: input.dataset.catalog || undefined,
+        entry: input.dataset.entry || undefined,
+        version: input.dataset.version || undefined,
     };
 
     let { rules } = await browser.storage.local.get("rules");
@@ -299,6 +302,10 @@ async function setupCommunityCatalog(imports) {
             }
             const input = document.createElement("rule-import-input");
             input.textContent = `${entry.category || "community"} - ${entry.name}`;
+            input.dataset.catalog = catalog.catalog || "requestcontrol-community";
+            input.dataset.entry = entry.id || entry.url;
+            input.dataset.version = entry.version || catalog.version || "";
+            input.dataset.group = entry.group || "";
             if (entry.sha256) {
                 input.setAttribute("expected-sha256", entry.sha256);
             }
