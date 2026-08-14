@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 export function groupRuleInputs(inputs) {
-    const sorted = [...inputs].sort((a, b) => a.title.localeCompare(b.title));
+    const sorted = [...inputs].sort((a, b) => compareText(a.title, b.title));
     const hasNamedGroup = sorted.some((input) => Boolean(input.rule.group));
 
     if (!hasNamedGroup) {
@@ -26,6 +26,13 @@ export function groupRuleInputs(inputs) {
         if (!b.name) {
             return -1;
         }
-        return a.name.localeCompare(b.name);
+        return compareText(a.name, b.name);
     });
+}
+
+function compareText(a, b) {
+    if (a === b) {
+        return 0;
+    }
+    return a < b ? -1 : 1;
 }

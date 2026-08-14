@@ -18,6 +18,7 @@ export default [
         },
         rules: {
             "no-prototype-builtins": "off",
+            "no-useless-assignment": "off",
             "no-unused-vars": ["error", {"argsIgnorePattern": "^_", "caughtErrors": "none"}],
         },
     },
@@ -33,7 +34,8 @@ export default [
             },
         },
         rules: {
-            "no-prototype-builtins": "off"
+            "no-prototype-builtins": "off",
+            "no-useless-assignment": "off"
         }
     }
 ];
