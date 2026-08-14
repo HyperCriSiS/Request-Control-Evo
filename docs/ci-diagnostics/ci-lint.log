@@ -1,0 +1,10 @@
+
+> lint
+> eslint src test && npm run lint:json && web-ext lint -i=$npm_package_config_ignore -w
+
+
+/home/runner/work/requestcontrol/requestcontrol/src/options/rule-input.js
+  158:13  error  The value assigned to 'hosts' is not used in subsequent statements  no-useless-assignment
+
+✖ 1 problem (1 error, 0 warnings)
+
