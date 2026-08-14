@@ -1,0 +1,33 @@
+name: Restore control test baseline
+
+on:
+  push:
+    branches:
+      - feature/modernization
+    paths:
+      - .github/workflows/repair-control-test.yml
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Restore upstream test and adapt Jest 30 matcher
+        run: |
+          git fetch origin master
+          git show origin/master:test/control.test.js > test/control.test.js
+          sed -i 's/\.toThrowError(Error);/.toThrow(Error);/' test/control.test.js
+      - name: Commit restored test
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add test/control.test.js
+          if ! git diff --cached --quiet; then
+            git commit -m "test: restore control regression coverage for Jest 30"
+            git push origin HEAD:feature/modernization
+          fi
