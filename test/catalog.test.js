@@ -1,4 +1,5 @@
-import {webcrypto} from "node:crypto";
+import { webcrypto } from "node:crypto";
+import { TextDecoder, TextEncoder } from "node:util";
 
 import {
     canonicalStringify,
@@ -8,9 +9,19 @@ import {
     ruleDigest,
 } from "../src/main/catalog.js";
 
-Object.defineProperty(globalThis, "crypto", {
-    configurable: true,
-    value: webcrypto,
+Object.defineProperties(globalThis, {
+    crypto: {
+        configurable: true,
+        value: webcrypto,
+    },
+    TextDecoder: {
+        configurable: true,
+        value: TextDecoder,
+    },
+    TextEncoder: {
+        configurable: true,
+        value: TextEncoder,
+    },
 });
 
 const SOURCE = {
