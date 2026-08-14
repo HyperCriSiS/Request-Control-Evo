@@ -269,8 +269,46 @@ async function setupImportsTab() {
         });
     }
 
+    await setupCommunityCatalog(imports || {});
     document.getElementById("import-source-form").addEventListener("submit", onImportSourceAdded);
     document.getElementById("new-import-source").addEventListener("input", checkImportSourceValidity);
+}
+
+async function setupCommunityCatalog(imports) {
+    const catalogUrl = "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/catalog.json";
+    try {
+        const response = await fetch(catalogUrl, { cache: "no-store" });
+        if (!response.ok) {
+            return;
+        }
+        const catalog = await response.json();
+        if (!catalog || !Array.isArray(catalog.ruleSets)) {
+            return;
+        }
+
+        const container = document.getElementById("tab-imports");
+        const details = document.createElement("details");
+        details.open = true;
+        const summary = document.createElement("summary");
+        summary.textContent = "Request Control Community";
+        const list = document.createElement("ul");
+
+        for (const entry of catalog.ruleSets) {
+            if (!entry || !entry.url || !entry.name) {
+                continue;
+            }
+            const input = document.createElement("rule-import-input");
+            input.textContent = `${entry.category || "community"} - ${entry.name}`;
+            input.setAttribute("src", entry.url);
+            input.data = imports[entry.url] || {};
+            list.append(input);
+        }
+
+        details.append(summary, list);
+        container.prepend(details);
+    } catch {
+        // Community catalog is optional; built-in and user lists continue to work offline.
+    }
 }
 
 async function checkImportSourceValidity() {
