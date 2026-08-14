@@ -58,6 +58,50 @@ rule-list .header > .collapse-button:before {
     vertical-align: middle;
 }
 
+rule-list .rule-group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.2rem;
+    padding: 0.25rem 0.75rem;
+    background: var(--surface-subtle);
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+rule-list .rule-group-toggle {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-color);
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+}
+
+rule-list .rule-group-toggle::before {
+    content: "▾";
+    color: var(--text-muted);
+}
+
+rule-list .rule-group-toggle[aria-expanded="false"]::before {
+    content: "▸";
+}
+
+rule-list .rule-group-count {
+    min-width: 1.8rem;
+    text-align: center;
+}
+
+rule-list .group-hidden {
+    display: none;
+}
+
 @media (max-width: 35em) {
     rule-list .select-all {
         display: none;
@@ -73,5 +117,10 @@ rule-list .header > .collapse-button:before {
         border-top: 0;
         border-radius: 0 0 var(--radius-md) var(--radius-md);
         background: var(--surface-color);
+    }
+
+    rule-list .rule-group-header {
+        padding-left: 0.55rem;
+        padding-right: 0.55rem;
     }
 }
