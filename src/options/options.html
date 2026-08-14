@@ -1,264 +1,218 @@
-<!-- This Source Code Form is subject to the terms of the Mozilla Public - License, v. 2.0. If a copy of the MPL was not distributed with this - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
 <!DOCTYPE html>
 <html>
     <head>
         <meta charset="utf-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-        <link rel="stylesheet" href="../util/badges.css" />
-        <link rel="stylesheet" href="../util/tags-input/src/tags-input.css" />
         <link rel="stylesheet" href="/lib/lit/lit.css" />
+        <link rel="stylesheet" href="../util/badges.css" />
         <link rel="stylesheet" href="common.css" />
-        <link rel="stylesheet" href="options.css" />
-        <link rel="stylesheet" href="rule-list.css" />
+        <link rel="stylesheet" href="alert-popup.css" />
+        <link rel="stylesheet" href="loading-dots.css" />
+        <link rel="stylesheet" href="modal-dialog.css" />
+        <link rel="stylesheet" href="rule-import-input.css" />
         <link rel="stylesheet" href="rule-input.css" />
-        <script defer src="../util/tab.js"></script>
+        <link rel="stylesheet" href="rule-list.css" />
+        <link rel="stylesheet" href="rule-tester.css" />
+        <link rel="stylesheet" href="options.css" />
         <script defer type="module" src="../util/i18n.js"></script>
-        <script defer src="type-input.js"></script>
         <script defer src="loading-dots.js"></script>
         <script defer src="rule-import-input.js"></script>
-        <script defer type="module" src="../util/tags-input/src/tags-input.js"></script>
+        <script defer type="module" src="rule-input.js"></script>
         <script defer type="module" src="rule-list.js"></script>
         <script defer type="module" src="options.js"></script>
-        <title data-i18n="options_title">Request Control</title>
     </head>
-
     <body>
         <div class="c">
             <div id="tabs" class="row">
                 <div class="col">
-                    <a href="#tab-rules" class="tab-selector active" data-tab-title="options_title">
-                        <img src="/icons/ionicons/list-outline.svg" width="24" />
+                    <a class="tab-selector" href="#tab-rules">
+                        <img src="/icons/ionicons/list.svg" height="20" />
                         <span data-i18n="rules"></span>
                     </a>
                 </div>
                 <div class="col">
-                    <a href="#tab-imports" class="tab-selector" data-tab-title="imports_title">
-                        <img src="/icons/ionicons/download-outline.svg" width="24" />
-                        <span data-i18n="imports"></span>
-                    </a>
-                </div>
-                <div class="col">
-                    <a href="#tab-settings" class="tab-selector" data-tab-title="settings_title">
-                        <img src="/icons/ionicons/options-outline.svg" width="24" />
+                    <a class="tab-selector" href="#tab-settings">
+                        <img src="/icons/ionicons/settings.svg" height="20" />
                         <span data-i18n="settings"></span>
                     </a>
                 </div>
                 <div class="col">
-                    <a href="#tab-manual" class="tab-selector" data-tab-title="manual_title">
-                        <img src="/icons/ionicons/book-outline.svg" width="24" />
-                        <span data-i18n="manual"></span>
+                    <a class="tab-selector" href="#tab-imports">
+                        <img src="/icons/ionicons/cloud-download.svg" height="20" />
+                        <span data-i18n="imports"></span>
                     </a>
                 </div>
                 <div class="col">
-                    <a href="#tab-about" class="tab-selector" data-tab-title="about_title">
-                        <img src="/icons/ionicons/bookmark-outline.svg" width="24" />
-                        <span data-i18n="about"></span>
+                    <a class="tab-selector" href="#tab-manual">
+                        <img src="/icons/ionicons/help-circle.svg" height="20" />
+                        <span data-i18n="manual"></span>
                     </a>
                 </div>
             </div>
-            <div id="tab-rules" class="tab-pane active">
-                <rule-list id="filter" icon="/icons/icon-filter.svg" text="filter_rules" class="d-none"></rule-list>
-                <rule-list
-                    id="redirect"
-                    icon="/icons/icon-redirect.svg"
-                    text="redirect_rules"
-                    class="d-none"
-                ></rule-list>
-                <rule-list id="secure" icon="/icons/icon-secure.svg" text="secure_rules" class="d-none"></rule-list>
-                <rule-list id="block" icon="/icons/icon-block.svg" text="block_rules" class="d-none"></rule-list>
-                <rule-list
-                    id="whitelist"
-                    icon="/icons/icon-whitelist.svg"
-                    text="whitelist_rules"
-                    class="d-none"
-                ></rule-list>
-                <rule-list id="new" text="new_rules" class="d-none"></rule-list>
-                <div class="no-rules-block d-none">
-                    <div class="no-rules" data-i18n="no_rules"></div>
-                    <p class="create-or-import" data-i18n="create_or_import"></p>
-                    <a class="create-or-import-link" href="#tab-imports"></a>
-                </div>
-                <div class="toolbar">
-                    <button id="addNewRule" class="btn">
-                        <img src="/icons/ionicons/add-outline.svg" width="16" />
-                        <span data-i18n="create_new_rule"></span>
-                    </button>
+            <div class="tab-content">
+                <div id="tab-rules" class="tab-pane active">
+                    <div class="no-rules-block d-none">
+                        <div class="no-rules">
+                            <p data-i18n="no_rules"></p>
+                            <p class="create-or-import" data-i18n="create_or_import"><a class="create-or-import-link" href="#tab-imports"></a></p>
+                        </div>
+                    </div>
+                    <rule-list id="new"></rule-list>
+                    <rule-list id="filter"></rule-list>
+                    <rule-list id="redirect"></rule-list>
+                    <rule-list id="secure"></rule-list>
+                    <rule-list id="block"></rule-list>
+                    <rule-list id="whitelist"></rule-list>
+                    <div class="toolbar sticky">
+                        <div>
+                            <button id="addNewRule" class="btn primary">
+                                <img src="/icons/ionicons/add-circle-outline.svg" width="20" />
+                                <span data-i18n="create_rule"></span>
+                            </button>
+                            <button id="selectedRules" class="btn d-none-mobile"></button>
+                        </div>
+                        <div class="d-none-mobile">
+                            <button id="testSelectedRules" class="btn btn-selected-action" disabled>
+                                <img src="/icons/ionicons/flask-outline.svg" width="20" />
+                                <span data-i18n="test_selected"></span>
+                            </button>
+                            <button id="exportSelectedRules" class="btn btn-selected-action" disabled>
+                                <img src="/icons/ionicons/download-outline.svg" width="20" />
+                                <span data-i18n="export_selected"></span>
+                            </button>
+                            <button id="removeSelectedRules" class="btn btn-danger btn-selected-action" disabled>
+                                <img src="/icons/ionicons/trash-bin-outline.svg" width="20" />
+                                <span data-i18n="remove_selected"></span>
+                            </button>
+                        </div>
+                    </div>
                     <div class="mobile-toolbar">
-                        <button
-                            id="testSelectedRules"
-                            class="btn btn-selected-action"
-                            disabled="disabled"
-                            autocomplete="off"
-                            data-toggle="modal"
-                            data-target="#ruleTesterModal"
-                        >
-                            <img src="/icons/ionicons/shuffle-outline.svg" width="16" />
+                        <button id="testSelectedRulesMobile" class="btn btn-selected-action" disabled onclick="document.getElementById('testSelectedRules').click()">
+                            <img src="/icons/ionicons/flask-outline.svg" width="20" />
                             <span data-i18n="test_selected"></span>
-                            <span class="badge badge-light selected-count">0</span>
                         </button>
-                        <button
-                            id="exportSelectedRules"
-                            class="btn btn-selected-action"
-                            disabled="disabled"
-                            autocomplete="off"
-                        >
-                            <img src="/icons/ionicons/code-download-outline.svg" width="16" />
+                        <button id="exportSelectedRulesMobile" class="btn btn-selected-action" disabled onclick="document.getElementById('exportSelectedRules').click()">
+                            <img src="/icons/ionicons/download-outline.svg" width="20" />
                             <span data-i18n="export_selected"></span>
-                            <span class="badge badge-light selected-count">0</span>
                         </button>
-                        <button
-                            id="removeSelectedRules"
-                            class="btn btn-danger btn-selected-action"
-                            disabled="disabled"
-                            autocomplete="off"
-                        >
-                            <img src="/icons/ionicons/trash-bin.svg" width="16" />
+                        <button id="removeSelectedRulesMobile" class="btn btn-danger btn-selected-action" disabled onclick="document.getElementById('removeSelectedRules').click()">
+                            <img src="/icons/ionicons/trash-bin-outline.svg" width="20" />
                             <span data-i18n="remove_selected"></span>
-                            <span class="badge badge-light selected-count">0</span>
                         </button>
                     </div>
-                    <button id="selectedRules" class="btn" data-i18n="zero_selected_rules"></button>
                 </div>
-            </div>
-            <div id="tab-imports" class="tab-pane">
-                <details open>
-                    <summary data-i18n="common_lists"></summary>
-                    <ul>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-common-redirectors.json"><span data-i18n="privacy"></span> - <span data-i18n="imports_skip_redirectors"></span></rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-common-params.json"><span data-i18n="privacy"></span> - <span data-i18n="imports_remove_parameters"></span></rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-common-images.json"><span data-i18n="privacy"></span> - <span data-i18n="imports_remove_image_parameters"></span></rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-block-beacon-and-ping.json"><span data-i18n="privacy"></span> - <span data-i18n="imports_block_beacon_and_ping"></span></rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/other-skip-image-downsamplers.json"><span data-i18n="other"></span> - <span data-i18n="imports_skip_image_downsamplers"></span></rule-import-input>
-                    </ul>
-                </details>
-                <details open>
-                    <summary data-i18n="site_specific_lists"></summary>
-                    <ul>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-amazon.json"><span data-i18n="privacy"></span> - Amazon</rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-bing.json"><span data-i18n="privacy"></span> - Bing</rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-duckduckgo.json"><span data-i18n="privacy"></span> - DuckDuckGo</rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-facebook.json"><span data-i18n="privacy"></span> - Facebook</rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-google.json"><span data-i18n="privacy"></span> - Google</rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-youtube.json"><span data-i18n="privacy"></span> - YouTube</rule-import-input>
-                    </ul>
-                </details>
-                <details open>
-                    <summary data-i18n="my_lists"></summary>
-                    <ul id="my-import-sources"></ul>
-                    <form id="import-source-form">
-                        <input id="new-import-source" name="src" required type="url" data-i18n-placeholder="add_url_to_rules"></input>
-                        <button class="btn">
-                            <span data-i18n="add"></span>
+                <div id="tab-settings" class="tab-pane">
+                    <h3 data-i18n="settings"></h3>
+                    <h4 data-i18n="toolbar"></h4>
+                    <label class="btn">
+                        <input id="optionShowCounter" type="checkbox" />
+                        <span data-i18n="show_counter"></span>
+                    </label>
+                    <label class="btn">
+                        <input id="optionChangeIcon" type="checkbox" />
+                        <span data-i18n="change_icon"></span>
+                    </label>
+                    <h4 data-i18n="rules"></h4>
+                    <div>
+                        <button id="exportRules" class="btn">
+                            <img src="/icons/ionicons/download-outline.svg" width="20" />
+                            <span data-i18n="export"></span>
                         </button>
-                    </form>
-                </details>
-            </div>
-            <div id="tab-settings" class="tab-pane">
-                <h4 data-i18n="export_rules"></h4>
-                <p data-i18n="export_description"></p>
-                <button id="exportRules" class="btn btn-dark" data-i18n="export"></button>
-                <hr />
-                <h4 data-i18n="import_rules"></h4>
-                <p data-i18n="import_description"></p>
-                <label class="btn btn-dark" for="importRules">
-                    <input
-                        id="importRules"
-                        class="d-none"
-                        type="file"
-                        accept="application/json,.json,text/plain,.txt"
-                        autocomplete="off"
-                    />
-                    <span data-i18n="browse_file"></span>
-                </label>
-                <hr />
-                <h4 data-i18n="toolbar_icon"></h4>
-                <div>
-                    <label>
-                        <input
-                            id="optionShowCounter"
-                            type="checkbox"
-                            checked="checked"
-                            autocomplete="off"/>
-                            <span data-i18n="option_show_request_counter"></span>
-                    </label>
+                        <label class="btn">
+                            <img src="/icons/ionicons/cloud-upload-outline.svg" width="20" />
+                            <span data-i18n="import"></span>
+                            <input id="importRules" class="v-hidden" type="file" accept=".json,text/plain" />
+                        </label>
+                    </div>
+                    <hr />
+                    <div>
+                        <p><span id="version"></span> - <button id="changelog" class="btn text" data-i18n="changelog"></button> - <a href="https://github.com/tumpio/requestcontrol" data-i18n="homepage"></a></p>
+                        <p data-i18n="license_short"></p>
+                    </div>
                 </div>
-                <div>
-                    <label>
-                        <input
-                            id="optionChangeIcon"
-                            type="checkbox"
-                            checked="checked"
-                            autocomplete="off"/>
-                            <span data-i18n="option_change_toolbar_icon"></span>
-                    </label>
+                <div id="tab-imports" class="tab-pane">
+                    <h3 data-i18n="imports"></h3>
+                    <details open>
+                        <summary data-i18n="my_lists"></summary>
+                        <ul id="my-import-sources"></ul>
+                        <form id="import-source-form">
+                            <input id="new-import-source" name="src" type="url" required placeholder="https://example.com/rules.json" />
+                            <button class="btn" type="submit" data-i18n="add"></button>
+                        </form>
+                    </details>
+                    <details open>
+                        <summary data-i18n="common"></summary>
+                        <ul>
+                            <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-common-redirectors.json"><span data-i18n="privacy"></span> - <span data-i18n="imports_skip_redirectors"></span></rule-import-input>
+                            <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-common-params.json"><span data-i18n="privacy"></span> - <span data-i18n="imports_remove_parameters"></span></rule-import-input>
+                            <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-common-images.json"><span data-i18n="privacy"></span> - <span data-i18n="imports_remove_image_parameters"></span></rule-import-input>
+                            <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-block-beacon-and-ping.json"><span data-i18n="privacy"></span> - <span data-i18n="imports_block_beacon_and_ping"></span></rule-import-input>
+                            <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/other-skip-image-downsamplers.json"><span data-i18n="other"></span> - <span data-i18n="imports_skip_image_downsamplers"></span></rule-import-input>
+                        </ul>
+                    </details>
+                    <details>
+                        <summary data-i18n="specific"></summary>
+                        <ul>
+                            <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-amazon.json"><span data-i18n="privacy"></span> - Amazon</rule-import-input>
+                            <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-bing.json"><span data-i18n="privacy"></span> - Bing</rule-import-input>
+                            <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-duckduckgo.json"><span data-i18n="privacy"></span> - DuckDuckGo</rule-import-input>
+                            <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-facebook.json"><span data-i18n="privacy"></span> - Facebook</rule-import-input>
+                            <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-google.json"><span data-i18n="privacy"></span> - Google</rule-import-input>
+                            <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-youtube.json"><span data-i18n="privacy"></span> - YouTube</rule-import-input>
+                        </ul>
+                    </details>
+                    <button id="importSelected" class="btn primary" disabled data-i18n="import_selected"></button>
                 </div>
-            </div>
-            <div id="tab-manual" class="tab-pane">
-                <div id="contents" class="toc">
-                    <label data-i18n="contents"></label>
+                <div id="tab-manual" class="tab-pane">
+                    <div id="contents" class="toc sticky"></div>
+                    <div id="manual" class="manual-content"></div>
                 </div>
-                <div id="manual" class="manual-content"></div>
-            </div>
-            <div id="tab-about" class="tab-pane">
-                <h4 id="version"></h4>
-                <hr />
-                <a href="https://addons.mozilla.org/addon/requestcontrol"><strong data-i18n="home_page"></strong> </a>
-                <br />
-                <a id="changelog" href="#changelog" data-toggle="modal" data-target="#changelogModal"
-                    ><strong data-i18n="changelog"></strong
-                ></a>
-                <br />
-                <a href="https://github.com/tumpio/requestcontrol/graphs/contributors"
-                    ><strong data-i18n="contributors"></strong
-                ></a>
-                <br />
-                <a href="https://github.com/tumpio/requestcontrol"><strong data-i18n="source_code"></strong></a>
-                <hr />
-                <h5>
-                    <a href="https://github.com/tumpio/requestcontrol/issues"
-                        ><strong data-i18n="report_bug_request_feature"></strong
-                    ></a>
-                </h5>
-                <hr />
-                <h4 data-i18n="license"></h4>
-                <pre class="license-clause"><code><span data-i18n="license_clause"></span> <a
-        href="/LICENSE">LICENSE</a>.</code></pre>
             </div>
         </div>
         <template id="alert-popup">
-            <link rel="stylesheet" href="alert-popup.css" />
-            <span id="message"></span>
-            <span id="close">&times;</span>
-        </template>
-        <template id="modal-dialog">
-            <link rel="stylesheet" href="/lib/lit/lit.css" />
-            <link rel="stylesheet" href="common.css" />
-            <link rel="stylesheet" href="modal-dialog.css" />
-            <div id="body" class="c">
-                <div class="header">
-                    <span id="title"><slot name="title"></slot></span>
-                    <span id="close">&times;</span>
+            <modal-dialog>
+                <link rel="stylesheet" href="/lib/lit/lit.css" />
+                <link rel="stylesheet" href="common.css" />
+                <link rel="stylesheet" href="modal-dialog.css" />
+                <link rel="stylesheet" href="alert-popup.css" />
+                <div class="content">
+                    <div class="header"><strong data-i18n="error"></strong></div>
+                    <pre id="message"></pre>
+                    <div class="footer"><button id="close" class="btn primary" data-i18n="close"></button></div>
                 </div>
-                <div id="content"><slot name="content"></slot></div>
-            </div>
+            </modal-dialog>
         </template>
-        <template id="rule-test-dialog">
-            <link rel="stylesheet" href="rule-tester.css" />
-            <input type="url" class="card w-100" id="test-url" data-i18n-placeholder="test_url" name="test-url"/>
-            <div class="test-result">
-                <span>&gt;</span>
-                <span id="result">&nbsp;</span>
-            </div>
+        <template id="rule-tester">
+            <modal-dialog>
+                <link rel="stylesheet" href="/lib/lit/lit.css" />
+                <link rel="stylesheet" href="common.css" />
+                <link rel="stylesheet" href="modal-dialog.css" />
+                <link rel="stylesheet" href="rule-tester.css" />
+                <div class="content">
+                    <div class="header"><strong data-i18n="test_rule"></strong></div>
+                    <div class="body">
+                        <form id="test-form">
+                            <input id="test-url" type="url" class="card w-100" placeholder="https://example.com/" required />
+                            <button class="btn primary" type="submit" data-i18n="test"></button>
+                        </form>
+                        <div id="test-results"></div>
+                    </div>
+                    <div class="footer"><button id="close" class="btn" data-i18n="close"></button></div>
+                </div>
+            </modal-dialog>
         </template>
         <template id="rule-input">
             <div id="header" class="rule-header">
-                <div class="rule-select">
+                <label class="rule-select">
                     <input id="select" type="checkbox" autocomplete="off" />
-                </div>
+                </label>
                 <div class="rule-header-title">
-                    <div class="title-wrap">
+                    <div>
                         <small class="badge edit-label d-none" data-i18n="name"></small>
-                        <label id="title" class="title" data-i18n="new_rule"></label>
+                        <span id="title" class="title"></span>
                     </div>
                     <div class="description-wrap d-none">
                         <small class="badge edit-label d-none" data-i18n="description"></small>
@@ -269,9 +223,19 @@
                         <button id="add-tag" type="button" class="badge add-tag" data-i18n="set_tag"></button>
                         <small id="tag" class="tag"></small>
                     </div>
+                    <div class="group-wrap d-none">
+                        <small class="badge edit-label d-none" data-i18n="group"></small>
+                        <input id="group" class="group-input" type="text" autocomplete="off" data-i18n-placeholder="group_placeholder" />
+                    </div>
                 </div>
                 <div class="header-info-wrap">
                     <div class="information">
+                        <label id="source-badge-wrap" class="badge badge-info d-none">
+                            <span id="source-badge"></span>
+                        </label>
+                        <label id="group-badge-wrap" class="badge badge-success d-none">
+                            <span id="group-badge"></span>
+                        </label>
                         <label class="badge badge-light">
                             <span id="tag-badge" class="tag-badge"></span>
                         </label>
@@ -298,205 +262,124 @@
                         <div class="form-wrap">
                             <div id="url-area" class="url-wrap">
                                 <div class="form-group-pattern">
-                                    <div>
-                                        <small data-i18n="scheme"></small>
-                                        <div>
-                                            <select id="scheme" class="scheme card">
-                                                <option value="http">http</option>
-                                                <option value="https">https</option>
-                                                <option value="*" selected>http/https</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                    <div>
-                                        <small data-i18n="method"></small>
-                                        <input
-                                            id="method"
-                                            is="tags-input"
-                                            type="text"
-                                            data-i18n-placeholder="method_placeholder"
-                                            spellcheck="false"
-                                            data-separator=", "
-                                            data-edit-only="true"
-											size="10"
-                                        />
-                                    </div>
-                                    <div>
-                                        <small data-i18n="host"></small>
-                                        <input
-                                            id="host"
-                                            is="tags-input"
-                                            type="text"
-                                            data-i18n-placeholder="host_placeholder"
-                                            spellcheck="false"
-                                            data-separator=", "
-                                            data-edit-only="true"
-                                            required="required"
-                                        />
-                                    </div>
-                                    <div>
-                                        <small data-i18n="path"></small>
-                                        <input
-                                            id="path"
-                                            is="tags-input"
-                                            type="text"
-                                            data-i18n-placeholder="path_placeholder"
-                                            spellcheck="false"
-                                            data-separator=" "
-                                            data-edit-only="true"
-                                        />
-                                    </div>
+                                    <select id="scheme" class="scheme" autocomplete="off">
+                                        <option value="*">http/https</option>
+                                        <option value="http">http</option>
+                                        <option value="https">https</option>
+                                        <option value="ws">ws</option>
+                                        <option value="wss">wss</option>
+                                    </select>
+                                    <span>://</span>
+                                    <input
+                                        id="host"
+                                        is="tags-input"
+                                        type="text"
+                                        data-separator=""
+                                        data-edit-only="true"
+                                        autocomplete="off"
+                                        spellcheck="false"
+                                        data-i18n-placeholder="placeholder_host"
+                                        required
+                                    />
+                                    <span>/</span>
+                                    <input
+                                        id="path"
+                                        is="tags-input"
+                                        type="text"
+                                        data-separator=""
+                                        data-edit-only="true"
+                                        autocomplete="off"
+                                        spellcheck="false"
+                                        data-i18n-placeholder="placeholder_path"
+                                        required
+                                    />
                                 </div>
                                 <div id="tlds-form" class="d-none">
-                                    <small id="collapse-tlds" class="collapse-button plus collapsed">
-                                        <span data-i18n="top_level_domains"></span>
-                                    </small>
-                                    <div id="tlds-area">
-                                        <input
-                                            id="tlds"
-                                            is="tags-input"
-                                            type="text"
-                                            class="d-none"
-                                            disabled="disabled"
-                                            spellcheck="false"
-                                            autocomplete="off"
-                                            data-i18n-placeholder="tlds_placeholder"
-                                            required="required"
-                                            data-separator=", "
-                                            data-edit-only="true"
-                                        />
-                                        <label class="btn">
-                                            <input id="any-tld" type="checkbox" autocomplete="off" />
-                                            <span data-i18n="any_tld"></span>
-                                        </label>
+                                    <a id="collapse-tlds" class="collapse-button" data-i18n="top_level_domains"></a>
+                                    <div id="tlds-area" class="d-none">
+                                        <div class="form-wrap">
+                                            <div>
+                                                <input
+                                                    id="tlds"
+                                                    is="tags-input"
+                                                    type="text"
+                                                    data-separator=""
+                                                    data-edit-only="true"
+                                                    autocomplete="off"
+                                                    spellcheck="false"
+                                                    data-i18n-placeholder="placeholder_tlds"
+                                                />
+                                            </div>
+                                            <div class="any-wrap">
+                                                <label class="btn">
+                                                    <input id="any-tld" type="checkbox" autocomplete="off" />
+                                                    <span data-i18n="any_tld"></span>
+                                                </label>
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
                             </div>
-                            <div class="any-wrap any-url-wrap">
+                            <div class="any-wrap">
                                 <label class="btn">
                                     <input id="any-url" type="checkbox" autocomplete="off" />
-                                    <span data-i18n="all_urls"></span>
+                                    <span data-i18n="any_url"></span>
                                 </label>
                             </div>
                         </div>
                     </div>
-                    <small
-                        id="collapse-matchers"
-                        class="form-header row collapse-button plus"
-                        data-i18n="extra_matchers"
-                    ></small>
-                    <div class="row">
-                        <div id="matchers" class="d-none">
-                            <small data-i18n="includes"></small>
-                            <input
-                                id="includes"
-                                is="tags-input"
-                                type="text"
-                                spellcheck="false"
-                                autocomplete="off"
-                                data-separator=""
-                                data-edit-only="true"
-                                data-i18n-placeholder="includes_placeholder"
-                            />
-                            <small data-i18n="excludes"></small>
-                            <input
-                                id="excludes"
-                                is="tags-input"
-                                type="text"
-                                spellcheck="false"
-                                autocomplete="off"
-                                data-separator=""
-                                data-edit-only="true"
-                                data-i18n-placeholder="excludes_placeholder"
-                            />
-                            <small data-i18n="match_by_origin"></small>
-                            <div>
-                                <label class="btn">
-                                    <input
-                                        class="origin-matcher"
-                                        value="any"
-                                        type="radio"
-                                        name="origin-matcher"
-                                        autocomplete="off"
-                                        checked
-                                    />
-                                    <span data-i18n="any"></span>
-                                </label>
-                                <label class="btn">
-                                    <input
-                                        class="origin-matcher"
-                                        value="same-domain"
-                                        type="radio"
-                                        name="origin-matcher"
-                                        autocomplete="off"
-                                    />
-                                    <span data-i18n="same_domain"></span>
-                                </label>
-                                <label class="btn">
-                                    <input
-                                        class="origin-matcher"
-                                        value="third-party-domain"
-                                        type="radio"
-                                        name="origin-matcher"
-                                        autocomplete="off"
-                                    />
-                                    <span data-i18n="third_party_domain"></span>
-                                </label>
-                                <label class="btn">
-                                    <input
-                                        class="origin-matcher"
-                                        value="same-origin"
-                                        type="radio"
-                                        name="origin-matcher"
-                                        autocomplete="off"
-                                    />
-                                    <span data-i18n="same_origin"></span>
-                                </label>
-                                <label class="btn">
-                                    <input
-                                        class="origin-matcher"
-                                        value="third-party-origin"
-                                        type="radio"
-                                        name="origin-matcher"
-                                        autocomplete="off"
-                                    />
-                                    <span data-i18n="third_party_origin"></span>
-                                </label>
-                            </div>
-                            <small data-i18n="private_browsing"></small>
-                            <div>
-                                <select id="incognito" autocomplete="off">
-                                    <option value="" data-i18n="include"></option>
-                                    <option value="false" data-i18n="exclude"></option>
-                                    <option value="true" data-i18n="only"></option>
-                                </select>
-                            </div>
+                    <a id="collapse-matchers" class="collapse-button" data-i18n="extra_matchers"></a>
+                    <div id="matchers" class="d-none">
+                        <div class="row">
+                            <label data-i18n="http_method"></label>
+                            <input id="method" is="tags-input" type="text" data-separator="" data-edit-only="true" autocomplete="off" spellcheck="false" />
+                        </div>
+                        <div class="row">
+                            <label data-i18n="extra_url_matcher"></label>
+                            <input id="includes" is="tags-input" type="text" data-separator="" data-edit-only="true" autocomplete="off" spellcheck="false" />
+                        </div>
+                        <div class="row">
+                            <label data-i18n="extra_url_exclude"></label>
+                            <input id="excludes" is="tags-input" type="text" data-separator="" data-edit-only="true" autocomplete="off" spellcheck="false" />
+                        </div>
+                        <div class="row">
+                            <label data-i18n="origin"></label>
+                            <select id="origin" autocomplete="off">
+                                <option value="any" data-i18n="any"></option>
+                                <option value="same-domain" data-i18n="same_domain"></option>
+                                <option value="same-origin" data-i18n="same_origin"></option>
+                                <option value="third-party-domain" data-i18n="third_party_domain"></option>
+                                <option value="third-party-origin" data-i18n="third_party_origin"></option>
+                            </select>
+                        </div>
+                        <div class="row">
+                            <label data-i18n="private_browsing"></label>
+                            <select id="incognito" autocomplete="off">
+                                <option value="" data-i18n="any"></option>
+                                <option value="true" data-i18n="only_private"></option>
+                                <option value="false" data-i18n="not_private"></option>
+                            </select>
                         </div>
                     </div>
-                    <small class="form-header row" data-i18n="types"></small>
+                    <small class="form-header" data-i18n="types"></small>
                     <div class="row">
                         <div class="form-wrap">
-                            <div id="types" class="btn-group-types">
-                                <input is="type-input" value="main_frame" index="0"></input>
-                                <input is="type-input" value="sub_frame" index="1"></input>
-                                <input is="type-input" value="script" index="2"></input>
-                                <input is="type-input" value="stylesheet" index="3"></input>
-                                <input is="type-input" value="image" index="4"></input>
-                                <input is="type-input" value="font" index="5"></input>
-                                <input is="type-input" value="media" index="6"></input>
-                                <input is="type-input" value="object" index="7"></input>
-                                <input is="type-input" value="object_subrequest" index="8"></input>
-                                <input is="type-input" value="imageset" index="9"></input>
-                                <input is="type-input" value="beacon" index="10"></input>
-                                <input is="type-input" value="ping" index="11"></input>
-                                <input is="type-input" value="speculative" index="12"></input>
-                                <input is="type-input" value="websocket" index="13"></input>
-                                <input is="type-input" value="xmlhttprequest" index="14"></input>
-                                <input is="type-input" value="web_manifest" index="15"></input>
-                                <input is="type-input" value="csp_report" index="16"></input>
-                                <input is="type-input" value="xml_dtd" index="17"></input>
-                                <input is="type-input" value="xslt" index="18"></input>
-                                <input is="type-input" value="other" index="19"></input>
+                            <div id="types" class="types-wrap">
+                                <label class="btn"><input class="type" type="checkbox" value="main_frame" /><span data-i18n="main_frame"></span></label>
+                                <label class="btn"><input class="type" type="checkbox" value="sub_frame" /><span data-i18n="sub_frame"></span></label>
+                                <label class="btn"><input class="type" type="checkbox" value="stylesheet" /><span data-i18n="stylesheet"></span></label>
+                                <label class="btn"><input class="type" type="checkbox" value="script" /><span data-i18n="script"></span></label>
+                                <label class="btn"><input class="type" type="checkbox" value="image" /><span data-i18n="image"></span></label>
+                                <label class="btn"><input class="type extra-type" type="checkbox" value="object" /><span data-i18n="object"></span></label>
+                                <label class="btn"><input class="type extra-type" type="checkbox" value="xmlhttprequest" /><span data-i18n="xmlhttprequest"></span></label>
+                                <label class="btn"><input class="type extra-type" type="checkbox" value="xml_dtd" /><span data-i18n="xml_dtd"></span></label>
+                                <label class="btn"><input class="type extra-type" type="checkbox" value="font" /><span data-i18n="font"></span></label>
+                                <label class="btn"><input class="type extra-type" type="checkbox" value="media" /><span data-i18n="media"></span></label>
+                                <label class="btn"><input class="type extra-type" type="checkbox" value="websocket" /><span data-i18n="websocket"></span></label>
+                                <label class="btn"><input class="type extra-type" type="checkbox" value="csp_report" /><span data-i18n="csp_report"></span></label>
+                                <label class="btn"><input class="type extra-type" type="checkbox" value="imageset" /><span data-i18n="imageset"></span></label>
+                                <label class="btn"><input class="type extra-type" type="checkbox" value="other" /><span data-i18n="other"></span></label>
+                                <label class="btn"><input class="type extra-type" type="checkbox" value="speculative" /><span data-i18n="speculative"></span></label>
                                 <label class="btn">
                                     <input id="more-types" class="v-hidden" type="checkbox" autocomplete="off" />
                                     <span class="text" data-i18n="show_more_true"></span>

@@ -31,6 +31,7 @@ export function buildSuggestedFilterRule(analysis, suggestions, uuid) {
         title: `Suggested cleanup: ${analysis.hostname}`,
         description: "Generated locally by the URL analyzer. Review and test before enabling.",
         tag: "assisted",
+        group: unwrap ? "Redirect cleanup" : "Privacy / Tracking parameters",
     };
 
     if (removeParameters.length > 0) {
