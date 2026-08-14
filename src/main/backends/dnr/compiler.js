@@ -186,11 +186,15 @@ function compileUrlConditions(pattern) {
         case "":
             break;
         case "same-domain":
-            conditionBase.domainType = "firstParty";
-            break;
         case "third-party-domain":
-            conditionBase.domainType = "thirdParty";
-            break;
+            return {
+                diagnostics: [
+                    diagnostic(
+                        "domain-matcher-unsupported",
+                        "Request Control currently resolves registrable domains with ICANN-only tldts defaults, while Chromium DNR domainType includes private registries. The mapping is not treated as exact."
+                    ),
+                ],
+            };
         case "same-origin":
         case "third-party-origin":
             return {
@@ -346,7 +350,7 @@ function compileAction(rule, { allowApproximate }) {
                     status: "unsupported",
                 };
             }
-            if (typeof rule.redirectUrl !== "string" || rule.redirectUrl.includes("[")) {
+            if (typeof rule.redirectUrl !== "string" || rule.redirectUrl.includes("[") || rule.redirectUrl.includes("{")) {
                 return {
                     diagnostics: [
                         diagnostic(

@@ -50,14 +50,13 @@ test("preserves Request Control action dominance with DNR priorities", () => {
     expect(secure.priority).toBeGreaterThan(redirect.priority);
 });
 
-test("compiles same-domain and request-method matching using native DNR conditions", () => {
+test("compiles supported request methods using native DNR conditions", () => {
     const result = compileRuleToDnr(
         baseRule({
             pattern: {
                 scheme: "*",
                 host: ["*.example.com"],
                 path: ["api/*"],
-                origin: "same-domain",
                 method: ["GET", "post"],
             },
             types: ["xmlhttprequest"],
@@ -66,11 +65,21 @@ test("compiles same-domain and request-method matching using native DNR conditio
 
     expect(result.status).toBe("supported");
     expect(result.rules[0].condition).toMatchObject({
-        domainType: "firstParty",
         requestMethods: ["get", "post"],
         resourceTypes: ["xmlhttprequest"],
     });
     expect(result.rules[0].condition.regexFilter).toContain("(?:http|https|ws|wss)");
+});
+
+test("does not equate Request Control domain matching with Chromium private-registry semantics", () => {
+    const result = compileRuleToDnr(
+        baseRule({
+            pattern: { scheme: "https", host: ["example.com"], path: ["*"], origin: "same-domain" },
+        })
+    );
+
+    expect(result.status).toBe("unsupported");
+    expect(result.diagnostics.map(({ code }) => code)).toContain("domain-matcher-unsupported");
 });
 
 test("expands explicit TLD wildcard lists deterministically", () => {
@@ -100,13 +109,18 @@ test("compiles static absolute redirects but rejects the Request Control redirec
     const dsl = compileRuleToDnr(
         baseRule({ action: "redirect", redirectUrl: "https://destination.example/[path]" })
     );
+    const parameterDsl = compileRuleToDnr(
+        baseRule({ action: "redirect", redirectUrl: "https://destination.example/{path}" })
+    );
 
     expect(simple).toMatchObject({
         status: "supported",
         rules: [{ action: { type: "redirect", redirect: { url: "https://destination.example/path" } } }],
     });
     expect(dsl.status).toBe("unsupported");
+    expect(parameterDsl.status).toBe("unsupported");
     expect(dsl.diagnostics.map(({ code }) => code)).toContain("redirect-dsl-unsupported");
+    expect(parameterDsl.diagnostics.map(({ code }) => code)).toContain("redirect-dsl-unsupported");
 });
 
 test("compiles trim-all query filtering exactly when inline URL parsing is disabled", () => {
