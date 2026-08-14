@@ -1,4 +1,4 @@
-|BuildStatus| |codecov|
+|BuildStatus|
 
 Request Control - Firefox extension
 -----------------------------------
@@ -32,6 +32,7 @@ Requests can be controlled with following rules:
 | `FAQ`_
 | `Source code`_
 | `License`_
+| `Upstream`_
 
 Support
 ~~~~~~~
@@ -48,7 +49,7 @@ Clone repository and setup development environment with `npm`_
 
 ::
 
-    git clone https://github.com/tumpio/requestcontrol.git
+    git clone https://github.com/HyperCriSiS/requestcontrol.git
     cd requestcontrol
     npm install
 
@@ -90,11 +91,12 @@ License
     file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 .. _webRequest.onBeforeRequest: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/webRequest/onBeforeRequest
-.. _Pattern Capturing: https://github.com/tumpio/requestcontrol/blob/master/_locales/en/manual.wiki#redirect-using-pattern-capturing
-.. _Manual: https://github.com/tumpio/requestcontrol/blob/master/_locales/en/manual.wiki
-.. _FAQ: https://github.com/tumpio/requestcontrol/issues?utf8=%E2%9C%93&q=label%3Aquestion+
-.. _Source code: https://github.com/tumpio/requestcontrol
-.. _License: https://github.com/tumpio/requestcontrol/blob/master/LICENSE
+.. _Pattern Capturing: https://github.com/HyperCriSiS/requestcontrol/blob/master/_locales/en/manual.wiki#redirect-using-pattern-capturing
+.. _Manual: https://github.com/HyperCriSiS/requestcontrol/blob/master/_locales/en/manual.wiki
+.. _FAQ: https://github.com/HyperCriSiS/requestcontrol/issues?q=label%3Aquestion
+.. _Source code: https://github.com/HyperCriSiS/requestcontrol
+.. _License: https://github.com/HyperCriSiS/requestcontrol/blob/master/LICENSE
+.. _Upstream: https://github.com/tumpio/requestcontrol
 .. _npm: https://www.npmjs.com/
 .. _lit: https://ajusa.github.io/lit/
 .. _tags-input: https://github.com/developit/tags-input
@@ -102,7 +104,5 @@ License
 .. _ionicons: http://ionicons.com/
 .. _tldts: https://github.com/remusao/tldts
 
-.. |BuildStatus| image:: https://github.com/tumpio/requestcontrol/workflows/Build/badge.svg?event=push&branch=master
-   :target: https://github.com/tumpio/requestcontrol/actions
-.. |codecov| image:: https://codecov.io/gh/tumpio/requestcontrol/branch/master/graph/badge.svg
-   :target: https://codecov.io/gh/tumpio/requestcontrol
+.. |BuildStatus| image:: https://github.com/HyperCriSiS/requestcontrol/workflows/Build/badge.svg?event=push&branch=master
+   :target: https://github.com/HyperCriSiS/requestcontrol/actions

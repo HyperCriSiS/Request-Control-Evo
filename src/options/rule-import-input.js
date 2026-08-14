@@ -39,7 +39,7 @@ class RuleImportInput extends HTMLElement {
     }
 
     static get observedAttributes() {
-        return ["src", "deletable"];
+        return ["src", "deletable", "expected-sha256"];
     }
 
     attributeChangedCallback(name, _oldValue, newValue) {
@@ -49,6 +49,9 @@ class RuleImportInput extends HTMLElement {
                 break;
             case "deletable":
                 this.onDeletableChanged(newValue);
+                break;
+            case "expected-sha256":
+                this.expectedSha256 = newValue ? newValue.toLowerCase() : null;
                 break;
             default:
                 break;
@@ -114,9 +117,17 @@ class RuleImportInput extends HTMLElement {
                 throw `${response.status} - ${response.statusText}`;
             }
 
-            const data = await response.json();
+            const text = await response.text();
+            if (this.expectedSha256) {
+                const actualSha256 = await digest(text, "SHA-256");
+                if (actualSha256 !== this.expectedSha256) {
+                    throw new Error("Rule list integrity check failed (SHA-256 mismatch)");
+                }
+            }
+
+            const data = JSON.parse(text);
             const rules = (Array.isArray(data) ? data : [data]).filter((rule) => rule.uuid);
-            this.digest = await digest(JSON.stringify(rules));
+            this.digest = await digest(JSON.stringify(rules), "SHA-256");
             this.etag = response.headers.get("etag");
             this.rules = rules;
             this.shadowRoot.getElementById("count").textContent = browser.i18n.getMessage(
@@ -137,10 +148,10 @@ class RuleImportInput extends HTMLElement {
 
 customElements.define("rule-import-input", RuleImportInput);
 
-async function digest(text) {
+async function digest(text, algorithm = "SHA-256") {
     const encoder = new TextEncoder();
     const data = encoder.encode(text);
-    const digest = await crypto.subtle.digest("SHA-1", data);
+    const digest = await crypto.subtle.digest(algorithm, data);
     const bytes = Array.from(new Uint8Array(digest));
     return bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }

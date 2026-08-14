@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { reconcileManagedRules } from "../main/catalog.js";
 import { exportObject, importFile } from "../util/import-export.js";
 import { Toc } from "../util/toc.js";
 import { uuid } from "../util/uuid.js";
@@ -172,7 +173,7 @@ document.addEventListener("rule-import-delete-imported", onRemoveImportedRules);
 document.addEventListener("rule-import-show-imported", (e) => {
     const { uuids } = e.target.data.imported;
     uuids.forEach((uuid) => {
-        const input = document.querySelector(`[data-uuid="${uuid}"`);
+        const input = document.querySelector(`[data-uuid="${uuid}"]`);
         if (input) {
             input.select();
         }
@@ -188,7 +189,6 @@ document.addEventListener("rule-import-import-list", async (e) => {
     let { imports } = await browser.storage.local.get("imports");
     const src = input.getAttribute("src");
     const rulesToImport = input.rules.filter((rule) => rule.uuid);
-    const uuids = rulesToImport.map((rule) => rule.uuid);
 
     if (!imports) {
         imports = {};
@@ -199,28 +199,62 @@ document.addEventListener("rule-import-import-list", async (e) => {
     }
 
     const data = imports[src];
+    const source = {
+        id: input.dataset.entry ? `${input.dataset.catalog}/${input.dataset.entry}` : src,
+        url: src,
+        revision: input.etag || input.digest,
+        catalog: input.dataset.catalog || undefined,
+        entry: input.dataset.entry || undefined,
+        version: input.dataset.version || undefined,
+    };
 
-    if (data.imported && data.imported.uuids) {
-        const { rules } = await browser.storage.local.get("rules");
-
-        if (rules) {
-            const removed = new Set(data.imported.uuids.filter((uuid) => !uuids.includes(uuid)));
-            await browser.storage.local.set({ rules: rules.filter((rule) => !removed.has(rule.uuid)) });
-        }
+    let { rules } = await browser.storage.local.get("rules");
+    if (!rules) {
+        rules = [];
     }
 
-    importRules(rulesToImport);
+    rules = markLegacyImportedRules(rules, data.imported, source);
+    const reconciliation = await reconcileManagedRules(rules, rulesToImport, source);
+
+    await browser.storage.local.set({ rules: reconciliation.rules });
+    document.querySelectorAll("rule-list").forEach((list) => list.removeAll());
+    createRuleInputs(reconciliation.rules);
+
+    const managedUuids = reconciliation.rules
+        .filter((rule) => rule.source && rule.source.id === source.id)
+        .map((rule) => rule.uuid);
+    const hasConflicts = reconciliation.conflicts.length > 0;
 
     imports[src].imported = {
-        uuids,
+        uuids: managedUuids,
         etag: input.etag,
-        digest: input.digest,
+        digest: hasConflicts ? data.imported && data.imported.digest : input.digest,
+        availableDigest: input.digest,
         timestamp: Date.now(),
+        conflicts: reconciliation.conflicts,
     };
 
     await browser.storage.local.set({ imports });
     input.data = imports[src];
 });
+
+function markLegacyImportedRules(rules, imported, source) {
+    if (!imported || !Array.isArray(imported.uuids)) {
+        return rules;
+    }
+
+    const importedUuids = new Set(imported.uuids);
+    return rules.map((rule) => {
+        if (!importedUuids.has(rule.uuid) || rule.source) {
+            return rule;
+        }
+        return {
+            ...rule,
+            managed: true,
+            source: { ...source },
+        };
+    });
+}
 
 async function setupImportsTab() {
     const { imports } = await browser.storage.local.get("imports");
@@ -230,7 +264,7 @@ async function setupImportsTab() {
             if (data.deletable) {
                 createImportInput(src, data);
             } else {
-                const input = document.querySelector(`rule-import-input[src="${src}"`);
+                const input = document.querySelector(`rule-import-input[src="${src}"]`);
                 if (input) {
                     input.data = data;
                 }
@@ -238,8 +272,65 @@ async function setupImportsTab() {
         });
     }
 
+    const importTab = document.querySelector('a[href="#tab-imports"]');
+    const loadCommunityCatalog = async () => {
+        if (importTab.dataset.communityLoaded === "true") {
+            return;
+        }
+        importTab.dataset.communityLoaded = "true";
+        await setupCommunityCatalog(imports || {});
+    };
+    importTab.addEventListener("click", loadCommunityCatalog);
+    if (location.hash === "#tab-imports") {
+        loadCommunityCatalog();
+    }
+
     document.getElementById("import-source-form").addEventListener("submit", onImportSourceAdded);
     document.getElementById("new-import-source").addEventListener("input", checkImportSourceValidity);
+}
+
+async function setupCommunityCatalog(imports) {
+    const catalogUrl = "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/catalog.json";
+    try {
+        const response = await fetch(catalogUrl, { cache: "no-store" });
+        if (!response.ok) {
+            return;
+        }
+        const catalog = await response.json();
+        if (!catalog || !Array.isArray(catalog.ruleSets)) {
+            return;
+        }
+
+        const container = document.getElementById("tab-imports");
+        const details = document.createElement("details");
+        details.open = true;
+        const summary = document.createElement("summary");
+        summary.textContent = "Request Control Community";
+        const list = document.createElement("ul");
+
+        for (const entry of catalog.ruleSets) {
+            if (!entry || !entry.url || !entry.name) {
+                continue;
+            }
+            const input = document.createElement("rule-import-input");
+            input.textContent = `${entry.category || "community"} - ${entry.name}`;
+            input.dataset.catalog = catalog.catalog || "requestcontrol-community";
+            input.dataset.entry = entry.id || entry.url;
+            input.dataset.version = entry.version || catalog.version || "";
+            input.dataset.group = entry.group || "";
+            if (entry.sha256) {
+                input.setAttribute("expected-sha256", entry.sha256);
+            }
+            input.setAttribute("src", entry.url);
+            input.data = imports[entry.url] || {};
+            list.append(input);
+        }
+
+        details.append(summary, list);
+        container.prepend(details);
+    } catch {
+        // Community catalog is optional; built-in and user lists continue to work offline.
+    }
 }
 
 async function checkImportSourceValidity() {

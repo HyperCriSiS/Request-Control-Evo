@@ -1,0 +1,52 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Request Control — URL Analyzer</title>
+  <link rel="stylesheet" href="analyzer.css">
+  <script defer type="module" src="../util/i18n.js"></script>
+  <script defer type="module" src="analyzer.js"></script>
+</head>
+<body>
+  <main>
+    <header>
+      <div>
+        <h1 data-i18n="analyzer_title"></h1>
+        <p data-i18n="analyzer_privacy_note"></p>
+      </div>
+      <button id="open-options" type="button" data-i18n="rules"></button>
+    </header>
+
+    <section class="card">
+      <form id="analyzer-form">
+        <label for="url" data-i18n="analyzer_url_label"></label>
+        <div class="input-row">
+          <input id="url" type="url" required autocomplete="off" spellcheck="false" data-i18n-placeholder="analyzer_url_placeholder">
+          <button type="submit" class="primary" data-i18n="analyze"></button>
+        </div>
+      </form>
+      <p id="error" class="error hidden" data-i18n="analyzer_invalid_url"></p>
+    </section>
+
+    <section id="results" class="card hidden">
+      <dl>
+        <div><dt data-i18n="host"></dt><dd id="host"></dd></div>
+        <div><dt data-i18n="path"></dt><dd id="path"></dd></div>
+        <div><dt data-i18n="analyzer_query_parameters"></dt><dd id="parameter-count"></dd></div>
+      </dl>
+
+      <h2 data-i18n="analyzer_suggestions"></h2>
+      <div id="suggestions"></div>
+      <p id="no-suggestions" class="muted hidden" data-i18n="analyzer_no_suggestions"></p>
+      <div class="actions">
+        <button id="create-rule" class="primary" type="button" data-i18n="analyzer_create_rule" disabled></button>
+      </div>
+      <p class="muted" data-i18n="analyzer_rule_disabled_note"></p>
+    </section>
+  </main>
+</body>
+</html>

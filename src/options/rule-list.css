@@ -12,10 +12,12 @@ rule-list .list {
     padding: 0;
     margin: 0;
     overflow: hidden;
+    border-top: 1px solid var(--border-color);
 }
 
 rule-list .list.collapsed {
     height: 0;
+    border-top: 0;
 }
 
 rule-list .list > * {
@@ -26,35 +28,99 @@ rule-list .list > * {
 rule-list .header:not(.d-none) {
     display: flex;
     align-items: center;
-    padding: 0.2em 0;
-    font-size: 0.9em;
+    min-height: 2.8rem;
+    padding: 0.35rem 0.75rem;
+    font-size: 0.9rem;
+    background: var(--surface-subtle);
 }
 
 rule-list .header > * {
-    margin-right: 0.5em;
+    margin-right: 0.5rem;
 }
 
 rule-list .header > * + * {
-    margin-top: 0.2em;
-    margin-bottom: 0.2em;
+    margin-top: 0.2rem;
+    margin-bottom: 0.2rem;
 }
 
 rule-list .select-all {
-    margin: 0 0.8rem;
+    margin: 0 0.45rem 0 0.15rem;
     display: flex;
 }
 
 rule-list .header > .collapse-button {
     margin-left: auto;
-    margin-right: 1em;
+    margin-right: 0.25rem;
+    color: var(--text-muted);
 }
 
 rule-list .header > .collapse-button:before {
     vertical-align: middle;
 }
 
+rule-list .rule-group-header {
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+    min-height: 2.2rem;
+    padding: 0.25rem 0.75rem;
+    background: var(--surface-subtle);
+    border-top: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+rule-list .rule-group-toggle {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    padding: 0.35rem 0;
+    border: 0;
+    background: transparent;
+    color: var(--text-color);
+    font: inherit;
+    font-weight: 700;
+    text-align: left;
+    cursor: pointer;
+}
+
+rule-list .rule-group-toggle::before {
+    content: "▾";
+    color: var(--text-muted);
+}
+
+rule-list .rule-group-toggle[aria-expanded="false"]::before {
+    content: "▸";
+}
+
+rule-list .rule-group-count {
+    min-width: 1.8rem;
+    text-align: center;
+}
+
+rule-list .group-hidden {
+    display: none;
+}
+
 @media (max-width: 35em) {
     rule-list .select-all {
         display: none;
+    }
+
+    rule-list .header:not(.d-none) {
+        border: 1px solid var(--border-color);
+        border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+
+    rule-list .list {
+        border: 1px solid var(--border-color);
+        border-top: 0;
+        border-radius: 0 0 var(--radius-md) var(--radius-md);
+        background: var(--surface-color);
+    }
+
+    rule-list .rule-group-header {
+        padding-left: 0.55rem;
+        padding-right: 0.55rem;
     }
 }

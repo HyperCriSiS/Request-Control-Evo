@@ -65,7 +65,7 @@ describe("Resolving non-marked requests", () => {
 test("Rule creation fails", () => {
     expect(() => {
         createRule("no-action");
-    }).toThrowError(Error);
+    }).toThrow(Error);
 });
 
 describe("user is not notified", () => {

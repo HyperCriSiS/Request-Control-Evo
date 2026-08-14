@@ -1,0 +1,160 @@
+# Request Control modernization
+
+This document records the modernization strategy for the `modernization` branch. The existing rule semantics remain the compatibility contract until tests prove that a replacement behaves equivalently.
+
+## Goals
+
+1. Preserve and extend Request Control's flexible rule engine.
+2. Make common URL-cleaning and redirect-skipping use cases work without expert regex knowledge.
+3. Support Firefox and Chromium from a shared rule model.
+4. Move Chromium to Manifest V3 without silently reducing functionality.
+5. Add maintained rule catalogs, subscriptions, grouping, validation and safe updates.
+6. Modernize the UI without coupling UI code to request-processing code.
+7. Make rule creation assisted and eventually automatable.
+
+## Current architecture
+
+The current background page registers blocking `webRequest.onBeforeRequest` listeners. Individual rule listeners mark matching rules for a request and a final listener resolves priority/composition through `RequestController`. That behavior is stateful and order-sensitive.
+
+This architecture is a good semantic reference implementation, but it cannot be ported to Chromium Manifest V3 by changing only `manifest.json`.
+
+## Browser backend strategy
+
+Introduce one shared rule model and two execution backends:
+
+- **Firefox backend:** keep `webRequest` blocking where supported, initially reusing the existing engine.
+- **Chromium MV3 backend:** compile supported Request Control rules to `declarativeNetRequest` dynamic/static rules.
+- **Capability layer:** report rules or rule features that cannot be represented exactly by a backend instead of silently approximating them.
+
+The compiler must have golden tests: one Request Control rule + request context -> expected action/URL, then compare reference engine and target backend representation wherever equivalence is possible.
+
+## Rule model evolution
+
+Existing rule JSON must remain importable. New metadata is additive and optional.
+
+Planned metadata:
+
+```json
+{
+  "group": "privacy/tracking-parameters",
+  "source": {
+    "catalog": "requestcontrol-community",
+    "entry": "common-tracking-parameters",
+    "version": "1.0.0"
+  },
+  "managed": true
+}
+```
+
+Runtime action remains independent from presentation/grouping metadata.
+
+## Rule organization
+
+Keep the existing action categories (Filter, Redirect, Secure, Block, Whitelist), but add orthogonal groups. A rule can therefore be shown as:
+
+- action: Filter
+- group: Privacy / Tracking parameters
+- source: Request Control Community
+
+Suggested first-level groups:
+
+- Privacy
+- Redirect cleanup
+- Security
+- Compatibility
+- Site-specific
+- Media
+- Developer
+- User rules
+
+Groups should be collapsible and filterable rather than creating more hard-coded top-level rule-list elements.
+
+## Assisted rule creation
+
+Implement in stages, with local deterministic analysis first:
+
+### Stage 1: URL analyzer
+
+Given a URL, parse and display:
+
+- scheme, hostname, port, path, query parameters, hash
+- likely nested URLs and encoded URLs
+- repeated/variable-looking values
+- known tracking parameter matches
+- which existing rules match and why
+
+### Stage 2: compare navigation samples
+
+Capture an opt-in short-lived local trace of requested/navigation URLs for the current tab. Cluster similar URLs and identify changing parameters. Suggest candidate operations such as:
+
+- remove parameter
+- keep-only parameters
+- unwrap nested target URL
+- replace hostname/path
+- upgrade scheme
+- block request type
+
+No trace leaves the device.
+
+### Stage 3: rule wizard
+
+Turn analyzer findings into a draft Request Control rule and run the existing tester against observed examples before saving it.
+
+### Stage 4: optional LLM assistant
+
+Only after deterministic analysis. The LLM receives a minimized structured representation by default, not raw page contents. It returns a structured draft that must pass schema validation, static safety checks and local rule tests. Remote code is never accepted or executed.
+
+## Community catalog
+
+Use GitHub as source control, not as a runtime executable-code source. Catalog entries are JSON data.
+
+Each catalog release should expose:
+
+- catalog manifest
+- rule-set files
+- content hashes
+- schema version
+- semantic catalog/ruleset versions
+- source repository and issue/PR URL
+
+The extension stores for every subscribed rule:
+
+- catalog ID and entry ID
+- installed version/hash
+- upstream version/hash
+- whether the local rule was modified
+- update policy
+
+Safe update policy:
+
+- unchanged managed rule -> automatic replacement is safe
+- locally modified managed rule -> show diff/conflict, never overwrite silently
+- removed upstream rule -> mark deprecated before deletion
+
+Ratings should not be embedded directly into the extension repository as mutable counters. Prefer GitHub Discussions/Issues or a small signed/static aggregation generated by CI. Rule correctness needs tests and review; popularity is only secondary metadata.
+
+## Link-cleaner replacement scope
+
+Request Control already has the primitives for parameter removal, redirect unwrapping, URL rewriting, blocking and whitelisting. The missing product layer is a maintained catalog with exceptions, grouping, subscriptions and safe updates.
+
+The target is therefore not a separate "ClearURLs mode" engine. It is a catalog/compiler layer that can express common cleaner rules using Request Control's general model, with compatibility exceptions and regression tests.
+
+## Migration phases
+
+1. CI/tooling baseline and dependency automation.
+2. Test corpus from upstream bug history and current rules.
+3. Rule metadata + groups + catalog manifest/schema.
+4. Rule analyzer/wizard.
+5. Firefox engine cleanup behind reference tests.
+6. Chromium MV3 DNR compiler/backend.
+7. SPA/history-state handling for navigations that do not produce a normal network navigation.
+8. Catalog publishing/update workflow and community contribution UX.
+9. Optional LLM assistant.
+10. Cross-browser packaging/release automation.
+
+## Non-goals
+
+- Do not turn the extension into a generic content blocker competing with uBlock Origin in every area.
+- Do not upload page contents or browsing history by default.
+- Do not fetch or execute remote JavaScript.
+- Do not force Manifest V3 onto Firefox if that reduces capabilities without a benefit.
