@@ -208,14 +208,14 @@
                     ><strong data-i18n="changelog"></strong
                 ></a>
                 <br />
-                <a href="https://github.com/tumpio/requestcontrol/graphs/contributors"
+                <a href="https://github.com/HyperCriSiS/requestcontrol/graphs/contributors"
                     ><strong data-i18n="contributors"></strong
                 ></a>
                 <br />
-                <a href="https://github.com/tumpio/requestcontrol"><strong data-i18n="source_code"></strong></a>
+                <a href="https://github.com/HyperCriSiS/requestcontrol"><strong data-i18n="source_code"></strong></a>
                 <hr />
                 <h5>
-                    <a href="https://github.com/tumpio/requestcontrol/issues"
+                    <a href="https://github.com/HyperCriSiS/requestcontrol/issues"
                         ><strong data-i18n="report_bug_request_feature"></strong
                     ></a>
                 </h5>
@@ -269,9 +269,25 @@
                         <button id="add-tag" type="button" class="badge add-tag" data-i18n="set_tag"></button>
                         <small id="tag" class="tag"></small>
                     </div>
+                    <div class="group-wrap d-none">
+                        <small class="badge edit-label d-none" data-i18n="group"></small>
+                        <input
+                            id="group"
+                            class="group-input"
+                            type="text"
+                            autocomplete="off"
+                            data-i18n-placeholder="group_placeholder"
+                        />
+                    </div>
                 </div>
                 <div class="header-info-wrap">
                     <div class="information">
+                        <label id="source-badge-wrap" class="badge badge-info d-none">
+                            <span id="source-badge"></span>
+                        </label>
+                        <label id="group-badge-wrap" class="badge badge-success d-none">
+                            <span id="group-badge"></span>
+                        </label>
                         <label class="badge badge-light">
                             <span id="tag-badge" class="tag-badge"></span>
                         </label>

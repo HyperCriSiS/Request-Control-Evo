@@ -5,9 +5,19 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.16.0] - Aug. 14, 2026
 - Add option to remove toolbar icon counter. #129
 - Add support for matching hostnames without suffix (TLD wildcard). #126
 - Add private browsing matcher to ignore or only use in private browsing.
+- Add a local URL analyzer for known tracking parameters and embedded destination URLs.
+- Add assisted rule creation with generated rules disabled until reviewed.
+- Add rule groups and managed-source badges without changing request matching semantics.
+- Add conflict-safe managed rule subscriptions with provenance and SHA-256 baselines.
+- Add the Request Control Community catalog with SHA-256 integrity verification for catalog rule files.
+- Modernize the options and popup UI, including dark mode and responsive behavior.
+- Update the Node.js dependency, lint, test, build, Dependabot, and release toolchain.
+- Add upstream issue and pull-request triage plus the browser-backend modernization roadmap.
 
 ## [1.15.5] - Jul. 7, 2020
 - Fix rule creation after 1.15.3. #131

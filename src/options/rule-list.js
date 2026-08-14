@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { groupRuleInputs } from "./rule-grouping.js";
 import { newRuleInput } from "./rule-input.js";
 
 class RuleList extends HTMLElement {
@@ -11,6 +12,7 @@ class RuleList extends HTMLElement {
         this.appendChild(template.content.cloneNode(true));
 
         this.list = this.querySelector("#list");
+        this.collapsedGroups = new Set();
         this.querySelector("#icon").src = this.getAttribute("icon");
         this.querySelector("#title").textContent = browser.i18n.getMessage(this.getAttribute("text"));
         this.querySelector("#collapse").addEventListener("click", () => this.collapse());
@@ -25,16 +27,20 @@ class RuleList extends HTMLElement {
         this.addEventListener("rule-invalid", (e) => this.onInvalid(e));
     }
 
+    get ruleInputs() {
+        return Array.from(this.list.querySelectorAll(":scope > [data-uuid]"));
+    }
+
     get selected() {
-        return Array.from(this.list.querySelectorAll(".selected"), (selected) => selected.rule);
+        return this.ruleInputs.filter((input) => input.selected).map((input) => input.rule);
     }
 
     get size() {
-        return this.list.childElementCount;
+        return this.ruleInputs.length;
     }
 
     get isEmpty() {
-        return this.list.childElementCount === 0;
+        return this.size === 0;
     }
 
     newRule() {
@@ -49,20 +55,8 @@ class RuleList extends HTMLElement {
     }
 
     add(rule) {
-        const ruleInput = newRuleInput(rule);
-        const { title } = ruleInput;
-
-        if (this.size === 0 || this.list.lastElementChild.title.localeCompare(title) < 0) {
-            this.list.append(ruleInput);
-            return;
-        }
-
-        for (const next of this.list.childNodes) {
-            if (next.title.localeCompare(title) >= 0) {
-                next.before(ruleInput);
-                break;
-            }
-        }
+        this.list.append(newRuleInput(rule));
+        this.renderGroups();
     }
 
     addCreated(rule) {
@@ -90,15 +84,14 @@ class RuleList extends HTMLElement {
     }
 
     removeSelected() {
-        this.list.querySelectorAll(".selected").forEach((ruleInput) => ruleInput.remove());
+        this.ruleInputs.filter((input) => input.selected).forEach((ruleInput) => ruleInput.remove());
+        this.renderGroups();
         this.updateHeader();
         this.toggle();
     }
 
     removeAll() {
-        while (this.list.lastChild) {
-            this.list.lastChild.remove();
-        }
+        this.list.replaceChildren();
     }
 
     edit(uuid) {
@@ -118,24 +111,71 @@ class RuleList extends HTMLElement {
         });
     }
 
+    renderGroups() {
+        const inputs = this.ruleInputs;
+        this.list.querySelectorAll(":scope > .rule-group-header").forEach((header) => header.remove());
+
+        if (inputs.length === 0) {
+            return;
+        }
+
+        const groups = groupRuleInputs(inputs);
+        if (this.id === "new" || groups[0].name === null) {
+            for (const input of groups[0].inputs) {
+                input.classList.remove("group-hidden");
+                this.list.append(input);
+            }
+            return;
+        }
+
+        for (const { name: group, inputs: rules } of groups) {
+            const collapsed = this.collapsedGroups.has(group);
+            const header = document.createElement("li");
+            header.className = "rule-group-header";
+            header.dataset.group = group;
+
+            const toggle = document.createElement("button");
+            toggle.type = "button";
+            toggle.className = "rule-group-toggle";
+            toggle.setAttribute("aria-expanded", String(!collapsed));
+            toggle.textContent = group || browser.i18n.getMessage("ungrouped") || "Ungrouped";
+            toggle.addEventListener("click", () => this.toggleGroup(group));
+
+            const count = document.createElement("span");
+            count.className = "badge badge-light rule-group-count";
+            count.textContent = String(rules.length);
+
+            header.append(toggle, count);
+            this.list.append(header);
+
+            for (const input of rules) {
+                input.classList.toggle("group-hidden", collapsed);
+                this.list.append(input);
+            }
+        }
+    }
+
+    toggleGroup(group) {
+        if (this.collapsedGroups.has(group)) {
+            this.collapsedGroups.delete(group);
+        } else {
+            this.collapsedGroups.add(group);
+        }
+        this.renderGroups();
+    }
+
     updateHeader() {
         const checkbox = this.querySelector("#select-all");
+        const inputs = this.ruleInputs;
+        const selectedCount = inputs.filter((input) => input.selected).length;
 
-        if (!this.list.querySelector(".selected")) {
-            checkbox.checked = false;
-            checkbox.indeterminate = false;
-        } else if (!this.list.querySelector(":scope > :not(.selected)")) {
-            checkbox.checked = true;
-            checkbox.indeterminate = false;
-        } else {
-            checkbox.checked = false;
-            checkbox.indeterminate = true;
-        }
+        checkbox.checked = selectedCount > 0 && selectedCount === inputs.length;
+        checkbox.indeterminate = selectedCount > 0 && selectedCount < inputs.length;
         this.updateSelectedText();
     }
 
     updateSelectedText() {
-        const count = this.list.querySelectorAll(".selected").length;
+        const count = this.ruleInputs.filter((input) => input.selected).length;
         const selectedText = this.querySelector("#selected-text");
         selectedText.classList.toggle("d-none", count === 0);
         selectedText.textContent = browser.i18n.getMessage("selected_rules_count", [count, this.size]);
@@ -143,7 +183,7 @@ class RuleList extends HTMLElement {
 
     onSelectAll(e) {
         const { checked } = e.target;
-        this.list.childNodes.forEach((rule) => {
+        this.ruleInputs.forEach((rule) => {
             rule.selected = checked;
         });
         this.updateSelectedText();
@@ -157,12 +197,14 @@ class RuleList extends HTMLElement {
 
     onCreate(e) {
         e.target.remove();
+        this.renderGroups();
         this.updateHeader();
         this.toggle();
     }
 
     onDelete(e) {
         e.target.remove();
+        this.renderGroups();
         this.updateHeader();
         this.toggle();
     }
@@ -171,8 +213,11 @@ class RuleList extends HTMLElement {
         const { action } = e.detail;
         if (action !== this.id) {
             e.target.remove();
+            this.renderGroups();
             this.updateHeader();
             this.toggle();
+        } else {
+            this.renderGroups();
         }
     }
 

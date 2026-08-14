@@ -1,66 +1,91 @@
 name: Build
-on: [push, pull_request]
+
+on:
+  push:
+    branches:
+      - master
+      - dev
+  pull_request:
+
+permissions:
+  contents: read
 
 jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          node-version-file: .node-version
+          cache: npm
       - run: npm ci
       - run: npm run lint
 
   test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          node-version-file: .node-version
+          cache: npm
       - run: npm ci
       - run: npm test -- --ci --coverage
-      - uses: codecov/codecov-action@v1
+      - uses: codecov/codecov-action@v7
+        with:
+          fail_ci_if_error: false
 
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - run: sudo apt-get -y install pandoc
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+          node-version-file: .node-version
+          cache: npm
+      - run: sudo apt-get update && sudo apt-get install -y pandoc
       - run: npm ci
       - run: npm run build
-      - uses: actions/upload-artifact@v2
+      - uses: actions/upload-artifact@v7
         with:
           name: web-ext-artifacts
           path: web-ext-artifacts/*.zip
+          if-no-files-found: error
 
   lint-build:
     needs: build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
-      - uses: actions/cache@v2
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          path: ~/.npm
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
-      - uses: actions/download-artifact@v2
+          node-version-file: .node-version
+          cache: npm
+      - uses: actions/download-artifact@v8
         with:
           name: web-ext-artifacts
           path: web-ext-artifacts
       - run: npm ci
       - run: npm run lint-build
+
+  checker:
+    if: always()
+    needs:
+      - lint
+      - test
+      - build
+      - lint-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required jobs
+        env:
+          LINT: ${{ needs.lint.result }}
+          TEST: ${{ needs.test.result }}
+          BUILD: ${{ needs.build.result }}
+          LINT_BUILD: ${{ needs.lint-build.result }}
+        run: |
+          test "$LINT" = "success"
+          test "$TEST" = "success"
+          test "$BUILD" = "success"
+          test "$LINT_BUILD" = "success"

@@ -27,6 +27,8 @@ class RuleInput extends HTMLElement {
         this.querySelector("#description").addEventListener("blur", this.onSetDescription.bind(this));
         this.querySelector("#tag").addEventListener("keydown", this.onKeyDown.bind(this));
         this.querySelector("#tag").addEventListener("blur", this.onSetTag.bind(this));
+        this.querySelector("#group").addEventListener("keydown", this.onKeyDown.bind(this));
+        this.querySelector("#group").addEventListener("change", this.onSetGroup.bind(this));
         this.querySelector("#add-tag").addEventListener("click", this.onAddTag.bind(this));
         this.querySelector("#select").addEventListener("change", this.onSelect.bind(this));
         this.querySelector("#activate").addEventListener("click", this.toggleActive.bind(this));
@@ -81,7 +83,8 @@ class RuleInput extends HTMLElement {
             ...this.querySelectorAll(".edit-label"),
             this.querySelector("#input-area"),
             this.querySelector(".description-wrap"),
-            this.querySelector(".tag-wrap")
+            this.querySelector(".tag-wrap"),
+            this.querySelector(".group-wrap")
         );
         toggleHidden(editing, this.querySelector(".information"));
         toggleHidden(isNew, this.querySelector(".btn-done"), this.querySelector(".rule-header-buttons"));
@@ -227,6 +230,20 @@ class RuleInput extends HTMLElement {
         this.notifyChanged();
     }
 
+    get group() {
+        return this.rule.group || "";
+    }
+
+    set group(str) {
+        const group = str.trim();
+        if (group) {
+            this.rule.group = group;
+        } else {
+            delete this.rule.group;
+        }
+        this.notifyChanged();
+    }
+
     onCreate() {
         if (!this.isValid()) {
             this.reportValidity();
@@ -324,6 +341,11 @@ class RuleInput extends HTMLElement {
     onSetTag(e) {
         this.tag = e.target.textContent;
         this.updateTag();
+    }
+
+    onSetGroup(e) {
+        this.group = e.target.value;
+        this.updateGroup();
     }
 
     onShowMoreTypes(e) {
@@ -476,12 +498,33 @@ class RuleInput extends HTMLElement {
         this.querySelector("#title").title = this.description;
         this.querySelector("#description").textContent = this.description;
         this.querySelector("#tag").textContent = this.tag;
+        this.querySelector("#group").value = this.group;
 
+        this.updateSourceBadge();
+        this.updateGroup();
         this.updateTag();
         this.updatePatternBadge();
         this.updateTypesBadge();
         this.updateOriginBadge();
         this.updateActiveState();
+    }
+
+    updateSourceBadge() {
+        const wrap = this.querySelector("#source-badge-wrap");
+        const badge = this.querySelector("#source-badge");
+        const source = this.rule.source;
+        const value = source && (source.catalog || source.id || source.url);
+        toggleHidden(!value, wrap);
+        if (value) {
+            badge.textContent = source.catalog || "Managed";
+            wrap.title = value;
+        }
+    }
+
+    updateGroup() {
+        const isEmpty = this.group === "";
+        toggleHidden(isEmpty, this.querySelector("#group-badge-wrap"));
+        this.querySelector("#group-badge").textContent = this.group;
     }
 
     updateTag() {
