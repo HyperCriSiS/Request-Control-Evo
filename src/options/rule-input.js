@@ -400,6 +400,7 @@ class RuleInput extends HTMLElement {
     }
 
     onSelect(e) {
+        this.selected = e.target.checked;
         this.dispatchEvent(
             new CustomEvent("rule-selected", {
                 bubbles: true,
@@ -408,17 +409,12 @@ class RuleInput extends HTMLElement {
         );
     }
 
-    isValid() {
-        try {
-            createRule(this.rule);
-            return this.querySelector("#form").checkValidity();
-        } catch (e) {
-            return false;
+    notifyChangedIfValid() {
+        if (!this.isValid()) {
+            this.notifyInvalid();
+        } else {
+            this.notifyChanged();
         }
-    }
-
-    reportValidity() {
-        this.querySelector("#form").reportValidity();
     }
 
     notifyChanged() {
@@ -427,23 +423,74 @@ class RuleInput extends HTMLElement {
                 bubbles: true,
                 composed: true,
                 detail: {
-                    input: this,
                     rule: this.rule,
+                    input: this,
                 },
             })
         );
     }
 
-    notifyChangedIfValid() {
-        if (this.isValid()) {
-            this.notifyChanged();
+    notifyInvalid() {
+        this.dispatchEvent(
+            new CustomEvent("rule-invalid", {
+                bubbles: true,
+                composed: true,
+                detail: {
+                    input: this,
+                },
+            })
+        );
+    }
+
+    isValid() {
+        if (!this.querySelector("#form").checkValidity()) {
+            return false;
         }
+        try {
+            createRule(this.rule);
+        } catch {
+            return false;
+        }
+        this.classList.remove("error");
+        return true;
+    }
+
+    reportValidity() {
+        this.classList.toggle("error", !this.isValid());
+        this.querySelector("#form").reportValidity();
+    }
+
+    setType(value, bool) {
+        const type = this.querySelector(`.type[value=${value}]`);
+        setButtonChecked(type, bool);
+        toggleHidden(false, type.parentNode);
     }
 
     sortTypes() {
-        const types = Array.from(this.querySelectorAll(".type"));
-        types.sort((a, b) => Number(b.checked) - Number(a.checked));
-        types.forEach((type) => type.parentNode.parentNode.append(type.parentNode));
+        const list = this.querySelector("#types");
+        let sorting = true;
+        let i, types, swap;
+        while (sorting) {
+            sorting = false;
+            types = list.getElementsByClassName("type");
+            for (i = 0; i < types.length - 1; i++) {
+                swap = false;
+                if (types[i].checked) {
+                    continue;
+                }
+                if (types[i + 1].checked) {
+                    swap = true;
+                    break;
+                } else if (Number(types[i].dataset.index) > Number(types[i + 1].dataset.index)) {
+                    swap = true;
+                    break;
+                }
+            }
+            if (swap) {
+                list.insertBefore(types[i + 1].parentNode, types[i].parentNode);
+                sorting = true;
+            }
+        }
     }
 
     updateHeader() {
@@ -548,44 +595,39 @@ class RuleInput extends HTMLElement {
             this.querySelector("#action").value = this.rule.action;
         }
 
-        this.setAnyTLD(this.rule.pattern.anyTLD);
-
-        if (Array.isArray(this.rule.pattern.topLevelDomains)) {
+        if (this.rule.pattern.topLevelDomains) {
             this.tldsTagsInput.tags = this.rule.pattern.topLevelDomains;
+            this.onSetTLDs();
         }
 
-        this.setAnyUrl(this.rule.pattern.allUrls);
-
-        if (Array.isArray(this.rule.pattern.includes)) {
+        if (this.rule.pattern.includes) {
             this.includesTagsInput.tags = this.rule.pattern.includes;
         }
 
-        if (Array.isArray(this.rule.pattern.excludes)) {
+        if (this.rule.pattern.excludes) {
             this.excludesTagsInput.tags = this.rule.pattern.excludes;
         }
 
         if (this.rule.pattern.origin) {
-            setButtonChecked(this.querySelector(`.origin-matcher[value="${this.rule.pattern.origin}"]`), true);
-        } else {
-            setButtonChecked(this.querySelector('.origin-matcher[value="any"]'), true);
+            setButtonChecked(this.querySelector(`.origin-matcher[value=${this.rule.pattern.origin}]`), true);
         }
 
-        if (this.rule.pattern.hasOwnProperty("incognito")) {
+        if (this.rule.pattern.incognito) {
             this.querySelector("#incognito").value = this.rule.pattern.incognito.toString();
-        } else {
-            this.querySelector("#incognito").value = "";
         }
 
-        if (this.rule.types) {
-            this.rule.types.forEach((type) => setButtonChecked(this.querySelector(`.type[value="${type}"]`), true));
-        } else {
+        if (!this.rule.types || this.rule.types.length === 0) {
             this.setAnyType(true);
+        } else {
+            this.setType("main_frame", false);
+            for (const type of this.rule.types) {
+                this.setType(type, true);
+            }
+            this.sortTypes();
         }
 
-        this.sortTypes();
-        this.onShowMoreTypes({
-            stopPropagation() {},
-        });
+        this.setAnyUrl(this.rule.pattern.hasOwnProperty("allUrls"));
+        this.setAnyTLD(this.rule.pattern.hasOwnProperty("anyTLD"));
     }
 
     updateRule() {
@@ -668,6 +710,12 @@ class SecureRuleInput extends RuleInput {
     get rule() {
         return super.rule;
     }
+
+    onActionChange() {
+        this.querySelector("#scheme").disabled = false;
+        this.querySelector("#any-url").disabled = false;
+        super.onActionChange();
+    }
 }
 
 class WhitelistRuleInput extends RuleInput {
@@ -675,11 +723,12 @@ class WhitelistRuleInput extends RuleInput {
         super();
         const actions = document.getElementById("actions-whitelist");
         this.querySelector("#form").appendChild(actions.content.cloneNode(true));
+        this.querySelector("#log-whitelist").addEventListener("change", onToggleButtonChange);
     }
 
     updateInputs() {
         super.updateInputs();
-        setButtonChecked(this.querySelector("#log-whitelist"), this.rule.log);
+        setButtonChecked(this.querySelector("#log-whitelist"), this.rule.log === true);
     }
 
     updateRule() {
