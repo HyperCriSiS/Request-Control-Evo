@@ -37,5 +37,15 @@ export default [
             "no-prototype-builtins": "off",
             "no-useless-assignment": "off"
         }
-    }
+    },
+    {
+        files: ["scripts/**/*.mjs"],
+        languageOptions: {
+            ecmaVersion: "latest",
+            sourceType: "module",
+            globals: {
+                ...globals.node,
+            },
+        },
+    },
 ];
