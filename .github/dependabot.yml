@@ -1,12 +1,13 @@
 version: 2
 updates:
-  - package-ecosystem: npm
-    directory: /
+  - package-ecosystem: "npm"
+    directory: "/"
+    target-branch: "dev"
     schedule:
-      interval: weekly
+      interval: "weekly"
     open-pull-requests-limit: 10
     labels:
-      - dependencies
+      - "dependencies"
     groups:
       eslint:
         patterns:
@@ -19,10 +20,11 @@ updates:
           - "web-ext"
           - "addons-linter"
 
-  - package-ecosystem: github-actions
-    directory: /
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    target-branch: "dev"
     schedule:
-      interval: weekly
+      interval: "weekly"
     open-pull-requests-limit: 10
     labels:
-      - dependencies
+      - "dependencies"
