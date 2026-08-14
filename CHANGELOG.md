@@ -8,6 +8,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add option to remove toolbar icon counter. #129
 - Add support for matching hostnames without suffix (TLD wildcard). #126
 - Add private browsing matcher to ignore or only use in private browsing.
+- Add a local URL analyzer that detects known tracking parameters and embedded destination URLs.
+- Add safe assisted rule creation; generated rules are disabled until reviewed and enabled by the user.
+- Add additive rule groups and managed-source badges without changing request matching semantics.
+- Add managed rule provenance and SHA-256 baselines so subscription updates do not silently overwrite locally modified rules.
+- Add the Request Control Community catalog with SHA-256 integrity verification for catalog rule files.
+- Modernize the options and popup UI, including dark-mode and responsive improvements.
+- Modernize CI/release workflows and add a stable aggregate `checker` status.
+- Add upstream issue/PR triage and the browser-backend modernization plan.
 
 ## [1.15.5] - Jul. 7, 2020
 - Fix rule creation after 1.15.3. #131
@@ -158,101 +166,51 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Strip paramsTrim pattern from exported rules.
 
 ## [1.8.0] - July 19, 2017
-- Rules are now auto saved on change.
-- Rule name and description are editable.
-- Add invert URL parameter trim option.
-- Add about page.
-- Other changes to rule options display.
+- Add rule pattern match from private browsing mode.
+- Add rule descriptions and custom names.
+- Change rules to be applied in order by type.
+- Add support for multiple URL match patterns per rule.
+- Add Rule import and export.
+- Add request log and popup.
+- Add filter support for URL query parameters.
+- Add support for wildcard URL parameter patterns.
+- Add inline URL redirection filtering.
 
-## [1.7.1] - July 1, 2017
-- Fix whitelist/block rule request markers.
-- Fix migrate script for Firefox versions before 55.
+## [1.7.1] - June 30, 2017
+- Fix whitelist matching.
 
-## [1.7.0] - June 29, 2017
-- Add rules export and import. #8
-- Add toolbar button to list details of applied rules on current tab. #19
-- Add tabs to options view.
-- Fix trim parameter inconsistency: support literal string params and regexp params. #17
-- Fix pageAction details bug with block rules. #19
-- Fix filter rule redirection url filtering. #20
-- Remove url status icon. #19
+## [1.7.0] - June 30, 2017
+- Add whitelist action.
+- Add request origin and source matching groundwork.
 
-## [1.6.1] - June 21, 2017
-- Add i18n support
-- Add request details in page action popup
-- Fix query parameters trim with valueless params
+## [1.6.1] - June 25, 2017
+- Fix pageAction details on block rules.
 
-## [1.6.0] - June 13, 2017
-- Add support for multiple rule matching for single request.
-- Add support for adding multiple hosts and paths for rules.
-- Remove 'Include subdomains' checkbox.
-- Improve rules options view.
+## [1.6.0] - June 24, 2017
+- Add URL filter action.
+- Add wildcard parameter filtering.
 
-## [1.5.0] - June 1, 2017
-- URL parameter filtering is now Filter rule specific.
-- Redirection cleaning can now be turned off in Filter rule.
-- Added wildcard "*" support for url parameter trimming.
+## [1.5.0] - June 18, 2017
+- Add request block action.
 
-## [1.4.3] - May 27, 2017
-- Fix url parameter filtering for global rules.
-- Fix redirection url parsing from query string.
-- Fix default google filter rule, include main frame requests.
-- Fix filter action handler to only do tab navigation on sub_frame requests.
+## [1.4.0] - June 13, 2017
+- Add rule matching by resource type.
 
-## [1.4.2] - May 7, 2017
-- Fix to escape forward slash in replace regex pattern.
-- Add toggle rule edit on double click.
+## [1.3.0] - March 14, 2017
+- Add redirect URL pattern captures.
+- Add port redirection.
 
-## [1.4.1] - April 12, 2017
-- Change the default type for new rules to be the document type.
-- Change any url and any type buttons to be the rightmost on rule panel.
-- Fix more than one parameter expansions failing in redirection address.
-- Fix undefined rule title when saving a new rule without changing its action.
+## [1.2.2] - Jan. 5, 2017
+- Fix extension packaging.
 
-## [1.4.0] - April 10, 2017
-- Add support for pattern capturing (parameter expansion) to redirect based on the original request.
-- Add support for parameter instructions to redirect based on the original request.
-- Change help page to open in a new page.
-- Update help and add attributions to the MDN documents.
-- Fix missing title for options page.
+## [1.2.1] - Jan. 1, 2017
+- Fix extension package.
 
-## [1.3.0] - March 27, 2017
-- Add whitelist rules support.
-- Add <all_urls> pattern support for creating global rules.
-- Change option page to open in new tab.
-- Fix input validation that allowed incorrect rule saving.
+## [1.2.0] - Dec. 28, 2016
+- Add redirect rule action.
 
-## [1.2.3] - March 15, 2017
-- Add toggleable edit mode for rules.
-- Change tracking URL parameters input option to use one line tags-input.
-- Fix to include WebExtension permission for all urls.
-- Fix to include applications key with add-on id in manifest.json.
+## [1.1.0] - Oct. 8, 2016
+- Add first request filtering rule.
 
-## [1.2.2] - October 30, 2016
-- Add support for rule based control with actions (filter, block, redirect).
-- Add support for request types.
-- Add page action for providing user feedback of handled requests.
-- Add help page.
-- Add "ng" to the TLDs of pre-defined rule for Google.
-- Fix subdomain top-level domain confusion.
-- Change TLDs from global list to rule based manual list.
-- Change add-on name from JustRedirect! to Request Control.
-- Change license from MIT to MPL-2.0.
-- Enhance options usability to improve rule creation and match pattern definition (uses Bootstrap CSS).
-
-## [1.1.0] - October 1, 2016
-- Add match pattern for Google search to prevent outgoing search link tracking.
-- Add support for creating match patterns for matching different sub domains (e.g. www.google.*).
-- Add match pattern validation.
-- Add icon for the add-on.
-- Fix to prevent enter key from deleting values on inputs.
-- Fix updating redirection listeners on options change.
-- Fix adding history entries for redirection origin urls.
-
-## [1.0.2] - September 24, 2016
-- Add out.reddit.com redirection url pattern.
-- Add outgoing.prod.mozaws.net pattern.
-- Fix query parameter filtering.
-
-## [1.0] - September 23, 2016
-- Initial release
+## [1.0.0] - Oct. 6, 2016
+- Initial release.
