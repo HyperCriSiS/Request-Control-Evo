@@ -2,6 +2,9 @@ name: Build
 
 on:
   push:
+    branches:
+      - master
+      - dev
   pull_request:
 
 permissions:
@@ -67,23 +70,22 @@ jobs:
       - run: npm run lint-build
 
   checker:
-    name: checker
+    if: always()
     needs:
       - lint
       - test
       - build
       - lint-build
-    if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Verify required CI jobs
+      - name: Verify required jobs
         env:
-          LINT_RESULT: ${{ needs.lint.result }}
-          TEST_RESULT: ${{ needs.test.result }}
-          BUILD_RESULT: ${{ needs.build.result }}
-          LINT_BUILD_RESULT: ${{ needs.lint-build.result }}
+          LINT: ${{ needs.lint.result }}
+          TEST: ${{ needs.test.result }}
+          BUILD: ${{ needs.build.result }}
+          LINT_BUILD: ${{ needs.lint-build.result }}
         run: |
-          test "$LINT_RESULT" = "success"
-          test "$TEST_RESULT" = "success"
-          test "$BUILD_RESULT" = "success"
-          test "$LINT_BUILD_RESULT" = "success"
+          test "$LINT" = "success"
+          test "$TEST" = "success"
+          test "$BUILD" = "success"
+          test "$LINT_BUILD" = "success"
