@@ -65,3 +65,25 @@ jobs:
           path: web-ext-artifacts
       - run: npm ci
       - run: npm run lint-build
+
+  checker:
+    name: checker
+    needs:
+      - lint
+      - test
+      - build
+      - lint-build
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required CI jobs
+        env:
+          LINT_RESULT: ${{ needs.lint.result }}
+          TEST_RESULT: ${{ needs.test.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          LINT_BUILD_RESULT: ${{ needs.lint-build.result }}
+        run: |
+          test "$LINT_RESULT" = "success"
+          test "$TEST_RESULT" = "success"
+          test "$BUILD_RESULT" = "success"
+          test "$LINT_BUILD_RESULT" = "success"
