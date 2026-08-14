@@ -1,3 +1,0 @@
-ci=success
-test=failure
-lint=failure
