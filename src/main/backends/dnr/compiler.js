@@ -50,6 +50,15 @@ function escapeRegex(value) {
     return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
+function isAscii(value) {
+    for (const char of value) {
+        if (char.codePointAt(0) > 0x7f) {
+            return false;
+        }
+    }
+    return true;
+}
+
 function expandHosts(pattern) {
     const hosts = Array.isArray(pattern.host) ? pattern.host : [pattern.host];
     const expanded = [];
@@ -72,7 +81,7 @@ function expandHosts(pattern) {
         }
         const prefix = host.slice(0, -1);
         for (const tld of pattern.topLevelDomains) {
-            if (typeof tld !== "string" || tld.length === 0 || /[^\x00-\x7F]/.test(tld)) {
+            if (typeof tld !== "string" || tld.length === 0 || !isAscii(tld)) {
                 return { error: diagnostic("unsupported-tld", "TLD expansions must be non-empty ASCII strings.") };
             }
             expanded.push(`${prefix}${tld}`);
@@ -97,7 +106,7 @@ function schemeRegex(scheme) {
 }
 
 function hostRegex(host) {
-    if (/[^\x00-\x7F]/.test(host) || host.includes("[")) {
+    if (!isAscii(host) || host.includes("[")) {
         return null;
     }
     if (host === "*") {
@@ -257,7 +266,7 @@ function compileUrlConditions(pattern) {
             };
         }
         for (const path of paths) {
-            if (typeof path !== "string" || /[^\x00-\x7F]/.test(path) || path.includes("#")) {
+            if (typeof path !== "string" || !isAscii(path) || path.includes("#")) {
                 return {
                     diagnostics: [
                         diagnostic(
