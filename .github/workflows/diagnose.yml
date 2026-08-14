@@ -49,3 +49,4 @@ jobs:
             git commit -m "chore: capture CI diagnostics"
             git push origin HEAD:feature/modernization
           fi
+      # Temporary release-candidate diagnostic workflow; remove before release.
