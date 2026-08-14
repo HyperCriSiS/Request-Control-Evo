@@ -2,6 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { groupRuleInputs } from "./rule-grouping.js";
 import { newRuleInput } from "./rule-input.js";
 
 class RuleList extends HTMLElement {
@@ -118,38 +119,16 @@ class RuleList extends HTMLElement {
             return;
         }
 
-        const hasNamedGroup = inputs.some((input) => Boolean(input.rule.group));
-        if (this.id === "new" || !hasNamedGroup) {
-            inputs
-                .sort(compareRuleInputs)
-                .forEach((input) => {
-                    input.classList.remove("group-hidden");
-                    this.list.append(input);
-                });
+        const groups = groupRuleInputs(inputs);
+        if (this.id === "new" || groups[0].name === null) {
+            for (const input of groups[0].inputs) {
+                input.classList.remove("group-hidden");
+                this.list.append(input);
+            }
             return;
         }
 
-        const groups = new Map();
-        for (const input of inputs) {
-            const group = input.rule.group ? decodeURIComponent(input.rule.group) : "";
-            if (!groups.has(group)) {
-                groups.set(group, []);
-            }
-            groups.get(group).push(input);
-        }
-
-        const groupNames = Array.from(groups.keys()).sort((a, b) => {
-            if (!a) {
-                return 1;
-            }
-            if (!b) {
-                return -1;
-            }
-            return a.localeCompare(b);
-        });
-
-        for (const group of groupNames) {
-            const rules = groups.get(group).sort(compareRuleInputs);
+        for (const { name: group, inputs: rules } of groups) {
             const collapsed = this.collapsedGroups.has(group);
             const header = document.createElement("li");
             header.className = "rule-group-header";
@@ -268,10 +247,6 @@ class RuleList extends HTMLElement {
             input.reportValidity();
         }
     }
-}
-
-function compareRuleInputs(a, b) {
-    return a.title.localeCompare(b.title);
 }
 
 customElements.define("rule-list", RuleList);
