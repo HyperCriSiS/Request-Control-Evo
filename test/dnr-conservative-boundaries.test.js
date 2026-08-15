@@ -34,11 +34,19 @@ test("redirect DSL remains unsupported while static absolute redirects are suppo
 
 test("unsupported request methods are rejected instead of approximated", () => {
     const result = compileRuleToDnr(
-        rule({ methods: ["trace"] })
+        rule({
+            pattern: {
+                scheme: "https",
+                host: ["example.com"],
+                path: ["*"],
+                method: ["TRACE"],
+            },
+        })
     );
 
     expect(result.status).toBe("unsupported");
     expect(result.rules).toEqual([]);
+    expect(result.diagnostics.map(({ code }) => code)).toContain("request-method-unsupported");
 });
 
 test("filter parameter removal stays approximate unless explicitly enabled", () => {
