@@ -189,7 +189,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fix trim parameter inconsistency: support literal string params and regexp params. #17
 - Fix pageAction details bug with block rules. #19
 - Fix filter rule redirection url filtering. #20
-- Remove url status icon. #19
 
 ## [1.6.1] - June 21, 2017
 - Add i18n support
@@ -209,6 +208,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.3] - May 27, 2017
 - Fix url parameter filtering for global rules.
+- Fix redirection url parsing from query string.
 - Fix default google filter rule, include main frame requests.
 - Fix filter action handler to only do tab navigation on sub_frame requests.
 
