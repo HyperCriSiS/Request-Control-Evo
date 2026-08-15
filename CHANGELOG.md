@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.16.1] - Aug. 15, 2026
+- Publish the final validated modernization state that was not contained in the prematurely published 1.16.0 tag.
+- Include the transitive `async` 3.2.6 ReDoS security fix already present on the validated master state.
+
 ## [1.16.0] - Aug. 14, 2026
 - Add option to remove toolbar icon counter. #129
 - Add support for matching hostnames without suffix (TLD wildcard). #126
