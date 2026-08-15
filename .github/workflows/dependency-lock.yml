@@ -27,7 +27,6 @@ jobs:
           cache: npm
           cache-dependency-path: package-lock.json
       - name: Regenerate dependency lock
-        # Keep the lock reproducible from package.json on maintenance branches.
         run: npm install --package-lock-only --ignore-scripts
       - name: Commit updated lock
         id: commit-lock
