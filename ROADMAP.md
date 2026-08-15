@@ -8,7 +8,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 **Status: in progress**
 
-`dev` contains the released modernization baseline, conservative MV3 compiler foundation and the integrated SPA/history-state navigation adapter from PR #11.
+`dev` contains the released modernization baseline, conservative MV3 compiler foundation and the integrated SPA/history-state navigation adapter from PR #11. The exact lossless DNR subset is now documented and protected by dedicated regression tests.
 
 ## Completed modernization baseline
 
@@ -31,7 +31,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Phase 2 — MV3 compatibility expansion
 
-- [ ] Define the exact rule subset that can be represented losslessly in `declarativeNetRequest` and keep capability diagnostics user-visible/developer-visible.
+- [x] Define the exact rule subset that can be represented losslessly in `declarativeNetRequest` and keep capability diagnostics user-visible/developer-visible. See `docs/mv3-supported-subset.md` and `test/dnr-supported-subset.test.js`.
 - [ ] Expand the conservative DNR compiler only for rule types whose semantics can be preserved.
 - [ ] Keep unsupported method/origin/context-sensitive behavior on the Firefox reference engine; do not emulate it incorrectly on Chromium.
 - [ ] Add parity/regression fixtures comparing compiled MV3 behavior with the existing matcher semantics for supported rules.
@@ -51,4 +51,4 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Completion status
 
-**Not fully completed.** Phase 1 is integrated. The next action is to define and test the exact lossless MV3/DNR rule subset before expanding the compiler.
+**Not fully completed.** The exact lossless subset is now defined and regression-tested. The next action is to expand the compiler only where additional semantics can be proven lossless, then add direct parity fixtures against the Firefox matcher.
