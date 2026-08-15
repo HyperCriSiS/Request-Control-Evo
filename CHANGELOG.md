@@ -7,8 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [1.16.1] - Aug. 15, 2026
-- Include the final validated modernization merge that was not contained in the prematurely published 1.16.0 tag.
-- Update transitive `async` dependency from 3.2.0 to 3.2.6 to include its ReDoS security fix.
+- Publish the final validated modernization state that was not contained in the prematurely published 1.16.0 tag.
+- Include the transitive `async` 3.2.6 ReDoS security fix already present on the validated master state.
 
 ## [1.16.0] - Aug. 14, 2026
 - Add option to remove toolbar icon counter. #129
@@ -209,6 +209,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.4.3] - May 27, 2017
 - Fix url parameter filtering for global rules.
+- Fix redirection url parsing from query string.
 - Fix default google filter rule, include main frame requests.
 - Fix filter action handler to only do tab navigation on sub_frame requests.
 
