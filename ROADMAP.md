@@ -8,7 +8,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 **Status: in progress**
 
-`dev` contains the released modernization baseline and conservative MV3 compiler foundation. The next roadmap item is implemented on `feature/spa-history-adapter` in PR #11 targeting `dev`.
+`dev` contains the released modernization baseline, conservative MV3 compiler foundation and the integrated SPA/history-state navigation adapter from PR #11.
 
 ## Completed modernization baseline
 
@@ -27,7 +27,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 - [x] Add loop guards and clear per-tab navigation state on tab close/extension disable.
 - [x] Add regression coverage for pushState cleanup, whitelist precedence, block fallback, secure upgrades, frame exclusion, match patterns and unsupported method/origin constraints.
 - [x] Verify PR #11 checks: lint, build, tests, combined lint-build and checker are green on the current head.
-- [ ] Merge PR #11 into `dev` after final review and re-check the merged head.
+- [x] Merge PR #11 into `dev` after final review. Squash merge: `40809ef502cececf76b8cc4281123e5942664120`.
 
 ## Phase 2 — MV3 compatibility expansion
 
@@ -46,9 +46,9 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Blockers / dependencies
 
-- No current CI blocker on PR #11: all five reported checks are green.
+- PR #11 had all five required checks green immediately before integration.
 - MV3 feature growth is intentionally constrained by `declarativeNetRequest` expressiveness; unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
 
 ## Completion status
 
-**Not fully completed.** The next action is to integrate PR #11 into `dev`, then continue the conservative MV3 compatibility work.
+**Not fully completed.** Phase 1 is integrated. The next action is to define and test the exact lossless MV3/DNR rule subset before expanding the compiler.
