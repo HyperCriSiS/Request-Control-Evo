@@ -32,6 +32,8 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Phase 2 — MV3 compatibility expansion
 
+- [x] Inspect explicit-port Firefox semantics before treating ports as a new parity case: `createRequestFilters()` emits `https://example.com:8443/*`, while its supplemental matcher alone accepts the tested alternate/default ports; therefore the existing DNR port boundary test is not yet sufficient evidence of full Firefox↔DNR parity.
+
 - [x] Define the exact rule subset that can be represented losslessly in `declarativeNetRequest`; see `docs/mv3-supported-subset.md`.
 - [x] Keep unsupported or merely approximate semantics explicit instead of silently activating them.
 - [x] Add conservative request-method parity/boundary coverage.
