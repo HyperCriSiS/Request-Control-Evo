@@ -8,7 +8,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 **Status: in progress**
 
-`dev` contains the released modernization baseline, conservative MV3 compiler foundation and the integrated SPA/history-state navigation adapter from PR #11. The exact lossless DNR subset is documented and protected by dedicated regression tests; conservative boundary coverage validates request methods through the actual `pattern.method` schema, and direct matcher/compiler parity coverage now protects case-insensitive supported-method semantics.
+`dev` contains the released modernization baseline, conservative MV3 compiler foundation and the integrated SPA/history-state navigation adapter from PR #11. The exact lossless DNR subset is documented and protected by dedicated regression tests. Direct parity/boundary coverage now protects request-method semantics, URL/host/path boundaries and the exact DNR action mappings for the supported subset.
 
 ## Completed modernization baseline
 
@@ -32,12 +32,13 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 ## Phase 2 — MV3 compatibility expansion
 
 - [x] Define the exact rule subset that can be represented losslessly in `declarativeNetRequest` and keep capability diagnostics user-visible/developer-visible. See `docs/mv3-supported-subset.md` and `test/dnr-supported-subset.test.js`.
-- [x] Harden conservative DNR boundary tests for logged whitelists, redirect DSL vs. static redirects, request-method rejection and approximate query-parameter filtering; commit `5b1c3a7` corrects the method fixture to exercise `pattern.method` rather than an ignored top-level field.
 - [ ] Expand the conservative DNR compiler only for rule types whose semantics can be preserved.
 - [ ] Keep unsupported method/origin/context-sensitive behavior on the Firefox reference engine; do not emulate it incorrectly on Chromium.
 - [ ] Add parity/regression fixtures comparing compiled MV3 behavior with the existing matcher semantics for supported rules.
   - [x] Add direct method-matcher parity coverage for supported case-insensitive methods and explicit unsupported `TRACE` handling in `test/dnr-method-parity.test.js` (`5575131`).
-  - [ ] Add equivalent parity fixtures for URL/host/path matching and supported action semantics.
+  - [x] Add conservative URL/host/path boundary coverage in `test/dnr-url-boundaries.test.js` (`f2029d3`).
+  - [x] Add exact supported-action mapping coverage in `test/dnr-action-parity.test.js`.
+  - [ ] Add direct Firefox-matcher parity fixtures for URL/host/path behavior where matcher APIs permit a stable comparison.
 - [ ] Document known MV3 limitations and fallback behavior clearly.
 
 ## Phase 3 — stabilization and release
@@ -55,4 +56,4 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Completion status
 
-**Not fully completed.** Method parity is now covered directly. The next action is to add URL/host/path and action parity fixtures, then expand the compiler only where additional semantics can be proven lossless.
+**Not fully completed.** Method parity, URL/host/path boundaries and supported-action mappings are covered. The next action is direct Firefox-matcher parity for URL/host/path where stable comparison APIs exist, then compiler expansion only for newly proven lossless semantics.
