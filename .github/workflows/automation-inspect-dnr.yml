@@ -1,4 +1,4 @@
-name: automation inspect scheme parity contract
+name: automation inspect Request Control test command
 on:
   push:
     branches: [dev]
@@ -9,11 +9,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect scheme parity contract
+      - name: Inspect package scripts and current DNR test style
         run: |
-          echo '=== firefox filter parity test ==='
-          cat test/dnr-firefox-filter-parity.test.js
-          echo '=== scheme compiler ==='
-          sed -n '88,115p' src/main/backends/dnr/compiler.js
-          echo '=== createMatchPatterns ==='
-          sed -n '105,145p' src/main/api.js
+          cat package.json
+          echo '=== compiler test sample ==='
+          sed -n '1,180p' test/dnr-resource-type-parity.test.js
+          echo '=== build workflow ==='
+          find .github/workflows -maxdepth 1 -type f -print -exec sed -n '1,180p' {} \; | head -n 420
