@@ -115,3 +115,30 @@ test("multiple Firefox match patterns and DNR rules preserve union semantics", (
         ],
     );
 });
+
+test("explicit and wildcard schemes preserve Firefox browser-prefilter semantics", () => {
+    expectParity(
+        { scheme: "http", host: ["example.com"], path: ["api/*"] },
+        [
+            ["http://example.com/api/v1", true],
+            ["https://example.com/api/v1", false],
+        ],
+    );
+    expectParity(
+        { scheme: "https", host: ["example.com"], path: ["api/*"] },
+        [
+            ["https://example.com/api/v1", true],
+            ["http://example.com/api/v1", false],
+        ],
+    );
+    expectParity(
+        { scheme: "*", host: ["example.com"], path: ["api/*"] },
+        [
+            ["http://example.com/api/v1", true],
+            ["https://example.com/api/v1", true],
+            ["ws://example.com/api/v1", true],
+            ["wss://example.com/api/v1", true],
+            ["ftp://example.com/api/v1", false],
+        ],
+    );
+});
