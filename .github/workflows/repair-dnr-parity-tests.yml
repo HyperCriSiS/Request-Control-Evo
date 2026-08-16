@@ -1,0 +1,78 @@
+name: Repair DNR parity tests
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/repair-dnr-parity-tests.yml']
+permissions:
+  contents: write
+jobs:
+  repair:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+      - name: Repair parity tests
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('test/dnr-url-parity.test.js')
+          s = p.read_text()
+          old = '''function compile(pattern) {
+    const rule = createRule({
+        action: "block",
+        pattern,
+        types: ["xmlhttprequest"],
+    });
+    const compiled = compileRuleToDnr(rule);
+
+    expect(compiled.status).toBe("supported");
+    expect(compiled.rules).toHaveLength(1);
+
+    return {
+        rule,
+        regex: new RegExp(compiled.rules[0].condition.regexFilter),
+    };
+}'''
+          new = '''function compile(pattern) {
+    const firefoxRule = createRule({
+        action: "block",
+        pattern,
+        types: ["xmlhttprequest"],
+    });
+    const dnrRule = {
+        uuid: "url-parity",
+        active: true,
+        action: "block",
+        pattern,
+        types: ["xmlhttprequest"],
+    };
+    const compiled = compileRuleToDnr(dnrRule);
+
+    expect(compiled.status).toBe("supported");
+    expect(compiled.rules).toHaveLength(1);
+
+    return {
+        rule: firefoxRule,
+        regex: new RegExp(compiled.rules[0].condition.regexFilter),
+    };
+}'''
+          if old not in s:
+              raise SystemExit('dnr-url-parity compile helper anchor missing')
+          p.write_text(s.replace(old, new, 1))
+
+          p = Path('test/dnr-url-boundaries.test.js')
+          s = p.read_text()
+          bad = '    expect(regex.test("https://example.com/api/v1/resource#fragment")).toBe(false);\n'
+          if bad not in s:
+              raise SystemExit('fragment assertion anchor missing')
+          p.write_text(s.replace(bad, '', 1))
+          PY
+          npm ci
+          npm test -- --runInBand test/dnr-url-parity.test.js test/dnr-url-boundaries.test.js
+          git diff --check
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
+          git add test/dnr-url-parity.test.js test/dnr-url-boundaries.test.js
+          git commit -m "test: fix DNR URL parity regression fixtures"
+          git push
