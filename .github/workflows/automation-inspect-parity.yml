@@ -14,11 +14,13 @@ jobs:
         run: |
           echo '=== ROADMAP ==='
           cat ROADMAP.md
-          echo '=== matchers.js ==='
-          cat src/main/matchers.js
-          echo '=== relevant createMatchPatterns references ==='
-          grep -RIn -A35 -B15 'createMatchPatterns' src test | head -n 260 || true
-          echo '=== compiler exports ==='
-          grep -n -A40 -B10 -E 'module.exports|export |compile' src/main/backends/dnr/compiler.js | tail -n 220 || true
+          echo '=== api filter contract ==='
+          grep -n -A95 -B20 'createRequestFilters' src/main/api.js
+          echo '=== matchers helpers ==='
+          grep -n -A180 -B20 'createMatchPatterns' src/main/matchers.js
+          echo '=== DNR compiler ==='
+          sed -n '1,360p' src/main/backends/dnr/compiler.js
           echo '=== existing DNR tests ==='
-          ls -1 test/*dnr* 2>/dev/null || true
+          for f in test/*dnr*.test.js; do echo "--- $f"; cat "$f"; done
+          echo '=== package scripts ==='
+          cat package.json
