@@ -1,0 +1,21 @@
+name: automation inspect port parity
+on:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/automation-inspect-port-parity.yml'
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Show parity harness and port coverage
+        run: |
+          echo '=== firefox dnr parity harness ==='
+          sed -n '1,260p' test/dnr-firefox-filter-parity.test.js
+          echo '=== url boundaries port context ==='
+          grep -n -C 18 -E '8080|9090|port' test/dnr-url-boundaries.test.js || true
+          echo '=== createRequestFilters context ==='
+          grep -R -n -C 10 'function createRequestFilters\|const createRequestFilters\|export.*createRequestFilters' src test | head -n 220 || true
