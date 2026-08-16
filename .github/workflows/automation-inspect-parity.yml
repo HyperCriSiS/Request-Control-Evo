@@ -1,28 +1,29 @@
 name: automation inspect Firefox DNR parity
+
 on:
   push:
     branches: [dev]
     paths: ['.github/workflows/automation-inspect-parity.yml']
+
 permissions:
   contents: read
+
 jobs:
   inspect:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect parity implementation surface
+      - name: Print parity context
         run: |
-          set +e
           echo '=== ROADMAP ==='
           cat ROADMAP.md
-          echo '=== DNR-related files ==='
-          find src test -type f | grep -Ei 'dnr|declarative|matcher' | sort
-          echo '=== compiler references ==='
-          grep -RIn -B12 -A30 -E 'compileRuleToDnr|compile.*Dnr|regexFilter|declarativeNetRequest' src test | head -n 1200
-          echo '=== existing DNR tests ==='
-          for f in $(find test -maxdepth 2 -type f | grep -Ei 'dnr.*test|test.*dnr' | sort); do echo "--- $f"; cat "$f"; done
-          echo '=== API/matcher contract ==='
-          grep -n -A100 -B20 'createRequestFilters' src/main/api.js
-          grep -n -A220 -B20 'createMatchPatterns' src/main/matchers.js
+          echo '=== api.js ==='
+          sed -n '1,220p' src/main/api.js
+          echo '=== dnr compiler ==='
+          sed -n '1,320p' src/main/backends/dnr/compiler.js
+          echo '=== request filters tests ==='
+          cat test/request-filters.test.js
+          echo '=== url boundary tests ==='
+          cat test/dnr-url-boundaries.test.js
           echo '=== package scripts ==='
           cat package.json
