@@ -1,4 +1,4 @@
-name: automation inspect next DNR parity case
+name: automation inspect scheme parity contract
 on:
   push:
     branches: [dev]
@@ -9,11 +9,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect compiler and parity coverage
+      - name: Inspect scheme parity contract
         run: |
-          echo '=== DNR tests ==='
-          find test -maxdepth 1 -type f -name 'dnr-*' -print | sort
-          echo '=== scheme/port/domain/path compiler references ==='
-          grep -R -n -E 'scheme|protocol|port|initiatorDomains|requestDomains|domainType|thirdParty' src test/dnr-* 2>/dev/null | head -n 320 || true
-          echo '=== compiler ==='
-          sed -n '1,320p' src/services/dnr/compiler.js 2>/dev/null || find src -type f -iname '*dnr*' -o -iname '*compiler*'
+          echo '=== firefox filter parity test ==='
+          cat test/dnr-firefox-filter-parity.test.js
+          echo '=== scheme compiler ==='
+          sed -n '88,115p' src/main/backends/dnr/compiler.js
+          echo '=== createMatchPatterns ==='
+          sed -n '105,145p' src/main/api.js
