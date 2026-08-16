@@ -8,7 +8,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 **Status: in progress**
 
-`dev` contains the released modernization baseline, conservative MV3 compiler foundation and the integrated SPA/history-state navigation adapter from PR #11. The exact lossless DNR subset is documented and protected by dedicated regression tests. Direct parity/boundary coverage now protects request-method semantics, URL/host/path behavior and the exact DNR action mappings for the supported subset.
+`dev` contains the released modernization baseline, conservative MV3 compiler foundation and the integrated SPA/history-state navigation adapter from PR #11. The exact lossless DNR subset is documented and protected by dedicated regression tests. Direct parity/boundary coverage now protects request-method semantics, URL/host/path behavior and the exact DNR action mappings for the supported subset. Known MV3 limitations and fallback behavior are now documented explicitly.
 
 ## Completed modernization baseline
 
@@ -39,7 +39,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
   - [x] Add conservative URL/host/path boundary coverage in `test/dnr-url-boundaries.test.js` (`f2029d3`).
   - [x] Add exact supported-action mapping coverage in `test/dnr-action-parity.test.js`.
   - [x] Add direct Firefox-engine ↔ DNR parity fixtures for exact hosts, wildcard subdomains, paths and explicit ports in `test/dnr-url-parity.test.js`.
-- [ ] Document known MV3 limitations and fallback behavior clearly.
+- [x] Document known MV3 limitations and fallback behavior clearly. See `docs/mv3-limitations.md`.
 
 ## Phase 3 — stabilization and release
 
@@ -55,4 +55,4 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Completion status
 
-**Not fully completed.** Direct method and URL/host/path parity plus supported-action mappings are now covered. The next action is to run/verify the complete regression suite and use the parity fixtures to justify only newly proven lossless compiler expansions.
+**Not fully completed.** Direct method and URL/host/path parity plus supported-action mappings are covered, and known MV3 limitations/fallback behavior are documented. The next action is to run/verify the complete regression suite and use the parity fixtures to justify only newly proven lossless compiler expansions.
