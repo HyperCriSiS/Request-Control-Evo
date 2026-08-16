@@ -1,0 +1,22 @@
+name: automation inspect next lossless DNR parity case
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/automation-inspect-dnr-next.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect compiler and parity fixtures
+        shell: bash
+        run: |
+          echo '=== compiler ==='
+          sed -n '1,320p' src/background/dnr/compiler.js
+          echo '=== supported subset ==='
+          sed -n '1,260p' src/background/dnr/supported-subset.js
+          for f in test/dnr-firefox-filter-parity.test.js test/dnr-tld-parity.test.js test/dnr-method-parity.test.js test/dnr-action-parity.test.js test/dnr-url-boundaries.test.js; do
+            echo "=== $f ==="; sed -n '1,320p' "$f" || true
+          done
