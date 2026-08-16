@@ -8,7 +8,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 **Status: in progress**
 
-`dev` contains the released modernization baseline, integrated SPA/history-state navigation support and a conservative MV3/DNR compiler foundation. The lossless subset and known limitations are documented. Method/action parity and URL boundary coverage are green. An invalid direct URL-parity fixture was identified and removed instead of treating a broken oracle as proof of parity.
+`dev` contains the released modernization baseline, integrated SPA/history-state navigation support and a conservative MV3/DNR compiler foundation. The lossless subset and known limitations are documented. Method/action parity and URL boundary coverage are green. A conservative Firefox↔DNR URL parity harness now exercises the actual `createRequestFilters()` contract for the supported exact host/path subset, including the browser match-pattern prefilter plus supplemental matcher semantics.
 
 ## Completed modernization baseline
 
@@ -40,7 +40,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 - [x] Remove the temporary `repair-dnr-parity-tests.yml` workflow after diagnosis.
 - [x] Restore the complete normal Build workflow to green on clean head `0285ad03` after the regression-fixture corrections.
 - [x] Document known MV3 limitations and fallback behavior in `docs/mv3-limitations.md`.
-- [ ] Build a trustworthy Firefox↔DNR URL parity harness around the actual `createRequestFilters()` contract: browser URL matching comes from `createMatchPatterns(pattern)`, while `createRequestMatcher(pattern)` only adds includes/excludes, origin, method and any-TLD host checks. Do not use raw `createRequestMatcher()` alone as the host/path oracle.
+- [x] Build a conservative Firefox↔DNR URL parity harness around the actual `createRequestFilters()` contract. `test/dnr-firefox-filter-parity.test.js` validates exact hosts, wildcard subdomains, paths and multi-host/path union behavior by combining the generated WebExtension match-pattern prefilter with the filter matcher before comparing against the compiled DNR regexes. Normal Build #112 passed on commit `ff83e1cb`.
 - [ ] Expand the DNR compiler only for additional cases proven lossless by valid parity/boundary fixtures.
 
 ## Phase 3 — stabilization and release
@@ -52,10 +52,10 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Blockers / dependencies
 
-- No current normal CI blocker is known on `dev` after removing the invalid parity fixture and correcting the URL-boundary test.
-- A valid direct Firefox↔DNR URL parity oracle is still missing; no compiler capability should be promoted on the basis of the removed fixture.
+- No current normal CI blocker is known on `dev`; the new conservative Firefox↔DNR URL parity harness passed the normal Build workflow.
+- The parity harness intentionally covers only the conservative WebExtension match-pattern subset already representable exactly. Browser-specific or custom matcher semantics must gain dedicated evidence before compiler support is broadened.
 - MV3 feature growth remains constrained by `declarativeNetRequest` expressiveness; unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
 
 ## Completion status
 
-**Not fully completed.** The regression baseline is green. The next priority is a parity harness for the combined `createMatchPatterns()` + `createRequestMatcher()` filter contract, followed only by compiler expansions that this harness proves lossless.
+**Not fully completed.** The conservative URL parity harness is in place and green. The next priority is to use valid parity/boundary fixtures to identify the next genuinely lossless DNR compiler expansion, then validate representative real-world rules before release preparation.
