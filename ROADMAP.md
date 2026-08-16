@@ -8,7 +8,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 **Status: in progress**
 
-`dev` contains the released modernization baseline, conservative MV3 compiler foundation and the integrated SPA/history-state navigation adapter from PR #11. The exact lossless DNR subset is documented and protected by dedicated regression tests; conservative boundary coverage now also validates request methods through the actual `pattern.method` rule schema.
+`dev` contains the released modernization baseline, conservative MV3 compiler foundation and the integrated SPA/history-state navigation adapter from PR #11. The exact lossless DNR subset is documented and protected by dedicated regression tests; conservative boundary coverage validates request methods through the actual `pattern.method` schema, and direct matcher/compiler parity coverage now protects case-insensitive supported-method semantics.
 
 ## Completed modernization baseline
 
@@ -36,6 +36,8 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 - [ ] Expand the conservative DNR compiler only for rule types whose semantics can be preserved.
 - [ ] Keep unsupported method/origin/context-sensitive behavior on the Firefox reference engine; do not emulate it incorrectly on Chromium.
 - [ ] Add parity/regression fixtures comparing compiled MV3 behavior with the existing matcher semantics for supported rules.
+  - [x] Add direct method-matcher parity coverage for supported case-insensitive methods and explicit unsupported `TRACE` handling in `test/dnr-method-parity.test.js` (`5575131`).
+  - [ ] Add equivalent parity fixtures for URL/host/path matching and supported action semantics.
 - [ ] Document known MV3 limitations and fallback behavior clearly.
 
 ## Phase 3 — stabilization and release
@@ -49,8 +51,8 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 - PR #11 had all five required checks green immediately before integration.
 - MV3 feature growth is intentionally constrained by `declarativeNetRequest` expressiveness; unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
-- The available MCP endpoints do not expose a direct check-run/log view for standalone `dev` commits, so the corrected boundary fixture has been verified against the compiler schema/diff but still requires the repository's normal regression suite to confirm the branch head end-to-end.
+- The available MCP endpoints do not expose a direct check-run/log view for standalone `dev` commits, so new direct-branch fixtures still require the repository's normal regression suite to confirm the branch head end-to-end.
 
 ## Completion status
 
-**Not fully completed.** The exact lossless subset and conservative boundary coverage are in place. The next action is to expand the compiler only where additional semantics can be proven lossless, then add direct parity fixtures against the Firefox matcher.
+**Not fully completed.** Method parity is now covered directly. The next action is to add URL/host/path and action parity fixtures, then expand the compiler only where additional semantics can be proven lossless.
