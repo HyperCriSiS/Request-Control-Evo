@@ -1,4 +1,4 @@
-name: automation validate DNR scheme parity
+name: automation record verified DNR scheme parity
 on:
   push:
     branches: [dev]
@@ -7,51 +7,33 @@ on:
 permissions:
   contents: write
 jobs:
-  validate:
+  update:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-          cache: npm
-      - name: Add scheme parity coverage and validate
+      - name: Update roadmap and remove temporary workflow
         run: |
-          cat >> test/dnr-firefox-filter-parity.test.js <<'EOF'
-
-          test("explicit and wildcard schemes preserve Firefox browser-prefilter semantics", () => {
-              expectParity(
-                  { scheme: "http", host: ["example.com"], path: ["api/*"] },
-                  [
-                      ["http://example.com/api/v1", true],
-                      ["https://example.com/api/v1", false],
-                  ],
-              );
-              expectParity(
-                  { scheme: "https", host: ["example.com"], path: ["api/*"] },
-                  [
-                      ["https://example.com/api/v1", true],
-                      ["http://example.com/api/v1", false],
-                  ],
-              );
-              expectParity(
-                  { scheme: "*", host: ["example.com"], path: ["api/*"] },
-                  [
-                      ["http://example.com/api/v1", true],
-                      ["https://example.com/api/v1", true],
-                      ["ws://example.com/api/v1", true],
-                      ["wss://example.com/api/v1", true],
-                      ["ftp://example.com/api/v1", false],
-                  ],
-              );
-          });
-          EOF
-          npm ci
-          npm test -- --ci test/dnr-firefox-filter-parity.test.js
-          npm run lint
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('ROADMAP.md')
+          s = p.read_text()
+          marker = '- [x] Prove Firefox/DNR resource-type parity for the shared WebRequest/DNR resource types; keep Firefox-only `beacon` explicitly unsupported.\n'
+          addition = '- [x] Prove explicit/wildcard scheme parity (`http`, `https`, and `*` → HTTP(S)/WS(S), excluding FTP for wildcard) through the combined Firefox browser-prefilter/DNR harness (`589edce`); focused parity tests and lint are green.\n'
+          if addition not in s:
+              if marker in s:
+                  s = s.replace(marker, marker + addition)
+              else:
+                  anchor = '## Phase 2'
+                  pos = s.find(anchor)
+                  if pos < 0:
+                      raise SystemExit('roadmap phase anchor not found')
+                  s = s[:pos] + addition + '\n' + s[pos:]
+          p.write_text(s)
+          PY
+          rm .github/workflows/automation-inspect-dnr.yml
           git diff --check
           git config user.name HyperCriSiS
           git config user.email dev.github@w3b.world
-          git add test/dnr-firefox-filter-parity.test.js
-          git commit -m 'test: cover DNR scheme parity'
+          git add ROADMAP.md .github/workflows/automation-inspect-dnr.yml
+          git commit -m 'docs: record DNR scheme parity'
           git push
