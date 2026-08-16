@@ -1,0 +1,19 @@
+name: automation inspect next DNR parity case
+on:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/automation-inspect-dnr.yml'
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect compiler and parity coverage
+        run: |
+          echo '=== DNR tests ==='
+          find test -maxdepth 1 -type f -name 'dnr-*' -print | sort
+          echo '=== scheme/port/domain/path compiler references ==='
+          grep -R -n -E 'scheme|protocol|port|initiatorDomains|requestDomains|domainType|thirdParty' src test/dnr-* 2>/dev/null | head -n 320 || true
+          echo '=== compiler ==='
+          sed -n '1,320p' src/services/dnr/compiler.js 2>/dev/null || find src -type f -iname '*dnr*' -o -iname '*compiler*'
