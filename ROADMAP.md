@@ -42,6 +42,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 - [x] Document known MV3 limitations and fallback behavior in `docs/mv3-limitations.md`.
 - [x] Build a conservative Firefox↔DNR URL parity harness around the actual `createRequestFilters()` contract. `test/dnr-firefox-filter-parity.test.js` validates exact hosts, wildcard subdomains, paths and multi-host/path union behavior by combining the generated WebExtension match-pattern prefilter with the filter matcher before comparing against the compiled DNR regexes. Normal Build #112 passed on commit `ff83e1cb`.
 - [x] Prove explicit TLD-wildcard expansion parity (`*.google.*` with explicit `topLevelDomains`) against the combined Firefox filter contract; normal Build #124 passed on `8b595b7e`.
+- [x] Prove resource-type parity for the shared Firefox/DNR request-type subset and keep Firefox-only `beacon` explicitly unsupported; normal Build #128 passed on `a6f46806`.
 - [ ] Expand the DNR compiler only for additional cases proven lossless by valid parity/boundary fixtures.
 
 ## Phase 3 — stabilization and release
