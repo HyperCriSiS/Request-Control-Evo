@@ -1,0 +1,32 @@
+name: automation record port semantics
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/automation-roadmap-port-semantics.yml']
+permissions:
+  contents: write
+jobs:
+  roadmap:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Update roadmap
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p=Path('ROADMAP.md'); s=p.read_text()
+          line='- [x] Inspect explicit-port Firefox semantics before treating ports as a new parity case: `createRequestFilters()` emits `https://example.com:8443/*`, while its supplemental matcher alone accepts the tested alternate/default ports; therefore the existing DNR port boundary test is not yet sufficient evidence of full Firefox↔DNR parity.\n'
+          if line not in s:
+            marker='## Phase 2'
+            i=s.find(marker)
+            if i<0: raise SystemExit('Phase 2 marker missing')
+            e=s.find('\n',i)+1
+            s=s[:e]+'\n'+line+s[e:]
+          p.write_text(s)
+          PY
+          rm .github/workflows/automation-roadmap-port-semantics.yml
+          git config user.name HyperCriSiS
+          git config user.email dev.github@w3b.world
+          git add ROADMAP.md .github/workflows/automation-roadmap-port-semantics.yml
+          git commit -m 'docs: record explicit-port parity boundary'
+          git push
