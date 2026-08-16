@@ -28,6 +28,8 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 - [x] Add regression coverage for pushState cleanup, whitelist precedence, block fallback, secure upgrades, frame exclusion, match patterns and unsupported method/origin constraints.
 - [x] Verify PR #11 checks and the merged `dev` state.
 
+- [x] Prove explicit/wildcard scheme parity (`http`, `https`, and `*` → HTTP(S)/WS(S), excluding FTP for wildcard) through the combined Firefox browser-prefilter/DNR harness (`589edce`); focused parity tests and lint are green.
+
 ## Phase 2 — MV3 compatibility expansion
 
 - [x] Define the exact rule subset that can be represented losslessly in `declarativeNetRequest`; see `docs/mv3-supported-subset.md`.
