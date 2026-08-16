@@ -1,0 +1,30 @@
+name: automation-url-parity
+on:
+  push:
+    branches: [dev]
+    paths: [.github/workflows/automation-url-parity.yml]
+permissions:
+  contents: write
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - name: Inspect matcher exports and build parity harness
+        run: |
+          node --input-type=module - <<'NODE'
+          import * as m from './src/main/matchers.js';
+          console.log(Object.keys(m));
+          NODE
+          grep -nE 'class .*Matcher|export .*Matcher|function .*Matcher' src/main/matchers.js | head -n 200
+      - name: Add direct URL parity tests
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          s=Path('src/main/matchers.js').read_text()
+          print(s[:12000])
+          PY
