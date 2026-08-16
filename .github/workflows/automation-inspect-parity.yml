@@ -10,17 +10,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Inspect parity contract
+      - name: Inspect parity implementation surface
         run: |
+          set +e
           echo '=== ROADMAP ==='
           cat ROADMAP.md
-          echo '=== api filter contract ==='
-          grep -n -A95 -B20 'createRequestFilters' src/main/api.js
-          echo '=== matchers helpers ==='
-          grep -n -A180 -B20 'createMatchPatterns' src/main/matchers.js
-          echo '=== DNR compiler ==='
-          sed -n '1,360p' src/main/backends/dnr/compiler.js
+          echo '=== DNR-related files ==='
+          find src test -type f | grep -Ei 'dnr|declarative|matcher' | sort
+          echo '=== compiler references ==='
+          grep -RIn -B12 -A30 -E 'compileRuleToDnr|compile.*Dnr|regexFilter|declarativeNetRequest' src test | head -n 1200
           echo '=== existing DNR tests ==='
-          for f in test/*dnr*.test.js; do echo "--- $f"; cat "$f"; done
+          for f in $(find test -maxdepth 2 -type f | grep -Ei 'dnr.*test|test.*dnr' | sort); do echo "--- $f"; cat "$f"; done
+          echo '=== API/matcher contract ==='
+          grep -n -A100 -B20 'createRequestFilters' src/main/api.js
+          grep -n -A220 -B20 'createMatchPatterns' src/main/matchers.js
           echo '=== package scripts ==='
           cat package.json
