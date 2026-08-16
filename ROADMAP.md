@@ -8,7 +8,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 **Status: in progress**
 
-`dev` contains the released modernization baseline, conservative MV3 compiler foundation and the integrated SPA/history-state navigation adapter from PR #11. The exact lossless DNR subset is documented and protected by dedicated regression tests. Direct parity/boundary coverage now protects request-method semantics, URL/host/path boundaries and the exact DNR action mappings for the supported subset.
+`dev` contains the released modernization baseline, conservative MV3 compiler foundation and the integrated SPA/history-state navigation adapter from PR #11. The exact lossless DNR subset is documented and protected by dedicated regression tests. Direct parity/boundary coverage now protects request-method semantics, URL/host/path behavior and the exact DNR action mappings for the supported subset.
 
 ## Completed modernization baseline
 
@@ -26,8 +26,8 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 - [x] Use same-origin `history.replaceState` for Filter cleanup to avoid reloads/history pollution.
 - [x] Add loop guards and clear per-tab navigation state on tab close/extension disable.
 - [x] Add regression coverage for pushState cleanup, whitelist precedence, block fallback, secure upgrades, frame exclusion, match patterns and unsupported method/origin constraints.
-- [x] Verify PR #11 checks: lint, build, tests, combined lint-build and checker are green on the current head.
-- [x] Merge PR #11 into `dev` after final review. Squash merge: `40809ef502cececf76b8cc4281123e5942664120`.
+- [x] Verify PR #11 checks: lint, build, tests, combined lint-build and checker are green on the validated head.
+- [x] Merge PR #11 into `dev` and re-check the merged implementation state.
 
 ## Phase 2 — MV3 compatibility expansion
 
@@ -38,7 +38,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
   - [x] Add direct method-matcher parity coverage for supported case-insensitive methods and explicit unsupported `TRACE` handling in `test/dnr-method-parity.test.js` (`5575131`).
   - [x] Add conservative URL/host/path boundary coverage in `test/dnr-url-boundaries.test.js` (`f2029d3`).
   - [x] Add exact supported-action mapping coverage in `test/dnr-action-parity.test.js`.
-  - [ ] Add direct Firefox-matcher parity fixtures for URL/host/path behavior where matcher APIs permit a stable comparison.
+  - [x] Add direct Firefox-engine ↔ DNR parity fixtures for exact hosts, wildcard subdomains, paths and explicit ports in `test/dnr-url-parity.test.js`.
 - [ ] Document known MV3 limitations and fallback behavior clearly.
 
 ## Phase 3 — stabilization and release
@@ -50,10 +50,9 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Blockers / dependencies
 
-- PR #11 had all five required checks green immediately before integration.
 - MV3 feature growth is intentionally constrained by `declarativeNetRequest` expressiveness; unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
-- The available MCP endpoints do not expose a direct check-run/log view for standalone `dev` commits, so new direct-branch fixtures still require the repository's normal regression suite to confirm the branch head end-to-end.
+- Direct-commit CI visibility is limited through the currently exposed MCP endpoints, so semantic changes must be backed by repository tests before compiler expansion.
 
 ## Completion status
 
-**Not fully completed.** Method parity, URL/host/path boundaries and supported-action mappings are covered. The next action is direct Firefox-matcher parity for URL/host/path where stable comparison APIs exist, then compiler expansion only for newly proven lossless semantics.
+**Not fully completed.** Direct method and URL/host/path parity plus supported-action mappings are now covered. The next action is to run/verify the complete regression suite and use the parity fixtures to justify only newly proven lossless compiler expansions.
