@@ -1,0 +1,44 @@
+name: tmp record matcher parity contract
+
+on:
+  push:
+    branches: [dev]
+    paths:
+      - '.github/workflows/tmp-roadmap-matcher-contract.yml'
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+      - name: Update ROADMAP
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          p = Path('ROADMAP.md')
+          s = p.read_text()
+          old = '- [ ] Build a trustworthy direct URL matcher parity harness that invokes the actual Firefox matcher semantics without RequestController side effects or false-positive marks.'
+          new = '- [ ] Build a trustworthy Firefox↔DNR URL parity harness around the actual `createRequestFilters()` contract: browser URL matching comes from `createMatchPatterns(pattern)`, while `createRequestMatcher(pattern)` only adds includes/excludes, origin, method and any-TLD host checks. Do not use raw `createRequestMatcher()` alone as the host/path oracle.'
+          if old not in s:
+              raise SystemExit('expected parity roadmap line not found')
+          s = s.replace(old, new, 1)
+          old2 = '**Not fully completed.** The regression baseline is green again. The next priority is a trustworthy direct URL-matcher parity harness, followed only by compiler expansions that this harness can prove lossless.'
+          new2 = '**Not fully completed.** The regression baseline is green. The next priority is a parity harness for the combined `createMatchPatterns()` + `createRequestMatcher()` filter contract, followed only by compiler expansions that this harness proves lossless.'
+          if old2 in s:
+              s = s.replace(old2, new2, 1)
+          p.write_text(s)
+          PY
+      - name: Commit ROADMAP
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ROADMAP.md
+          git diff --cached --quiet && exit 0
+          git commit -m 'docs: record Firefox matcher parity contract'
+          git push origin HEAD:dev
