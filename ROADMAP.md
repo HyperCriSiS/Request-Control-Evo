@@ -40,7 +40,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 - [x] Remove the temporary `repair-dnr-parity-tests.yml` workflow after diagnosis.
 - [x] Restore the complete normal Build workflow to green on clean head `0285ad03` after the regression-fixture corrections.
 - [x] Document known MV3 limitations and fallback behavior in `docs/mv3-limitations.md`.
-- [ ] Build a trustworthy direct URL matcher parity harness that invokes the actual Firefox matcher semantics without RequestController side effects or false-positive marks.
+- [ ] Build a trustworthy Firefox↔DNR URL parity harness around the actual `createRequestFilters()` contract: browser URL matching comes from `createMatchPatterns(pattern)`, while `createRequestMatcher(pattern)` only adds includes/excludes, origin, method and any-TLD host checks. Do not use raw `createRequestMatcher()` alone as the host/path oracle.
 - [ ] Expand the DNR compiler only for additional cases proven lossless by valid parity/boundary fixtures.
 
 ## Phase 3 — stabilization and release
@@ -58,4 +58,4 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Completion status
 
-**Not fully completed.** The regression baseline is green again. The next priority is a trustworthy direct URL-matcher parity harness, followed only by compiler expansions that this harness can prove lossless.
+**Not fully completed.** The regression baseline is green. The next priority is a parity harness for the combined `createMatchPatterns()` + `createRequestMatcher()` filter contract, followed only by compiler expansions that this harness proves lossless.
