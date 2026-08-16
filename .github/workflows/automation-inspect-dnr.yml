@@ -1,18 +1,57 @@
-name: automation inspect Request Control test command
+name: automation validate DNR scheme parity
 on:
   push:
     branches: [dev]
     paths:
       - '.github/workflows/automation-inspect-dnr.yml'
+permissions:
+  contents: write
 jobs:
-  inspect:
+  validate:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - name: Inspect package scripts and current DNR test style
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - name: Add scheme parity coverage and validate
         run: |
-          cat package.json
-          echo '=== compiler test sample ==='
-          sed -n '1,180p' test/dnr-resource-type-parity.test.js
-          echo '=== build workflow ==='
-          find .github/workflows -maxdepth 1 -type f -print -exec sed -n '1,180p' {} \; | head -n 420
+          cat >> test/dnr-firefox-filter-parity.test.js <<'EOF'
+
+          test("explicit and wildcard schemes preserve Firefox browser-prefilter semantics", () => {
+              expectParity(
+                  { scheme: "http", host: ["example.com"], path: ["api/*"] },
+                  [
+                      ["http://example.com/api/v1", true],
+                      ["https://example.com/api/v1", false],
+                  ],
+              );
+              expectParity(
+                  { scheme: "https", host: ["example.com"], path: ["api/*"] },
+                  [
+                      ["https://example.com/api/v1", true],
+                      ["http://example.com/api/v1", false],
+                  ],
+              );
+              expectParity(
+                  { scheme: "*", host: ["example.com"], path: ["api/*"] },
+                  [
+                      ["http://example.com/api/v1", true],
+                      ["https://example.com/api/v1", true],
+                      ["ws://example.com/api/v1", true],
+                      ["wss://example.com/api/v1", true],
+                      ["ftp://example.com/api/v1", false],
+                  ],
+              );
+          });
+          EOF
+          npm ci
+          npm test -- --ci test/dnr-firefox-filter-parity.test.js
+          npm run lint
+          git diff --check
+          git config user.name HyperCriSiS
+          git config user.email dev.github@w3b.world
+          git add test/dnr-firefox-filter-parity.test.js
+          git commit -m 'test: cover DNR scheme parity'
+          git push
