@@ -1,0 +1,31 @@
+name: automation update DNR resource parity roadmap
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/automation-update-roadmap.yml']
+permissions:
+  contents: write
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with: {ref: dev}
+      - name: Update roadmap
+        shell: python
+        run: |
+          from pathlib import Path
+          p=Path('ROADMAP.md'); s=p.read_text()
+          anchor='- [ ] Expand the DNR compiler only for additional cases proven lossless by valid parity/boundary fixtures.\n'
+          line='- [x] Prove resource-type parity for the shared Firefox/DNR request-type subset and keep Firefox-only `beacon` explicitly unsupported; normal Build #128 passed on `a6f46806`.\n'
+          if line not in s:
+              if anchor not in s: raise SystemExit('roadmap anchor missing')
+              s=s.replace(anchor,line+anchor,1)
+          p.write_text(s)
+      - name: Commit
+        run: |
+          git config user.name HyperCriSiS
+          git config user.email dev.github@w3b.world
+          git add ROADMAP.md
+          git commit -m 'docs: record DNR resource type parity'
+          git push origin HEAD:dev
