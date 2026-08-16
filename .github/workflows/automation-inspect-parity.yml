@@ -1,0 +1,24 @@
+name: automation inspect Firefox DNR parity
+on:
+  push:
+    branches: [dev]
+    paths: ['.github/workflows/automation-inspect-parity.yml']
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect parity contract
+        run: |
+          echo '=== ROADMAP ==='
+          cat ROADMAP.md
+          echo '=== matchers.js ==='
+          cat src/main/matchers.js
+          echo '=== relevant createMatchPatterns references ==='
+          grep -RIn -A35 -B15 'createMatchPatterns' src test | head -n 260 || true
+          echo '=== compiler exports ==='
+          grep -n -A40 -B10 -E 'module.exports|export |compile' src/main/backends/dnr/compiler.js | tail -n 220 || true
+          echo '=== existing DNR tests ==='
+          ls -1 test/*dnr* 2>/dev/null || true
