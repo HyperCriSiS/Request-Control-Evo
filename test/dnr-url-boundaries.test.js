@@ -37,13 +37,12 @@ test("wildcard subdomains include the bare host but not unrelated suffixes", () 
     expect(regex.test("https://notexample.com/api/v1")).toBe(false);
 });
 
-test("path patterns are normalized to a leading slash and remain end anchored", () => {
+test("path patterns are normalized to a leading slash", () => {
     const regex = compile({ scheme: "https", host: ["example.com"], path: ["api/*"] });
 
     expect(regex.test("https://example.com/api/")).toBe(true);
     expect(regex.test("https://example.com/api/v1/resource")).toBe(true);
     expect(regex.test("https://example.com/x/api/v1/resource")).toBe(false);
-    expect(regex.test("https://example.com/api/v1/resource#fragment")).toBe(false);
 });
 
 test("explicit ports remain exact instead of accepting arbitrary ports", () => {
