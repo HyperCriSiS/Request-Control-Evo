@@ -41,6 +41,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 - [x] Restore the complete normal Build workflow to green on clean head `0285ad03` after the regression-fixture corrections.
 - [x] Document known MV3 limitations and fallback behavior in `docs/mv3-limitations.md`.
 - [x] Build a conservative Firefox↔DNR URL parity harness around the actual `createRequestFilters()` contract. `test/dnr-firefox-filter-parity.test.js` validates exact hosts, wildcard subdomains, paths and multi-host/path union behavior by combining the generated WebExtension match-pattern prefilter with the filter matcher before comparing against the compiled DNR regexes. Normal Build #112 passed on commit `ff83e1cb`.
+- [x] Prove explicit TLD-wildcard expansion parity (`*.google.*` with explicit `topLevelDomains`) against the combined Firefox filter contract; normal Build #124 passed on `8b595b7e`.
 - [ ] Expand the DNR compiler only for additional cases proven lossless by valid parity/boundary fixtures.
 
 ## Phase 3 — stabilization and release
@@ -58,4 +59,4 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Completion status
 
-**Not fully completed.** The conservative URL parity harness is in place and green. The next priority is to use valid parity/boundary fixtures to identify the next genuinely lossless DNR compiler expansion, then validate representative real-world rules before release preparation.
+**Not fully completed.** The conservative URL parity harness is in place and green. The combined parity coverage now also proves explicit TLD-wildcard expansion with bounded `topLevelDomains`. The next priority is to use these valid fixtures to identify the next genuinely lossless DNR compiler expansion, then validate representative real-world rules before release preparation.
