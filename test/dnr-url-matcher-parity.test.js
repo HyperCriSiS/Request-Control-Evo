@@ -1,4 +1,4 @@
-import * as RequestControl from "../src/main/api.js";
+import { createRequestMatcher } from "../src/main/api.js";
 import { compileRuleToDnr } from "../src/main/backends/dnr/compiler.js";
 
 function blockRule(pattern) {
@@ -12,12 +12,12 @@ function blockRule(pattern) {
 }
 
 function firefoxMatches(ruleData, url) {
-    const rule = RequestControl.createRule(ruleData);
-    return Boolean(RequestControl.markRequest({
+    const matcher = createRequestMatcher(ruleData.pattern);
+    return matcher.test({
         url,
         method: "GET",
         type: "xmlhttprequest",
-    }, rule));
+    });
 }
 
 function dnrMatches(ruleData, url) {
