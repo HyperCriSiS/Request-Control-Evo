@@ -33,6 +33,11 @@ test("lossless MV3 subset rejects context semantics DNR cannot reproduce", () =>
 
     expect(
         compileRuleToDnr(rule({ pattern: { allUrls: true, includes: ["https://example.com/*"] } })).status
+    ).toBe("supported");
+    expect(
+        compileRuleToDnr(
+            rule({ pattern: { allUrls: true, includes: ["https://example.com/*", "https://example.net/*"] } })
+        ).status
     ).toBe("unsupported");
     expect(
         compileRuleToDnr(rule({ pattern: { allUrls: true, excludes: ["https://example.com/*"] } })).status
