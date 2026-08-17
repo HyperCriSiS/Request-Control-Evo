@@ -2,23 +2,29 @@
 
 ## Project goal
 
-Keep Request Control maintainable and behaviorally compatible while modernizing navigation handling and adding only provably lossless Manifest V3/DNR support alongside the existing Firefox reference implementation.
+Modernize Request Control while preserving the Firefox `webRequest` engine as the compatibility reference, improving navigation handling and adding a conservative Manifest V3 path without silently changing rule semantics.
 
 ## Current status
 
 **Status: in progress**
 
-The active maintenance branch is `dev`. SPA/history-state handling from PR #11 is integrated and the normal build is green. The MV3 compiler remains deliberately conservative: unsupported or approximate semantics are not silently enabled. Firefox↔DNR parity is tested through the real WebExtension match-pattern prefilter plus the internal matcher rather than through an incomplete request matcher alone.
+`dev` contains the released modernization baseline, integrated SPA/history-state navigation support and a conservative MV3/DNR compiler foundation. The lossless subset and known limitations are documented. Method/action parity and URL boundary coverage are green. A conservative Firefox↔DNR URL parity harness exercises the actual `createRequestFilters()` contract for the supported exact host/path subset, including the browser match-pattern prefilter plus supplemental matcher semantics. Additional composition coverage now confirms that `<all_urls>` remains aligned when combined with an explicit supported resource type.
 
-## Completed foundation
+## Completed modernization baseline
 
-- [x] Modernize the codebase without replacing the proven Firefox runtime semantics.
+- [x] Deliver the 1.16.0 modernization baseline: local URL analyzer, managed community catalogs, rule groups, modern UI/tooling, dependency updates, safe subscription reconciliation and release automation.
+- [x] Make release automation self-contained/idempotent so tag creation does not rely on a second token-triggered workflow.
 - [x] Prepare and synchronize the corrective 1.16.1 release state back to `dev`.
 - [x] Add a conservative MV3 `declarativeNetRequest` compiler foundation and capability diagnostics without changing the Firefox MV2 runtime/manifest.
 
-## Phase 1 — navigation and regression baseline
+## Phase 1 — SPA/history-state navigation
 
-- [x] Integrate SPA/history-state navigation support from PR #11 into `dev`.
+- [x] Implement and integrate the top-frame `webNavigation.onHistoryStateUpdated` adapter from PR #11 into `dev`.
+- [x] Reuse existing matcher/rule-construction semantics where SPA events expose sufficient context.
+- [x] Exclude method/origin-constrained rules when required context is unavailable.
+- [x] Preserve Whitelist, Block, Secure, Redirect and Filter priority semantics.
+- [x] Use same-origin `history.replaceState` for Filter cleanup to avoid reloads/history pollution.
+- [x] Add loop guards and clear per-tab navigation state on tab close/extension disable.
 - [x] Add regression coverage for pushState cleanup, whitelist precedence, block fallback, secure upgrades, frame exclusion, match patterns and unsupported method/origin constraints.
 - [x] Verify PR #11 checks and the merged `dev` state.
 
@@ -29,35 +35,29 @@ The active maintenance branch is `dev`. SPA/history-state handling from PR #11 i
 - [x] Add conservative request-method parity/boundary coverage.
 - [x] Add exact supported-action mapping coverage.
 - [x] Add URL/host/path boundary coverage for exact hosts, wildcard subdomains, paths and explicit ports.
+- [x] Correct the invalid fragment expectation in `test/dnr-url-boundaries.test.js`; URL fragments are not part of network requests.
+- [x] Remove `test/dnr-url-parity.test.js` after CI demonstrated that its RequestController-based Firefox oracle did not actually distinguish negative URL cases and therefore could not prove parity.
+- [x] Remove the temporary `repair-dnr-parity-tests.yml` workflow after diagnosis.
+- [x] Restore the complete normal Build workflow to green on clean head `0285ad03` after the regression-fixture corrections.
 - [x] Document known MV3 limitations and fallback behavior in `docs/mv3-limitations.md`.
-- [x] Build a conservative Firefox↔DNR URL parity harness around the actual `createRequestFilters()` contract, combining the generated WebExtension match-pattern prefilter with the supplemental matcher; normal Build #112 passed.
-- [x] Add TLD-expansion parity for explicit top-level-domain sets (`*.google.*`) without broadening unsupported semantics.
-- [x] Add supported resource-type parity and keep Firefox-only types such as `beacon` explicitly unsupported.
-- [x] Add scheme parity for explicit HTTP/HTTPS and Firefox wildcard scheme semantics without accidentally admitting FTP.
-- [x] Add explicit-port parity through the full Firefox match-pattern prefilter and DNR regex path; normal Build #141 is green.
-- [x] Add composed parity for HTTPS + explicit port + path + `xmlhttprequest` in one rule, proving individually supported dimensions remain lossless when combined.
-- [x] Prove composed Firefox↔DNR parity when an exact HTTP method is combined with scheme + explicit port + path + resource type, preventing method constraints from being widened during composition; normal Build #150 is green.
-- [x] Prove `<all_urls>` / `allUrls: true` parity for the supported Firefox/DNR scheme set, including HTTP(S), WS(S), FTP, file and data while excluding extension URLs; normal Build #151 passed on `bcfdc414`.
+- [x] Build a conservative Firefox↔DNR URL parity harness around the actual `createRequestFilters()` contract. `test/dnr-firefox-filter-parity.test.js` validates exact hosts, wildcard subdomains, paths and multi-host/path union behavior by combining the generated WebExtension match-pattern prefilter with the filter matcher before comparing against the compiled DNR regexes. Normal Build #112 passed on commit `ff83e1cb`.
+- [x] Add strict parity coverage for TLD expansion, supported resource types, schemes, explicit ports, composed HTTPS+port+path+XHR rules, composed request methods, and `<all_urls>` behavior.
+- [x] Prove `<all_urls>` + supported resource-type composition remains lossless with `test/dnr-all-urls-resource-type-parity.test.js`; normal Build #153 passed on commit `e42461c`.
 - [ ] Expand the DNR compiler only for additional cases proven lossless by valid parity/boundary fixtures.
 
 ## Phase 3 — stabilization and release
 
-- [ ] Validate representative real-world rules against the Firefox reference path and the DNR compiler for every newly supported class.
-- [ ] Keep normal build/lint/test workflows green on `dev` after each compatibility expansion.
+- [x] Re-run the complete regression/build suite after the current DNR fixture corrections; normal Build is green.
+- [ ] Validate representative real-world rules/catalogs against both the Firefox reference engine and the MV3 compiler subset.
+- [ ] Resolve any release-blocking compatibility regressions without broadening scope unnecessarily.
 - [ ] Prepare the next release only after `dev` remains green and any additional supported MV3 subset is documented.
-
-## Validation and completion criteria
-
-- [ ] Every DNR-supported rule class has direct Firefox↔DNR parity evidence.
-- [ ] Approximate or browser-specific semantics remain explicitly unsupported unless exact behavior is proven.
-- [ ] Normal CI remains green and representative real-world fixtures pass before release preparation.
 
 ## Blockers / dependencies
 
-- No current normal CI blocker is known on `dev`; the conservative Firefox↔DNR harness and subsequent TLD/resource-type/scheme/port/composed-method/all-URLs parity fixtures are green in normal builds.
-- The parity harness intentionally covers only semantics already representable exactly. Browser-specific or custom matcher behavior must gain dedicated evidence before compiler support is broadened.
+- No current normal CI blocker is known on `dev`; the conservative Firefox↔DNR parity suite, including `<all_urls>` plus resource-type composition, passes the normal Build workflow.
+- The parity harness intentionally covers only the conservative WebExtension match-pattern subset already representable exactly. Browser-specific or custom matcher semantics must gain dedicated evidence before compiler support is broadened.
 - MV3 feature growth remains constrained by `declarativeNetRequest` expressiveness; unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
 
 ## Completion status
 
-**Not fully completed.** The conservative parity harness now covers URL/host/path, TLD expansion, resource types, schemes, explicit ports, composed constraints, exact HTTP methods and `<all_urls>`. The next priority is to identify the next genuinely lossless compiler expansion from these fixtures, then validate representative real-world rules before release preparation.
+**Not fully completed.** The conservative parity harness is in place and green, including composed `<all_urls>` + resource-type coverage. The next priority is to use valid parity/boundary fixtures to identify the next genuinely lossless DNR compiler expansion, then validate representative real-world rules before release preparation.
