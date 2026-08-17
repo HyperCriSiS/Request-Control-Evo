@@ -1,0 +1,36 @@
+name: Sync managed catalog parity roadmap
+on:
+  push:
+    paths:
+      - '.github/workflows/automation-sync-managed-catalog-roadmap.yml'
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Update roadmap
+        shell: python
+        run: |
+          from pathlib import Path
+          p = Path('ROADMAP.md')
+          s = p.read_text()
+          old = '- [ ] Extend representative real-world/catalog validation beyond the initial composed fixtures without weakening unsupported/approximate boundaries.'
+          new = '- [x] Extend representative real-world/catalog validation beyond the initial composed fixtures without weakening unsupported/approximate boundaries. Managed Bing literal query-parameter filtering is pinned as `approximate` and LinkedIn procedural excludes as `unsupported` (`18717e4`, Build #165 green).'
+          if old not in s:
+              raise SystemExit('Target roadmap item not found or already updated')
+          s = s.replace(old, new, 1)
+          s = s.replace('Build #159 green with tracker-script, POST XHR/API, wildcard-CDN image fixtures.', 'Build #165 green with tracker-script, POST XHR/API, wildcard-CDN image fixtures and managed-catalog unsupported/approximate boundary guards.', 1)
+          s = s.replace('next priority validate additional real-world/catalog rules and identify next genuinely lossless compiler expansion', 'managed-catalog boundary validation is now covered; next priority identify the next genuinely lossless compiler expansion', 1)
+          p.write_text(s)
+      - name: Commit roadmap
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add ROADMAP.md
+          git commit -m 'docs: record managed catalog parity validation'
+          git push
