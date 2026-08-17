@@ -9,6 +9,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 **Status: in progress**
 
 `dev` contains the released modernization baseline, integrated SPA/history-state navigation support and a conservative MV3/DNR compiler foundation. The lossless subset and known limitations are documented. Method/action parity and URL boundary coverage are green. A conservative Firefox↔DNR URL parity harness exercises the actual `createRequestFilters()` contract, including the browser match-pattern prefilter plus supplemental matcher semantics; TLD expansion, shared resource types, schemes and explicit ports now have direct lossless parity evidence.
+- [x] Prove composed Firefox↔DNR parity for scheme + explicit port + path + resource type in one rule, guarding against semantic widening when individually supported condition classes are combined.
 
 ## Completed modernization baseline
 
