@@ -8,7 +8,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 **Status: in progress**
 
-`dev` contains the released modernization baseline, integrated SPA/history-state navigation support and a conservative MV3/DNR compiler foundation. The lossless subset and known limitations are documented. The Firefox↔DNR parity suite now covers the actual browser match-pattern prefilter plus supplemental matcher semantics for exact/wildcard hosts, paths, TLD expansion, supported resource types, schemes, explicit ports, methods, `<all_urls>` and representative composed rules, including `secure` and static absolute redirect actions.
+`dev` contains the released modernization baseline, integrated SPA/history-state navigation support and a conservative MV3/DNR compiler foundation. The lossless subset and known limitations are documented. The Firefox↔DNR parity suite now covers the actual browser match-pattern prefilter plus supplemental matcher semantics for exact/wildcard hosts, paths, TLD expansion, supported resource types, schemes, explicit ports, methods, `<all_urls>` and representative composed rules, including `secure`, static absolute redirects and `<all_urls>` + WebSocket resource-type composition.
 
 ## Completed modernization baseline
 
@@ -32,39 +32,38 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 - [x] Define the exact rule subset that can be represented losslessly in `declarativeNetRequest`; see `docs/mv3-supported-subset.md`.
 - [x] Keep unsupported or merely approximate semantics explicit instead of silently activating them.
-- [x] Add conservative request-method parity/boundary coverage.
-- [x] Add exact supported-action mapping coverage.
-- [x] Add URL/host/path boundary coverage for exact hosts, wildcard subdomains, paths and explicit ports.
-- [x] Correct the invalid fragment expectation in `test/dnr-url-boundaries.test.js`; URL fragments are not part of network requests.
-- [x] Remove the invalid RequestController-only URL parity oracle and replace it with the real Firefox `createRequestFilters()` browser-prefilter contract plus matcher semantics.
 - [x] Document known MV3 limitations and fallback behavior in `docs/mv3-limitations.md`.
-- [x] Validate exact host/path and wildcard-subdomain Firefox↔DNR parity with the conservative combined harness.
-- [x] Validate explicit TLD expansion parity for supported top-level-domain rules.
-- [x] Validate supported resource-type parity while keeping Firefox-only types such as `beacon` explicitly unsupported.
-- [x] Validate explicit `http`/`https` and wildcard WebExtension scheme parity without accidentally broadening to FTP.
-- [x] Validate explicit-port parity, including rejection of default/other ports.
+- [x] Build a Firefox↔DNR parity harness around the actual `createRequestFilters()` browser-prefilter contract plus supplemental matcher semantics.
+- [x] Validate exact and wildcard host/path behavior, including multi-host/path union boundaries.
+- [x] Validate explicit TLD expansion parity.
+- [x] Validate supported resource-type parity while keeping Firefox-only types such as `beacon` unsupported.
+- [x] Validate explicit scheme parity, including Firefox wildcard scheme behavior without accidentally admitting FTP.
+- [x] Validate explicit-port parity with browser match-pattern-prefilter semantics.
+- [x] Validate request-method parity and unsupported-method boundaries.
+- [x] Validate supported action mapping and conservative unsupported/approximate boundaries.
 - [x] Validate composed HTTPS + explicit port + path + XHR semantics.
 - [x] Validate composed POST + HTTPS + explicit port + path + XHR semantics.
 - [x] Validate `<all_urls>` parity and `<all_urls>` combined with an explicit supported resource type.
+- [x] Validate representative real-world rules, including tracker-script, POST API/XHR and wildcard-CDN cases.
+- [x] Validate managed-catalog rules against the supported MV3 subset without broadening unsupported semantics.
 - [x] Validate composed `secure`/`upgradeScheme` semantics with HTTP + POST + explicit port + path + XHR while preserving negative boundaries (`8a5d10dd`, Build #168 green).
 - [x] Validate static absolute redirect composition with GET + HTTPS + explicit port + path + XHR while preserving negative URL boundaries (`e1d3fc5`, Build #169 green).
+- [x] Validate `<all_urls>` combined with WebSocket resource type; normal Build #171 is green (`4b0aef27`).
 - [ ] Expand the DNR compiler only for additional cases proven lossless by valid parity/boundary fixtures.
 
 ## Phase 3 — stabilization and release
 
-- [x] Re-run the complete regression/build suite after the DNR fixture corrections; normal builds are green.
-- [x] Add representative real-world composed parity fixtures for a narrowly scoped tracker-script block and a POST XHR/API rule with explicit port/path/method constraints (`1c93a000`); normal Build #156 is green.
-- [x] Extend representative catalog-style parity coverage with an HTTPS CDN image rule using wildcard-host and path boundaries; corrected fixture semantics are green in normal Build #159 (`e4138b8`).
-- [x] Extend representative real-world/catalog validation beyond the initial composed fixtures without weakening unsupported/approximate boundaries. Managed Bing literal query-parameter filtering is pinned as `approximate` and LinkedIn procedural excludes as `unsupported` (`18717e4`, Build #165 green).
+- [x] Re-run the complete regression/build suite after parity-harness corrections and subsequent conservative parity additions; current normal CI remains green.
+- [ ] Continue validating representative real-world/catalog rules when they exercise genuinely new semantics.
 - [ ] Resolve any release-blocking compatibility regressions without broadening scope unnecessarily.
 - [ ] Prepare the next release only after `dev` remains green and any additional supported MV3 subset is documented.
 
 ## Blockers / dependencies
 
-- No current normal CI blocker is known on `dev`; Build #169 is green with the constrained static-redirect parity fixture.
+- No current normal CI blocker is known on `dev`; Build #171 is green on the WebSocket parity commit.
 - The parity harness intentionally covers only semantics already representable exactly. Browser-specific or custom matcher semantics must gain dedicated evidence before compiler support is broadened.
 - MV3 feature growth remains constrained by `declarativeNetRequest` expressiveness; unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
 
 ## Completion status
 
-**Not fully completed.** The conservative Firefox↔DNR parity base is broad and green, including representative composed `secure` and static-redirect rules. The next priority is to identify a genuinely new lossless compiler expansion from valid parity evidence, then resolve any release-blocking regressions before release preparation.
+**Not fully completed.** The conservative Firefox↔DNR parity base is broad and green, including representative composed actions and `<all_urls>` resource-type combinations. The next priority is to identify a genuinely new lossless compiler expansion from valid parity evidence, then resolve any release-blocking regressions before release preparation.
