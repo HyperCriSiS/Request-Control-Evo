@@ -23,6 +23,7 @@ A rule is activatable only when all URL conditions can be translated exactly:
 - trailing TLD wildcard only when an explicit `topLevelDomains` expansion list is provided;
 - ASCII paths using Request Control `*` wildcards and no fragment matching;
 - `allUrls` using the compiler's explicit scheme set;
+- exactly one non-empty, non-regexp ASCII `includes` glob when combined with `allUrls`; this is compiled as a case-insensitive DNR regex filter and is covered by direct Firefox↔DNR parity/boundary fixtures;
 - supported request methods: `connect`, `delete`, `get`, `head`, `options`, `patch`, `post`, `put`, `other`;
 - resource types that have an exact DNR counterpart.
 
@@ -30,7 +31,8 @@ A rule is activatable only when all URL conditions can be translated exactly:
 
 These remain unsupported rather than being approximated:
 
-- `includes` and `excludes` procedural matchers;
+- `excludes` procedural matchers;
+- multiple `includes`, regexp `includes`, non-ASCII `includes`, and any `includes` combined with a scoped match-pattern instead of `allUrls`;
 - `anyTLD` registrable-domain matching;
 - per-rule `incognito` conditions;
 - `same-domain` / `third-party-domain` because Chromium private-registry semantics differ from the current ICANN-only reference behavior;

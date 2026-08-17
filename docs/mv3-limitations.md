@@ -15,7 +15,8 @@ Firefox continues to use the existing `webRequest` matcher/runtime and therefore
 
 The following Request Control semantics are intentionally not represented as lossless DNR rules:
 
-- procedural `includes` and `excludes` matchers;
+- `excludes` procedural matchers;
+- multiple `includes`, regexp `includes`, non-ASCII `includes`, and `includes` combined with scoped match-patterns. The only proven include subset is `allUrls` plus exactly one non-empty, non-regexp ASCII include glob;
 - `anyTLD` registrable-domain matching;
 - per-rule incognito conditions;
 - `same-domain` and `third-party-domain` context matching;
