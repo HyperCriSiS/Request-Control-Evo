@@ -1,5 +1,7 @@
 name: automation inspect composed dnr parity
 on:
+  push:
+    branches: [dev]
   workflow_dispatch:
 permissions:
   contents: read
@@ -16,5 +18,7 @@ jobs:
           cat test/dnr-resource-type-parity.test.js
           echo '=== scheme parity ==='
           cat test/dnr-scheme-parity.test.js
+          echo '=== firefox filter parity ==='
+          cat test/dnr-firefox-filter-parity.test.js
           echo '=== compiler supported condition fields ==='
           grep -n -B8 -A20 -E 'resourceTypes|regexFilter|urlFilter|requestMethods|initiatorDomains|excluded' src/environment/background/script/dnr/compiler.js | head -n 300 || true
