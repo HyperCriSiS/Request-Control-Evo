@@ -1,0 +1,21 @@
+name: Automation Inspect Roadmap Turn 2
+on:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Inspect roadmap and DNR targets
+        shell: bash
+        run: |
+          echo '=== ROADMAP ==='
+          cat ROADMAP.md
+          echo '=== RECENT COMMITS ==='
+          git log -15 --oneline
+          echo '=== REAL WORLD TEST ==='
+          cat tests/dnr-real-world-rules.test.js
+          echo '=== SUPPORTED SUBSET ==='
+          cat docs/mv3-supported-subset.md
