@@ -52,13 +52,14 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 - [x] Re-run the complete regression/build suite after the DNR fixture corrections; normal builds are green.
 - [x] Add representative real-world composed parity fixtures for a narrowly scoped tracker-script block and a POST XHR/API rule with explicit port/path/method constraints (`1c93a000`); normal Build #156 is green.
+- [x] Extend representative catalog-style parity coverage with an HTTPS CDN image rule using wildcard-host and path boundaries; corrected fixture semantics are green in normal Build #159 (`e4138b8`).
 - [ ] Extend representative real-world/catalog validation beyond the initial composed fixtures without weakening unsupported/approximate boundaries.
 - [ ] Resolve any release-blocking compatibility regressions without broadening scope unnecessarily.
 - [ ] Prepare the next release only after `dev` remains green and any additional supported MV3 subset is documented.
 
 ## Blockers / dependencies
 
-- No current normal CI blocker is known on `dev`; Build #156 is green on the corrected representative-rule fixtures.
+- No current normal CI blocker is known on `dev`; Build #159 is green with representative tracker-script, POST XHR/API, and wildcard-CDN image parity fixtures.
 - The parity harness intentionally covers only semantics already representable exactly. Browser-specific or custom matcher semantics must gain dedicated evidence before compiler support is broadened.
 - MV3 feature growth remains constrained by `declarativeNetRequest` expressiveness; unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
 
