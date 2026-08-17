@@ -99,3 +99,61 @@ test("representative CDN image rule preserves wildcard-host and path boundaries"
     expect(regex.test("http://img.cdn.example.com/ads/banner.png")).toBe(false);
     expect(regex.test("https://img.notcdn.example.com/ads/banner.png")).toBe(false);
 });
+
+test("managed Bing literal query-parameter filtering remains approximate", () => {
+    const rule = {
+        title: "Remove query parameters from Bing",
+        description: "Removes possible tracking query parameters used by Bing",
+        uuid: "f53e0a5e-d658-4da5-9b12-143e24c4e1ba",
+        pattern: {
+            scheme: "*",
+            host: ["*.bing.com"],
+            path: ["*"],
+        },
+        types: ["main_frame", "sub_frame", "image"],
+        action: "filter",
+        active: true,
+        tag: "privacy-bing",
+        paramsFilter: {
+            values: ["cvid", "ehk", "form", "lg", "pq", "qs", "ru", "sc", "sk", "sp"],
+        },
+        skipRedirectionFilter: true,
+    };
+
+    const compiled = compileRuleToDnr(rule);
+
+    expect(compiled.status).toBe("approximate");
+});
+
+test("managed LinkedIn procedural excludes remain unsupported", () => {
+    const rule = {
+        uuid: "d78b46f3-6c04-43a8-a907-83c161138e61",
+        pattern: {
+            scheme: "*",
+            host: ["www.linkedin.com"],
+            path: ["*"],
+            excludes: [
+                "/\\/checkpoint\\//",
+                "/\\/jobs\\/\\?/",
+                "/\\/jobs\\/search\\?/",
+                "/\\/login\\?/",
+                "/\\/oauth\\/v2\\//",
+                "/\\/search\\/\\?/",
+                "/\\/uas\\/login\\?/",
+                "/\\/uas\\/logout\\?/",
+            ],
+        },
+        types: ["main_frame", "sub_frame"],
+        action: "filter",
+        active: true,
+        tag: "privacy-linkedin",
+        paramsFilter: {
+            values: ["url"],
+            invert: true,
+        },
+    };
+
+    const compiled = compileRuleToDnr(rule);
+
+    expect(compiled.status).toBe("unsupported");
+});
