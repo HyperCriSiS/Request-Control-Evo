@@ -60,6 +60,8 @@ The active maintenance branch is `dev`. SPA/history-state handling from PR #11 i
 - The parity harness intentionally covers only the conservative WebExtension match-pattern subset already representable exactly. Browser-specific or custom matcher semantics must gain dedicated evidence before compiler support is broadened.
 - MV3 feature growth remains constrained by `declarativeNetRequest` expressiveness; unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
 
+- [x] Prove composed Firefox↔DNR parity when an exact HTTP method is combined with scheme + explicit port + path + resource type, preventing method constraints from being widened during composition.
+
 ## Completion status
 
 **Not fully completed.** The conservative parity harness now covers URL/host/path, TLD expansion, resource types, schemes, explicit ports and composed constraints. The next priority is to identify the next genuinely lossless compiler expansion from these fixtures, then validate representative real-world rules before release preparation.
