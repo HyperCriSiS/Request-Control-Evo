@@ -11,6 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 20
       - name: Inspect roadmap and DNR targets
         shell: bash
         run: |
@@ -19,6 +21,14 @@ jobs:
           echo '=== RECENT COMMITS ==='
           git log -15 --oneline
           echo '=== REAL WORLD TEST ==='
-          cat tests/dnr-real-world-rules.test.js
+          cat test/dnr-real-world-rules.test.js
           echo '=== SUPPORTED SUBSET ==='
           cat docs/mv3-supported-subset.md
+          echo '=== BING CATALOG ==='
+          cat rules/privacy-bing.json
+          echo '=== DUCKDUCKGO CATALOG ==='
+          cat rules/privacy-duckduckgo.json
+          echo '=== HERE CATALOG ==='
+          cat rules/privacy-here.json
+          echo '=== LINKEDIN CATALOG ==='
+          cat rules/privacy-linkedin.json
