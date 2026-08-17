@@ -8,7 +8,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 **Status: in progress**
 
-`dev` contains the released modernization baseline, integrated SPA/history-state navigation support and a conservative MV3/DNR compiler foundation. The lossless subset and known limitations are documented. The Firefox↔DNR parity suite now covers the actual browser match-pattern prefilter plus supplemental matcher semantics for exact/wildcard hosts, paths, TLD expansion, supported resource types, schemes, explicit ports, methods, `<all_urls>` and representative composed rules.
+`dev` contains the released modernization baseline, integrated SPA/history-state navigation support and a conservative MV3/DNR compiler foundation. The lossless subset and known limitations are documented. The Firefox↔DNR parity suite now covers the actual browser match-pattern prefilter plus supplemental matcher semantics for exact/wildcard hosts, paths, TLD expansion, supported resource types, schemes, explicit ports, methods, `<all_urls>` and representative composed rules, including `secure` and static absolute redirect actions.
 
 ## Completed modernization baseline
 
@@ -46,6 +46,8 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 - [x] Validate composed HTTPS + explicit port + path + XHR semantics.
 - [x] Validate composed POST + HTTPS + explicit port + path + XHR semantics.
 - [x] Validate `<all_urls>` parity and `<all_urls>` combined with an explicit supported resource type.
+- [x] Validate composed `secure`/`upgradeScheme` semantics with HTTP + POST + explicit port + path + XHR while preserving negative boundaries (`8a5d10dd`, Build #168 green).
+- [x] Validate static absolute redirect composition with GET + HTTPS + explicit port + path + XHR while preserving negative URL boundaries (`e1d3fc5`, Build #169 green).
 - [ ] Expand the DNR compiler only for additional cases proven lossless by valid parity/boundary fixtures.
 
 ## Phase 3 — stabilization and release
@@ -59,10 +61,10 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Blockers / dependencies
 
-- No current normal CI blocker is known on `dev`; Build #159 is green with representative tracker-script, POST XHR/API, and wildcard-CDN image parity fixtures.
+- No current normal CI blocker is known on `dev`; Build #169 is green with the constrained static-redirect parity fixture.
 - The parity harness intentionally covers only semantics already representable exactly. Browser-specific or custom matcher semantics must gain dedicated evidence before compiler support is broadened.
 - MV3 feature growth remains constrained by `declarativeNetRequest` expressiveness; unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
 
 ## Completion status
 
-**Not fully completed.** The conservative Firefox↔DNR parity base is broad and green, and representative composed rules now exercise it. The next priority is to validate additional real-world/catalog rules and identify the next genuinely lossless compiler expansion without weakening compatibility guarantees.
+**Not fully completed.** The conservative Firefox↔DNR parity base is broad and green, including representative composed `secure` and static-redirect rules. The next priority is to identify a genuinely new lossless compiler expansion from valid parity evidence, then resolve any release-blocking regressions before release preparation.
