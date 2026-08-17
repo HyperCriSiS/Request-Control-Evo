@@ -1,0 +1,42 @@
+name: Sync CDN parity roadmap
+on:
+  push:
+    branches: [dev]
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+      - name: Record validated CDN wildcard parity
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('ROADMAP.md')
+          s = p.read_text(encoding='utf-8')
+          anchor = '- [x] Add representative real-world composed parity fixtures for a narrowly scoped tracker-script block and a POST XHR/API rule with explicit port/path/method constraints (`1c93a000`); normal Build #156 is green.'
+          line = '- [x] Extend representative catalog-style parity coverage with an HTTPS CDN image rule using wildcard-host and path boundaries; corrected fixture semantics are green in normal Build #159 (`e4138b8`).'
+          if line not in s:
+              if anchor not in s:
+                  raise SystemExit('representative-rule roadmap anchor missing')
+              s = s.replace(anchor, anchor + '\n' + line, 1)
+          old_blocker = '- No current normal CI blocker is known on `dev`; Build #156 is green on the corrected representative-rule fixtures.'
+          new_blocker = '- No current normal CI blocker is known on `dev`; Build #159 is green with representative tracker-script, POST XHR/API, and wildcard-CDN image parity fixtures.'
+          if old_blocker in s:
+              s = s.replace(old_blocker, new_blocker, 1)
+          p.write_text(s, encoding='utf-8')
+          PY
+          git diff --check
+      - name: Commit roadmap and remove helper
+        shell: bash
+        run: |
+          rm -f .github/workflows/automation-sync-cdn-parity-roadmap.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'docs: record CDN wildcard DNR parity'
+          git push origin HEAD:dev
