@@ -1,0 +1,38 @@
+name: Sync validated method parity roadmap
+on:
+  push:
+    branches: [dev]
+permissions:
+  contents: write
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: dev
+      - name: Record validated composed method parity
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('ROADMAP.md')
+          s = p.read_text(encoding='utf-8')
+          line = '- [x] Prove composed Firefox↔DNR parity when an exact HTTP method is combined with scheme + explicit port + path + resource type, preventing method constraints from being widened during composition.'
+          if line not in s:
+              marker = '## Completion status'
+              if marker not in s:
+                  raise SystemExit('completion marker missing')
+              s = s.replace(marker, line + '\n\n' + marker, 1)
+              p.write_text(s, encoding='utf-8')
+          PY
+          git diff --check
+      - name: Commit roadmap and remove helper
+        shell: bash
+        run: |
+          rm -f .github/workflows/automation-sync-method-parity-roadmap.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'docs: record composed method DNR parity'
+          git push origin HEAD:dev
