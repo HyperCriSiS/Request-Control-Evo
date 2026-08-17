@@ -14,7 +14,7 @@ The released modernization baseline is Request Control 1.16.1 on `master`. The a
 
 The Firefox↔DNR parity suite exercises the actual `createRequestFilters()` browser-prefilter contract plus supplemental matcher semantics for exact/wildcard hosts, paths, TLD expansion, supported resource types, schemes, explicit ports, methods, `<all_urls>` and representative composed rules. Recent coverage includes `secure`/scheme upgrade, static absolute redirect, `<all_urls>` combined with WebSocket resource type, and a proof fixture for the bounded compiler case `<all_urls>` plus exactly one non-regexp ASCII include glob with case-insensitive substring/glob semantics.
 
-Build #177 successfully revalidated the corrected Firefox single-include parity harness. The bounded single-include compiler support is now implemented in `9876a3cd`, with direct compiler/boundary coverage added in `dac14e79`. Multiple includes, regexp includes, non-ASCII includes and scoped match-pattern + include combinations remain explicitly unsupported. Build #179 is validating the implementation and new boundary tests; the compiler milestone is not considered complete until this CI run is green.
+Build #177 successfully revalidated the corrected Firefox single-include parity harness. The bounded single-include compiler support is implemented in `9876a3cd`, with direct compiler/boundary coverage added in `dac14e79`. Builds #178 and #180 exposed one stale supported-subset guard that still classified the newly proven single-include case as unsupported; `280fd54f` aligns that guard with the activated subset while adding an explicit multiple-include negative boundary. Multiple includes, regexp includes, non-ASCII includes and scoped match-pattern + include combinations remain explicitly unsupported. A new full CI run for `280fd54f` must be green before the compiler milestone is considered complete.
 
 ## Phase 1 — modernization baseline
 
@@ -46,7 +46,7 @@ Build #177 successfully revalidated the corrected Firefox single-include parity 
 - [x] Identify the next genuinely new rule semantic that can be represented exactly in DNR and add valid positive and negative parity/boundary fixtures for it: `<all_urls>` plus exactly one non-regexp ASCII include glob, proven in `test/dnr-single-include-parity.test.js`.
 - [x] Diagnose and correct the single-include proof-fixture regressions exposed by Builds #174 and #175; Build #177 successfully revalidated the restored harness.
 - [x] Implement the bounded DNR compiler expansion for `<all_urls>` plus exactly one non-regexp ASCII include glob while retaining explicit diagnostics for multiple includes, regexp includes, non-ASCII includes and scoped match-pattern + include combinations (`9876a3cd`, boundary tests `dac14e79`).
-- [ ] Obtain a green full CI run for the bounded single-include compiler implementation and its boundary tests (Build #179 in progress).
+- [ ] Obtain a green full CI run for the bounded single-include compiler implementation and its boundary tests; Builds #178/#180 exposed a stale guard expectation, corrected in `280fd54f`, and the replacement CI run is pending.
 
 ## Phase 3 — stabilization and next release
 
@@ -59,7 +59,7 @@ Build #177 successfully revalidated the corrected Firefox single-include parity 
 
 ## Blockers / dependencies
 
-- Build #179 is currently validating the bounded single-include compiler implementation and its direct boundary tests. Until it is green, that implementation is not yet a validated completed milestone.
+- Builds #178/#180 failed only because `test/dnr-supported-subset.test.js` still expected the newly proven single-include case to be unsupported. `280fd54f` corrects that stale expectation and preserves a multiple-include negative guard. A green replacement full CI run is still required before closing the milestone.
 - No open issue or open pull request currently identifies a release blocker in this fork.
 - The parity harness intentionally covers only semantics already representable exactly or narrowly scoped candidates before activation. Browser-specific or custom matcher semantics require dedicated positive and negative evidence before compiler support is broadened.
 - MV3 feature growth is constrained by `declarativeNetRequest` expressiveness. Unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
@@ -67,4 +67,4 @@ Build #177 successfully revalidated the corrected Firefox single-include parity 
 
 ## Completion status
 
-**Not fully completed.** The modernization baseline is released, the corrected Firefox single-include parity harness is green in Build #177, and the bounded `<all_urls>` + one non-regexp ASCII include compiler support has been implemented with direct boundary tests. Build #179 must validate that implementation before the compiler milestone is fully closed. Afterward the supported-subset/limitations documentation must be synchronized, followed by remaining release-blocking stabilization, final full validation and release preparation before this project can be marked **fully completed**.
+**Not fully completed.** The modernization baseline is released, the corrected Firefox single-include parity harness is green in Build #177, and the bounded `<all_urls>` + one non-regexp ASCII include compiler support has been implemented with direct boundary tests. The stale supported-subset guard exposed by Builds #178/#180 was corrected in `280fd54f`; a green replacement full CI run must validate that state before the compiler milestone is fully closed. Afterward the supported-subset/limitations documentation must be synchronized, followed by remaining release-blocking stabilization, final full validation and release preparation before this project can be marked **fully completed**.
