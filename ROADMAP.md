@@ -2,19 +2,17 @@
 
 ## Project goal
 
-Modernize Request Control while preserving the Firefox `webRequest` engine as the compatibility reference, improving navigation handling and adding a conservative Manifest V3 path without silently changing rule semantics.
+Keep Request Control maintainable and behaviorally compatible while modernizing navigation handling and adding only provably lossless Manifest V3/DNR support alongside the existing Firefox reference implementation.
 
 ## Current status
 
 **Status: in progress**
 
-`dev` contains the released modernization baseline, integrated SPA/history-state navigation support and a conservative MV3/DNR compiler foundation. The lossless subset and known limitations are documented. Method/action parity and URL boundary coverage are green. A conservative Firefox↔DNR URL parity harness exercises the actual `createRequestFilters()` contract, including the browser match-pattern prefilter plus supplemental matcher semantics; TLD expansion, shared resource types, schemes and explicit ports now have direct lossless parity evidence.
-- [x] Prove composed Firefox↔DNR parity for scheme + explicit port + path + resource type in one rule, guarding against semantic widening when individually supported condition classes are combined.
+The active maintenance branch is `dev`. SPA/history-state handling from PR #11 is integrated and the normal build is green. The MV3 compiler remains deliberately conservative: unsupported or approximate semantics are not silently enabled. Firefox↔DNR parity is now tested through the real WebExtension match-pattern prefilter plus the internal matcher rather than through an incomplete request matcher alone.
 
-## Completed modernization baseline
+## Completed foundation
 
-- [x] Deliver the 1.16.0 modernization baseline: local URL analyzer, managed community catalogs, rule groups, modern UI/tooling, dependency updates, safe subscription reconciliation and release automation.
-- [x] Make release automation self-contained/idempotent so tag creation does not rely on a second token-triggered workflow.
+- [x] Modernize the codebase without replacing the proven Firefox runtime semantics.
 - [x] Prepare and synchronize the corrective 1.16.1 release state back to `dev`.
 - [x] Add a conservative MV3 `declarativeNetRequest` compiler foundation and capability diagnostics without changing the Firefox MV2 runtime/manifest.
 
@@ -29,8 +27,6 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 - [x] Add regression coverage for pushState cleanup, whitelist precedence, block fallback, secure upgrades, frame exclusion, match patterns and unsupported method/origin constraints.
 - [x] Verify PR #11 checks and the merged `dev` state.
 
-- [x] Prove explicit/wildcard scheme parity (`http`, `https`, and `*` → HTTP(S)/WS(S), excluding FTP for wildcard) through the combined Firefox browser-prefilter/DNR harness (`589edce`); focused parity tests and lint are green.
-
 ## Phase 2 — MV3 compatibility expansion
 
 - [x] Define the exact rule subset that can be represented losslessly in `declarativeNetRequest`; see `docs/mv3-supported-subset.md`.
@@ -44,10 +40,11 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 - [x] Restore the complete normal Build workflow to green on clean head `0285ad03` after the regression-fixture corrections.
 - [x] Document known MV3 limitations and fallback behavior in `docs/mv3-limitations.md`.
 - [x] Build a conservative Firefox↔DNR URL parity harness around the actual `createRequestFilters()` contract. `test/dnr-firefox-filter-parity.test.js` validates exact hosts, wildcard subdomains, paths and multi-host/path union behavior by combining the generated WebExtension match-pattern prefilter with the filter matcher before comparing against the compiled DNR regexes. Normal Build #112 passed on commit `ff83e1cb`.
-- [x] Prove explicit TLD-wildcard expansion parity (`*.google.*` with explicit `topLevelDomains`) against the combined Firefox filter contract; normal Build #124 passed on `8b595b7e`.
-- [x] Prove resource-type parity for the shared Firefox/DNR request-type subset and keep Firefox-only `beacon` explicitly unsupported; normal Build #128 passed on `a6f46806`.
-- [x] Inspect explicit-port Firefox semantics before treating ports as a new parity case: `createRequestFilters()` emits `https://example.com:8443/*`, while its supplemental matcher alone accepts the tested alternate/default ports; therefore the browser match-pattern prefilter must be included in parity evidence.
-- [x] Prove explicit-port parity through a browser-prefilter-faithful Firefox↔DNR fixture (`test/dnr-port-parity.test.js`): `:8443` is preserved exactly and does not match default, `:443`, `:8080`, wrong-scheme, subdomain, or wrong-path cases; all five jobs in normal Build #141 passed on `bf508ebf`.
+- [x] Add TLD-expansion parity for explicit top-level-domain sets (`*.google.*`) without broadening unsupported semantics.
+- [x] Add supported resource-type parity and keep Firefox-only types such as `beacon` explicitly unsupported.
+- [x] Add scheme parity for explicit HTTP/HTTPS and Firefox wildcard scheme semantics without accidentally admitting FTP.
+- [x] Add explicit-port parity through the full Firefox match-pattern prefilter and DNR regex path; Build #141 is green.
+- [x] Add composed parity for HTTPS + explicit port + path + `xmlhttprequest` in one rule, proving the individually supported dimensions remain lossless when combined.
 - [ ] Expand the DNR compiler only for additional cases proven lossless by valid parity/boundary fixtures.
 
 ## Phase 3 — stabilization and release
@@ -59,10 +56,10 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Blockers / dependencies
 
-- No current normal CI blocker is known on `dev`; the new conservative Firefox↔DNR URL parity harness passed the normal Build workflow.
+- No current normal CI blocker is known on `dev`; the conservative Firefox↔DNR harness and subsequent TLD/resource-type/scheme/port/composed parity fixtures have remained green in normal builds.
 - The parity harness intentionally covers only the conservative WebExtension match-pattern subset already representable exactly. Browser-specific or custom matcher semantics must gain dedicated evidence before compiler support is broadened.
 - MV3 feature growth remains constrained by `declarativeNetRequest` expressiveness; unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
 
 ## Completion status
 
-**Not fully completed.** The conservative parity harness is green and now covers exact/wildcard URL semantics, bounded TLD expansion, shared resource types, schemes and explicit ports. The next priority is to use these valid fixtures to identify the next genuinely lossless DNR compiler expansion, then validate representative real-world rules before release preparation.
+**Not fully completed.** The conservative parity harness now covers URL/host/path, TLD expansion, resource types, schemes, explicit ports and composed constraints. The next priority is to identify the next genuinely lossless compiler expansion from these fixtures, then validate representative real-world rules before release preparation.
