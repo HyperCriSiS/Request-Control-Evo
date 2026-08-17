@@ -16,7 +16,7 @@ The Firefox↔DNR parity suite exercises the actual `createRequestFilters()` bro
 
 The single-include candidate is intentionally not activated in the compiler yet. Multiple includes are conjunctive in the Firefox reference matcher, regexp includes have separate semantics, non-ASCII regex support is outside the current DNR proof surface, and scoped match-pattern rules would mix case-sensitive browser path semantics with the case-insensitive include matcher. Those cases remain unsupported until independently proven exact.
 
-Build #174 exposed an incorrect negative fixture in `test/dnr-single-include-parity.test.js`: `file:///tmp/foo-bar-baz.txt` does match `foo?bar*baz`, because `?` matches the first hyphen and `*` can consume the second. The fixture was corrected in `2ba67dac`; Build #175 is queued for that correction. This CI failure did not invalidate the bounded single-include parity candidate and did not broaden its supported scope.
+Build #174 exposed an incorrect negative fixture in `test/dnr-single-include-parity.test.js`: `file:///tmp/foo-bar-baz.txt` does match `foo?bar*baz`, because `?` matches the first hyphen and `*` can consume the second. Commit `2ba67dac` corrected that expectation but also accidentally changed the established `createRequestFilters(rule)` parity-harness invocation to the invalid `createRequestFilters([rule])` form; Build #175 caught that regression. The original Firefox prefilter/matcher harness has now been restored while retaining the corrected `file://` expectation. CI revalidation is pending the build for the restoring commit.
 
 ## Phase 1 — modernization baseline
 
@@ -46,7 +46,7 @@ Build #174 exposed an incorrect negative fixture in `test/dnr-single-include-par
 - [x] Validate static absolute redirect composition with GET + HTTPS + explicit port + path + XHR while preserving negative URL boundaries (`e1d3fc5`, Build #169 green).
 - [x] Validate `<all_urls>` combined with WebSocket resource type (`4b0aef27`, Build #171 green).
 - [x] Identify the next genuinely new rule semantic that can be represented exactly in DNR and add valid positive and negative parity/boundary fixtures for it: `<all_urls>` plus exactly one non-regexp ASCII include glob, proven in `test/dnr-single-include-parity.test.js`.
-- [x] Correct the false-negative `file://` single-include parity fixture exposed by Build #174 (`2ba67dac`); CI revalidation is pending Build #175.
+- [x] Diagnose and correct the single-include proof-fixture regressions exposed by Builds #174 and #175; CI revalidation of the restored harness is pending.
 - [ ] Expand the DNR compiler for the proven single-include candidate only, retaining explicit diagnostics for multiple includes, regexp includes, non-ASCII includes and scoped match-pattern + include combinations.
 
 ## Phase 3 — stabilization and next release
@@ -60,7 +60,7 @@ Build #174 exposed an incorrect negative fixture in `test/dnr-single-include-par
 
 ## Blockers / dependencies
 
-- Build #175 is queued to revalidate the corrected single-include proof fixture. Until it completes successfully, the post-fixture CI baseline is not yet proven green.
+- The post-fixture CI baseline is awaiting revalidation after restoring the established Firefox parity harness and retaining the corrected `file://` expectation. Compiler expansion should not proceed until that build is green.
 - No open issue or open pull request currently identifies a release blocker in this fork.
 - The parity harness intentionally covers only semantics already representable exactly or narrowly scoped candidates before activation. Browser-specific or custom matcher semantics require dedicated positive and negative evidence before compiler support is broadened.
 - MV3 feature growth is constrained by `declarativeNetRequest` expressiveness. Unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
@@ -68,4 +68,4 @@ Build #174 exposed an incorrect negative fixture in `test/dnr-single-include-par
 
 ## Completion status
 
-**Not fully completed.** The modernization baseline is released and the conservative Firefox↔DNR parity base is broad. A new lossless compiler candidate has been identified and bounded by parity fixtures: `<all_urls>` plus exactly one non-regexp ASCII include glob. The incorrect negative fixture discovered by Build #174 has been corrected and awaits CI revalidation. The next priority is to implement only that compiler expansion, run the full suite, synchronize supported-subset/limitations documentation, and then continue release-blocking stabilization before this project can be marked **fully completed**.
+**Not fully completed.** The modernization baseline is released and the conservative Firefox↔DNR parity base is broad. A new lossless compiler candidate has been identified and bounded by parity fixtures: `<all_urls>` plus exactly one non-regexp ASCII include glob. Builds #174 and #175 exposed test-fixture/harness regressions that have now been corrected and require a green CI revalidation. The next priority after that is to implement only the bounded compiler expansion, run the full suite, synchronize supported-subset/limitations documentation, and then continue release-blocking stabilization before this project can be marked **fully completed**.

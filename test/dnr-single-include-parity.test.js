@@ -13,16 +13,11 @@ function blockRule(include) {
 }
 
 function isAscii(value) {
-    for (const char of value) {
-        if (char.codePointAt(0) > 0x7f) {
-            return false;
-        }
-    }
-    return true;
+    return [...value].every((char) => char.codePointAt(0) <= 0x7f);
 }
 
 function escapeGlob(value) {
-    const regexpChars = /[$()+.[\]^{|}]/g;
+    const regexpChars = /[$()+.[\\\]^{|}]/g;
     return value.replace(regexpChars, "\\$&").replace(/\*/g, ".*").replace(/\?/g, ".");
 }
 
@@ -31,10 +26,12 @@ function candidateDnrCondition(rule) {
     if (!rule.pattern.allUrls || !Array.isArray(includes) || includes.length !== 1) {
         return null;
     }
+
     const [include] = includes;
     if (typeof include !== "string" || include.length === 0 || !isAscii(include) || /^\/.*\/$/.test(include)) {
         return null;
     }
+
     return {
         regexFilter: `^(?:${ALL_URL_SCHEMES.join("|")}):.*${escapeGlob(include)}.*$`,
         isUrlFilterCaseSensitive: false,
@@ -42,16 +39,18 @@ function candidateDnrCondition(rule) {
 }
 
 function firefoxWouldMatch(rule, url) {
-    const [{ pattern }] = createRequestFilters([rule]);
-    return pattern.test(url);
+    return createRequestFilters(rule).some((filter) => {
+        const scheme = new URL(url).protocol.slice(0, -1);
+        const browserPrefilter = filter.urls.includes("<all_urls>") && ALL_URL_SCHEMES.includes(scheme);
+        return browserPrefilter && filter.matcher.test({ url, method: "GET" });
+    });
 }
 
 function candidateDnrWouldMatch(rule, url) {
     const condition = candidateDnrCondition(rule);
-    if (!condition) {
-        return false;
-    }
-    return new RegExp(condition.regexFilter, condition.isUrlFilterCaseSensitive ? "" : "i").test(url);
+    expect(condition).not.toBeNull();
+    const flags = condition.isUrlFilterCaseSensitive ? "" : "i";
+    return new RegExp(condition.regexFilter, flags).test(url);
 }
 
 test("single ASCII include glob under allUrls has lossless Firefox/DNR match semantics", () => {
@@ -77,16 +76,14 @@ test("candidate remains deliberately bounded to one non-regexp ASCII include glo
     expect(candidateDnrCondition(blockRule("/click.+/"))).toBeNull();
     expect(candidateDnrCondition(blockRule("münchen"))).toBeNull();
 
-    const multipleIncludes = blockRule("one");
-    multipleIncludes.pattern.includes.push("two");
-    expect(candidateDnrCondition(multipleIncludes)).toBeNull();
+    const multiple = blockRule("first");
+    multiple.pattern.includes.push("second");
+    expect(candidateDnrCondition(multiple)).toBeNull();
 
-    const scopedPattern = blockRule("click*");
-    scopedPattern.pattern = {
-        scheme: "https",
-        host: ["example.com"],
-        path: ["*"],
-        includes: ["click*"],
-    };
-    expect(candidateDnrCondition(scopedPattern)).toBeNull();
+    const scoped = blockRule("click");
+    delete scoped.pattern.allUrls;
+    scoped.pattern.scheme = "https";
+    scoped.pattern.host = ["example.com"];
+    scoped.pattern.path = ["*"];
+    expect(candidateDnrCondition(scoped)).toBeNull();
 });
