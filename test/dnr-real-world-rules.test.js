@@ -69,3 +69,33 @@ test("representative API XHR block preserves method, port and path constraints",
     expect(regex.test("https://api.example.com:8443/v2/telemetry/event")).toBe(false);
     expect(regex.test("http://api.example.com:8443/v1/telemetry/event")).toBe(false);
 });
+
+test("representative CDN image rule preserves wildcard-host and path boundaries", () => {
+    const rule = {
+        uuid: "real-world-cdn-image",
+        active: true,
+        pattern: {
+            scheme: "https",
+            host: ["*.cdn.example.com"],
+            path: ["ads/*"],
+        },
+        types: ["image"],
+        action: "block",
+    };
+
+    const firefoxFilters = createRequestFilters(rule);
+    const compiled = compileRuleToDnr(rule);
+
+    expect(firefoxFilters.length).toBeGreaterThan(0);
+    expect(compiled.status).toBe("supported");
+    expect(compiled.rules).toHaveLength(1);
+    expect(compiled.rules[0].condition.resourceTypes).toEqual(["image"]);
+
+    const regex = new RegExp(compiled.rules[0].condition.regexFilter);
+    expect(regex.test("https://img.cdn.example.com/ads/banner.png")).toBe(true);
+    expect(regex.test("https://static.cdn.example.com/ads/pixel.gif")).toBe(true);
+    expect(regex.test("https://cdn.example.com/ads/banner.png")).toBe(false);
+    expect(regex.test("https://img.cdn.example.com/content/banner.png")).toBe(false);
+    expect(regex.test("http://img.cdn.example.com/ads/banner.png")).toBe(false);
+    expect(regex.test("https://img.notcdn.example.com/ads/banner.png")).toBe(false);
+});
