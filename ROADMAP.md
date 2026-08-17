@@ -12,9 +12,9 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 The released modernization baseline is Request Control 1.16.1 on `master`. The active `dev` branch additionally contains the integrated SPA/history-state navigation support and the conservative MV3/DNR compiler foundation. The supported lossless subset and known limitations are documented in `docs/mv3-supported-subset.md` and `docs/mv3-limitations.md`.
 
-The Firefox↔DNR parity suite now exercises the actual `createRequestFilters()` browser-prefilter contract plus supplemental matcher semantics for exact/wildcard hosts, paths, TLD expansion, supported resource types, schemes, explicit ports, methods, `<all_urls>` and representative composed rules. Recent coverage includes `secure`/scheme upgrade, static absolute redirect, and `<all_urls>` combined with WebSocket resource type.
+The Firefox↔DNR parity suite exercises the actual `createRequestFilters()` browser-prefilter contract plus supplemental matcher semantics for exact/wildcard hosts, paths, TLD expansion, supported resource types, schemes, explicit ports, methods, `<all_urls>` and representative composed rules. Recent coverage includes `secure`/scheme upgrade, static absolute redirect, `<all_urls>` combined with WebSocket resource type, and a proof fixture for the next bounded compiler candidate: `<all_urls>` plus exactly one non-regexp ASCII include glob with case-insensitive substring/glob semantics.
 
-Repository audit on the current `dev` head `004aebdc` found no open issues or open pull requests. The normal `Build` workflow is green on Build #172 for that head. Release 1.16.1 is the latest published release.
+The single-include candidate is intentionally not activated in the compiler yet. Multiple includes are conjunctive in the Firefox reference matcher, regexp includes have separate semantics, non-ASCII regex support is outside the current DNR proof surface, and scoped match-pattern rules would mix case-sensitive browser path semantics with the case-insensitive include matcher. Those cases remain unsupported until independently proven exact.
 
 ## Phase 1 — modernization baseline
 
@@ -28,8 +28,8 @@ Repository audit on the current `dev` head `004aebdc` found no open issues or op
 
 - [x] Define the exact rule subset that can be represented losslessly in `declarativeNetRequest`; see `docs/mv3-supported-subset.md`.
 - [x] Keep unsupported or merely approximate semantics explicit instead of silently activating them.
-- [x] Document known MV3 limitations and fallback behavior in `docs/mv3-limitations.md`.
-- [x] Build a Firefox↔DNR parity harness around the actual `createRequestFilters()` browser-prefilter contract plus supplemental matcher semantics.
+- [x] Cover compiler capability/boundary behavior with dedicated regression tests.
+- [x] Add a Firefox↔DNR parity harness based on the actual `createRequestFilters()` browser-prefilter contract.
 - [x] Validate exact and wildcard host/path behavior, including multi-host/path union boundaries.
 - [x] Validate explicit TLD expansion parity.
 - [x] Validate supported resource-type parity while keeping Firefox-only types such as `beacon` unsupported.
@@ -37,20 +37,18 @@ Repository audit on the current `dev` head `004aebdc` found no open issues or op
 - [x] Validate explicit-port parity with browser match-pattern-prefilter semantics.
 - [x] Validate request-method parity and unsupported-method boundaries.
 - [x] Validate supported action mapping and conservative unsupported/approximate boundaries.
-- [x] Validate composed HTTPS + explicit port + path + XHR semantics.
-- [x] Validate composed POST + HTTPS + explicit port + path + XHR semantics.
-- [x] Validate `<all_urls>` parity and `<all_urls>` combined with an explicit supported resource type.
-- [x] Validate representative real-world rules, including tracker-script, POST API/XHR and wildcard-CDN cases.
+- [x] Validate `<all_urls>` scheme coverage against the Firefox reference prefilter.
+- [x] Validate representative real-world rules without broadening unsupported semantics.
 - [x] Validate managed-catalog rules against the supported MV3 subset without broadening unsupported semantics.
 - [x] Validate composed `secure`/`upgradeScheme` semantics with HTTP + POST + explicit port + path + XHR while preserving negative boundaries (`8a5d10dd`, Build #168 green).
 - [x] Validate static absolute redirect composition with GET + HTTPS + explicit port + path + XHR while preserving negative URL boundaries (`e1d3fc5`, Build #169 green).
 - [x] Validate `<all_urls>` combined with WebSocket resource type (`4b0aef27`, Build #171 green).
-- [ ] Identify the next genuinely new rule semantic that can be represented exactly in DNR and add valid positive and negative parity/boundary fixtures for it.
-- [ ] Expand the DNR compiler only when those fixtures prove the additional case lossless.
+- [x] Identify the next genuinely new rule semantic that can be represented exactly in DNR and add valid positive and negative parity/boundary fixtures for it: `<all_urls>` plus exactly one non-regexp ASCII include glob, proven in `test/dnr-single-include-parity.test.js`.
+- [ ] Expand the DNR compiler for the proven single-include candidate only, retaining explicit diagnostics for multiple includes, regexp includes, non-ASCII includes and scoped match-pattern + include combinations.
 
 ## Phase 3 — stabilization and next release
 
-- [x] Re-run the complete regression/build suite after parity-harness corrections and subsequent conservative parity additions; the current normal CI remains green through Build #172.
+- [x] Re-run the complete regression/build suite after parity-harness corrections and subsequent conservative parity additions; the normal CI was green through Build #173 before the single-include proof fixture.
 - [ ] Continue validating representative real-world/catalog rules only when they exercise genuinely new semantics.
 - [ ] Resolve any release-blocking compatibility regressions without broadening scope unnecessarily.
 - [ ] Re-run the full regression/build suite on the final candidate state.
@@ -59,12 +57,11 @@ Repository audit on the current `dev` head `004aebdc` found no open issues or op
 
 ## Blockers / dependencies
 
-- No current normal CI blocker is known on `dev`; Build #172 is green on the current roadmap head `004aebdc`.
 - No open issue or open pull request currently identifies a release blocker in this fork.
-- The parity harness intentionally covers only semantics already representable exactly. Browser-specific or custom matcher semantics require dedicated positive and negative evidence before compiler support is broadened.
+- The parity harness intentionally covers only semantics already representable exactly or narrowly scoped candidates before activation. Browser-specific or custom matcher semantics require dedicated positive and negative evidence before compiler support is broadened.
 - MV3 feature growth is constrained by `declarativeNetRequest` expressiveness. Unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
-- A new compiler expansion must not be invented merely to advance the checklist; it requires a concrete rule semantic with lossless Firefox↔DNR parity evidence.
+- The next compiler change must stay limited to the proven `<all_urls>` + single non-regexp ASCII include case; broader include support is not justified by the current evidence.
 
 ## Completion status
 
-**Not fully completed.** The modernization baseline is released and the conservative Firefox↔DNR parity base is broad and green. The next priority is to identify a genuinely new lossless DNR semantic, prove it with parity/boundary fixtures, and only then extend the compiler. After that, remaining release-blocking compatibility work, full validation, documentation sync and release preparation must be completed before this project can be marked **fully completed**.
+**Not fully completed.** The modernization baseline is released and the conservative Firefox↔DNR parity base is broad. A new lossless compiler candidate has now been identified and bounded by parity fixtures: `<all_urls>` plus exactly one non-regexp ASCII include glob. The next priority is to implement only that compiler expansion, run the full suite, synchronize supported-subset/limitations documentation, and then continue release-blocking stabilization before this project can be marked **fully completed**.
