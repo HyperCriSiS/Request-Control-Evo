@@ -104,7 +104,12 @@ rule-list .group-hidden {
 
 @media (max-width: 35em) {
     rule-list .select-all {
-        display: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+        margin: 0 0.25rem 0 0;
     }
 
     rule-list .header:not(.d-none) {
@@ -120,7 +125,12 @@ rule-list .group-hidden {
     }
 
     rule-list .rule-group-header {
+        min-height: 2.75rem;
         padding-left: 0.55rem;
         padding-right: 0.55rem;
+    }
+
+    rule-list .rule-group-toggle {
+        min-height: 2.75rem;
     }
 }
