@@ -81,6 +81,13 @@ jobs:
           npm run build
           npm run lint-build
 
+      - name: Create unsigned XPI artifact
+        if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'false'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          cp "web-ext-artifacts/request_control-$VERSION.zip" "web-ext-artifacts/request_control-$VERSION.xpi"
+
       - name: Create release tag
         if: steps.version.outputs.release == 'true' && steps.existing.outputs.tag == 'false' && steps.existing.outputs.release == 'false'
         env:
@@ -118,7 +125,9 @@ jobs:
         with:
           tag_name: ${{ steps.version.outputs.version }}
           name: Request Control ${{ steps.version.outputs.version }}
-          files: web-ext-artifacts/*.zip
+          files: |
+            web-ext-artifacts/*.zip
+            web-ext-artifacts/*.xpi
           body_path: release-notes.md
 
       - name: Sign and publish to Mozilla Add-ons
@@ -131,6 +140,17 @@ jobs:
         if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'false' && (env.WEB_EXT_API_KEY == '' || env.WEB_EXT_API_SECRET == '')
         run: echo "Mozilla signing skipped because WEB_EXT_API_KEY/WEB_EXT_API_SECRET are not configured." >> "$GITHUB_STEP_SUMMARY"
 
+      - name: Publish unsigned XPI to existing release
+        if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          mkdir -p web-ext-artifacts
+          gh release download "$VERSION" --repo "$GITHUB_REPOSITORY" --pattern "request_control-$VERSION.zip" --dir web-ext-artifacts
+          cp "web-ext-artifacts/request_control-$VERSION.zip" "web-ext-artifacts/request_control-$VERSION.xpi"
+          gh release upload "$VERSION" "web-ext-artifacts/request_control-$VERSION.xpi" --repo "$GITHUB_REPOSITORY" --clobber
+
       - name: Note existing release
         if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'true'
-        run: echo "Release ${{ steps.version.outputs.version }} already exists; nothing to publish." >> "$GITHUB_STEP_SUMMARY"
+        run: echo "Release ${{ steps.version.outputs.version }} already existed; the unsigned XPI asset was refreshed from the validated ZIP." >> "$GITHUB_STEP_SUMMARY"
