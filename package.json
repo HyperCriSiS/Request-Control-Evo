@@ -24,21 +24,22 @@
     "prebuild": "npm run build-manual",
     "build": "web-ext build -i=$npm_package_config_ignore --overwrite-dest --verbose",
     "deploy": "web-ext sign --verbose",
+    "audit": "node scripts/audit-dependencies.mjs",
     "lint": "eslint src test scripts && npm run lint:json && web-ext lint -i=$npm_package_config_ignore",
     "lint:json": "node scripts/validate-json.mjs"
   },
   "dependencies": {
     "@ajusa/lit": "^1.1.0",
-    "tldts-experimental": "^7.4.9"
+    "tldts-experimental": "^7.4.10"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
-    "addons-linter": "^10.9.0",
+    "addons-linter": "^10.10.0",
     "eslint": "^10.8.0",
     "globals": "^17.7.0",
     "jest": "^30.4.2",
     "jest-environment-jsdom": "^30.4.1",
-    "web-ext": "^10.5.0"
+    "web-ext": "^10.6.0"
   },
   "jest": {
     "testEnvironment": "jsdom",

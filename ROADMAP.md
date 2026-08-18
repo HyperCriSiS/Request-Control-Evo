@@ -8,15 +8,11 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Current status
 
-**Status: in progress**
+**Status: active post-1.17 development**
 
-The repository is now named `HyperCriSiS/Request-Control-Evo`; the active development branch remains `dev`. The released modernization baseline is Request Control 1.16.1 on `master`. The active `dev` branch additionally contains integrated SPA/history-state navigation support and the conservative MV3/DNR compiler foundation. The supported lossless subset and known limitations are documented in `docs/mv3-supported-subset.md` and `docs/mv3-limitations.md`.
+Request Control 1.17.0 is released and the 1.17.0 milestone remains complete. Post-1.17 work now covers both the UI/community workflow and an opt-in Inspection Mode that makes the request/rule model understandable from the currently loaded page. The work must not weaken the existing rule-engine parity guarantees, silently broaden permissions, or turn the guided UI into a replacement for the expert editor.
 
-The Firefox↔DNR parity suite exercises the actual `createRequestFilters()` browser-prefilter contract plus supplemental matcher semantics for exact/wildcard hosts, paths, TLD expansion, supported resource types, schemes, explicit ports, methods, `<all_urls>` and representative composed rules. Coverage includes `secure`/scheme upgrade, static absolute redirect, `<all_urls>` combined with WebSocket resource type, and the bounded compiler case `<all_urls>` plus exactly one non-regexp ASCII include glob with case-insensitive substring/glob semantics.
-
-The bounded single-include compiler support is implemented in `9876a3cd`, with direct compiler/boundary coverage in `dac14e79`. The stale supported-subset guard exposed by Builds #178/#180 was corrected in `280fd54f`; Builds #181 and #182 closed that validation milestone. The synchronized supported-subset/limitations documentation is in `451dcfe9`. Build #183 is the final candidate validation for that state and is fully green across `test`, `lint`, `build`, `lint-build`, and `checker`.
-
-A fresh release-blocker audit on the same candidate found no open issues and no open pull requests. No genuinely new real-world/catalog semantic is currently identified that would justify another parity fixture before release; existing representative, CDN, and managed-catalog coverage already exercises the currently supported subset. The only remaining planned work for this roadmap is preparing the next release through the repository's established release workflow.
+The Inspection Mode is intentionally local and user-triggered: start an inspection, reload the target page, record a bounded request snapshot, explain first-/third-party and existing rule effects, and create disabled rule drafts from real requests. The optional guided assistant sits on top of the same captured data; the normal expert rule editor remains available at all times.
 
 ## Phase 1 — modernization baseline
 
@@ -25,49 +21,96 @@ A fresh release-blocker audit on the same candidate found no open issues and no 
 - [x] Integrate SPA/history-state navigation support into `dev`.
 - [x] Add the conservative MV3/DNR compiler foundation to `dev`.
 - [x] Keep Firefox `webRequest` behavior as the reference semantics rather than silently replacing it with approximate DNR behavior.
+- [x] Refresh maintained npm dependency baselines and the lockfile, remove the known patched legacy `js-yaml`/`brace-expansion` vulnerabilities, and add a CI audit gate that rejects unapproved high/critical findings.
 
 ## Phase 2 — prove and expand exact MV3/DNR parity
 
-- [x] Define the exact rule subset that can be represented losslessly in `declarativeNetRequest`; see `docs/mv3-supported-subset.md`.
+- [x] Define and validate the exact lossless DNR subset documented in `docs/mv3-supported-subset.md`.
 - [x] Keep unsupported or merely approximate semantics explicit instead of silently activating them.
-- [x] Validate exact and wildcard host/path behavior, including multi-host/path union boundaries.
-- [x] Validate explicit TLD expansion parity.
-- [x] Validate supported resource-type parity while keeping Firefox-only types such as `beacon` unsupported.
-- [x] Validate explicit scheme parity, including Firefox wildcard-scheme behavior without accidentally admitting FTP.
-- [x] Validate explicit-port parity with browser match-pattern-prefilter semantics.
-- [x] Validate request-method parity and unsupported-method boundaries.
-- [x] Validate supported action mapping and conservative unsupported/approximate boundaries.
-- [x] Validate direct Firefox-engine ↔ DNR parity for representative exact/wildcard URL conditions.
-- [x] Validate composed filter semantics against the Firefox engine.
-- [x] Validate `<all_urls>` parity and resource-type combinations.
-- [x] Validate representative real-world/catalog rules against the supported MV3 subset without broadening unsupported semantics.
-- [x] Validate CDN wildcard rules against the supported MV3 subset without broadening host semantics.
-- [x] Validate managed-catalog rules against the supported MV3 subset without broadening unsupported semantics.
-- [x] Validate composed `secure`/`upgradeScheme` semantics with HTTP + POST + explicit port + path + XHR while preserving negative boundaries (`8a5d10dd`, Build #168 green).
-- [x] Validate static absolute redirect composition with GET + HTTPS + explicit port + path + XHR while preserving negative URL boundaries (`e1d3fc5`, Build #169 green).
-- [x] Validate `<all_urls>` combined with WebSocket resource type (`4b0aef27`, Build #171 green).
-- [x] Identify the next genuinely new rule semantic that can be represented exactly in DNR and add valid positive and negative parity/boundary fixtures for it: `<all_urls>` plus exactly one non-regexp ASCII include glob, proven in `test/dnr-single-include-parity.test.js`.
-- [x] Diagnose and correct the single-include proof-fixture regressions exposed by Builds #174 and #175; Build #177 successfully revalidated the restored harness.
-- [x] Implement the bounded DNR compiler expansion for `<all_urls>` plus exactly one non-regexp ASCII include glob while retaining explicit diagnostics for multiple includes, regexp includes, non-ASCII includes and scoped match-pattern + include combinations (`9876a3cd`, boundary tests `dac14e79`).
-- [x] Obtain a green full CI run for the bounded single-include compiler implementation and its boundary tests; stale guard corrected in `280fd54f`, with Builds #181 and #182 green.
+- [x] Validate the representative parity matrix, including URL/method/resource/action composition and the bounded single-include semantic.
+- [x] Obtain green full CI for the bounded single-include compiler implementation and boundary tests.
 
-## Phase 3 — stabilization and next release
+## Phase 3 — 1.17.0 stabilization and release
 
-- [x] Re-run the complete regression/build suite after parity-harness corrections and subsequent conservative parity additions; Builds #181 and #182 are green for the activated single-include compiler state.
-- [x] Update supported-subset/limitations documentation for the newly supported single-include DNR semantic before release (`451dcfe9`).
-- [x] Re-evaluate representative real-world/catalog coverage for the current candidate and avoid adding redundant fixtures when no genuinely new semantic is present; existing real-world, CDN and managed-catalog coverage already exercises the supported subset.
-- [x] Check for release-blocking compatibility regressions without broadening scope unnecessarily; no open issues or pull requests identify a blocker, and the final candidate CI is green.
-- [x] Re-run the full regression/build suite on the final candidate state; Build #183 is green across `test`, `lint`, `build`, `lint-build`, and `checker`.
-- [ ] Prepare the next release only after `dev` remains green and all release-blocking regressions are resolved.
+- [x] Complete final regression/build validation.
+- [x] Synchronize supported-subset/limitations documentation.
+- [x] Promote the validated 1.17.0 candidate to `master`.
+- [x] Publish and verify the 1.17.0 GitHub release artifact.
+- [x] Add an unsigned `.xpi` release asset for personal testing while keeping Mozilla signing optional.
+
+## Phase 4 — post-1.17 UI and GitHub community workflow
+
+### Theme/accessibility
+
+- [x] Replace remaining fixed light-theme text/background colors in options/rule editor components with shared theme variables.
+- [x] Verify import rows, rule editor states, badges, form controls, links, disabled states and editable text remain readable in dark theme.
+- [x] Add regression coverage where practical for theme-sensitive structural classes and avoid introducing new fixed foreground colors.
+
+### Import/catalog presentation
+
+- [x] Replace raw-JSON-oriented import presentation with a structured import card/row showing name, concise description, rule count/status and a human-readable source link.
+- [x] Show a concise description directly below each import and expose the same description as a tooltip for compact layouts.
+- [x] Consume optional `description`, `homepage`, `ratingIssue` and related metadata from the community catalog without breaking older catalog entries.
+- [x] Keep integrity verification (`sha256`) and managed-rule reconciliation unchanged.
+
+### GitHub-backed sharing and ratings
+
+- [x] Add a GitHub Community section to the import view for publishing/share flow without embedding GitHub credentials in the extension.
+- [x] Generate a reviewable GitHub submission from local rules, with explicit size/error handling and no automatic upload of browsing data.
+- [x] Add a requestcontrol-rules issue template/workflow for rule-set submissions so GitHub authentication and moderation remain on GitHub.
+- [x] Add catalog rating metadata backed by GitHub issue reactions; display positive/negative counts in the import UI and link users to GitHub to rate/review.
+- [x] Document that ratings are discovery/community signals only and never override review/integrity/safety status.
+- [x] Validate offline/failure behavior: built-in imports must continue to work when GitHub catalog/rating endpoints are unavailable.
+
+### Validation/release
+
+- [x] Run lint, tests, build, build-lint/checker and security checks for the complete post-1.17 UI/community phase.
+- [x] Update user-facing documentation and changelog only after the implemented behavior is stable.
+- [x] Prepare the next release only after the above work is fully validated: 1.18.0 candidate on `chore/release-1.18.0` passed audit, lint, tests, build, build-lint and checker.
+
+## Phase 5 — Inspection Mode and guided rule creation
+
+### Inspection session
+
+- [x] Add an explicit `Reload & inspect` mode for the current tab; do not record normal browsing continuously.
+- [x] Record a bounded in-memory request snapshot with request URL, method/type, first-/third-party classification, completion/error state and Request Control rule effects.
+- [x] Keep inspection local-only and stop/remove webRequest observation when no inspection session is active.
+- [x] Provide domain grouping, request filtering/search and direct request details in a dedicated interactive GUI.
+
+### Rule from request
+
+- [x] Create disabled rule drafts directly from an inspected request for exact-request, host, resource-type, third-party and current-site scopes.
+- [x] Add an explicit top-level source-site matcher to the Firefox `webRequest` engine so `only on this site` is exact rather than an approximate UI promise.
+- [x] Expose source-site scope as a dedicated editable field in the expert editor, using the same exact `pattern.source` match-pattern semantics as Inspection Mode.
+- [x] Reject source-site scope explicitly in DNR compilation until exact MV3 parity is proven.
+- [x] Show which existing Request Control rule affected a captured request and allow opening that rule in the expert editor.
+
+### Optional guided assistant
+
+- [x] Keep the assistant opt-in behind `Guided rule…`; it must not replace or hide the expert editor.
+- [x] Explain the selected request and proposed scope in human-readable language before creating a draft.
+- [x] Reuse the same deterministic rule builder as the direct Rule-from-Request actions; do not require a cloud/LLM service.
+
+### Validation
+
+- [x] Add unit coverage for inspection classification/grouping, bounded session storage, source-site matching, rule-draft generation and DNR rejection boundaries.
+- [x] Run full CI and only mark Phase 5 implementation items complete after the branch is green.
+
+## Phase 6 — 1.18.0 release finalization
+
+- [x] Align `manifest.json` and `CHANGELOG.md` at 1.18.0 after the released 1.17.0 baseline.
+- [x] Make unsigned XPI generation reproducible from the same validated ZIP and remove the obsolete temporary 1.17 roadmap automation.
+- [ ] Promote the validated 1.18.0 candidate to `master`.
+- [ ] Verify the 1.18.0 release workflow creates the tag, GitHub release, ZIP and byte-identical unsigned XPI; record Mozilla signing status separately.
 
 ## Blockers / dependencies
 
-- No current normal CI blocker is known on `dev`; Build #183 is fully green on candidate commit `451dcfe9`.
-- No open issue or open pull request currently identifies a release blocker in this fork.
-- The parity harness intentionally covers only semantics already representable exactly or narrowly scoped candidates before activation. Browser-specific or custom matcher semantics require dedicated positive and negative evidence before compiler support is broadened.
-- MV3 feature growth is constrained by `declarativeNetRequest` expressiveness. Unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
-- Multiple includes, regexp includes, non-ASCII includes and scoped match-pattern + include combinations remain outside the activated compiler subset until exact parity is separately proven.
+- No code blocker is currently known for the theme/import-presentation work.
+- Fully credential-less direct writes to GitHub are intentionally not assumed. The preferred community publication design keeps authentication on GitHub (submission/review UI) rather than storing a personal access token or secret inside the extension.
+- GitHub community metadata and ratings are optional network features; the existing local/built-in rule functionality must remain usable when GitHub is unavailable.
+- Source-site matching is Firefox `webRequest` functionality for now. The DNR compiler must keep returning an explicit unsupported diagnostic until an exact top-level-site translation is proven.
+- Inspection must remain bounded and opt-in; it must not become a persistent browsing-history collector.
 
 ## Completion status
 
-**Not fully completed.** The modernization baseline is released, the bounded `<all_urls>` + one non-regexp ASCII include compiler support is implemented, boundary-tested, documented, and fully green through Build #183. The current final candidate has no open issue/PR release blocker and no missing genuinely new real-world/catalog semantic requiring another fixture. The only remaining roadmap item is to prepare the next release through the established repository release workflow. After that release is created and its resulting repository/CI state is verified, this roadmap can be marked **fully completed**.
+**Not fully completed.** The 1.17.0 milestone remains complete. Phase 4 and Phase 5 are complete, and the 1.18.0 candidate is prepared and fully validated. Remaining work is promotion to `master` and verification of the resulting 1.18.0 release artifacts/signing status.

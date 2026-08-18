@@ -6,9 +6,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.0] - Aug. 18, 2026
+- Add an opt-in Inspection Mode with bounded local request capture, first-/third-party analysis, existing-rule effect reporting, direct Rule-from-Request drafts, and an optional deterministic guided rule assistant.
+- Add exact Firefox source-site scoping through `pattern.source`, including a dedicated expert-editor field; keep DNR compilation explicitly unsupported until exact parity is proven.
+- Finish dark-theme accessibility cleanup for options, rule controls, alerts, and the rule tester using shared semantic foreground/background tokens.
+- Improve import/community presentation with descriptions, human-readable source links, optional GitHub reaction ratings, SHA-256 integrity preservation, offline-safe metadata fallbacks, and credential-less GitHub submission of explicitly selected rules.
+- Publish the validated WebExtension ZIP and a byte-identical unsigned XPI test artifact from the same release build; Mozilla signing remains optional when AMO credentials are not configured.
+
 ## [1.17.0] - Aug. 18, 2026
-- Handle SPA/history-state main-frame URL changes so compatible block, secure, redirect, filter, and whitelist rules continue to apply without requiring a full page navigation.
-- Extend the lossless MV3/DNR compatibility compiler with the proven `<all_urls>` plus one non-regexp ASCII include-glob subset while keeping unproven include combinations explicitly unsupported.
+- Add SPA/history-state navigation handling so Request Control keeps page context aligned when sites navigate without full document loads.
+- Expand the conservative MV3/DNR compiler to the validated bounded single-include subset while keeping unsupported combinations as explicit diagnostics.
+- Publish the reproducible GitHub release artifact with the pinned, checksum-verified Pandoc CI setup; Mozilla signing remains optional when AMO credentials are not configured.
 
 ## [1.16.1] - Aug. 15, 2026
 - Publish the final validated modernization state that was not contained in the prematurely published 1.16.0 tag.
@@ -208,7 +216,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.5.0] - June 1, 2017
 - URL parameter filtering is now Filter rule specific.
-- Redirection cleaning can now be turned off in Filter rule.
+- Redirection cleaning can now be turned off for Filter rule.
 - Added wildcard "*" support for url parameter trimming.
 
 ## [1.4.3] - May 27, 2017

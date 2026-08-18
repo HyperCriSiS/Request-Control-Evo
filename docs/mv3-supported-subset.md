@@ -35,6 +35,7 @@ These remain unsupported rather than being approximated:
 - multiple `includes`, regexp `includes`, non-ASCII `includes`, and any `includes` combined with a scoped match-pattern instead of `allUrls`;
 - `anyTLD` registrable-domain matching;
 - per-rule `incognito` conditions;
+- top-level source-site (`pattern.source`) matching used by Inspection Mode; Firefox evaluates it against tracked top-level tab context, and no exact DNR translation is claimed yet;
 - `same-domain` / `third-party-domain` because Chromium private-registry semantics differ from the current ICANN-only reference behavior;
 - `same-origin` / `third-party-origin` because DNR `domainType` does not compare full origins;
 - host/path/resource/method values outside the compiler's exact subset.
