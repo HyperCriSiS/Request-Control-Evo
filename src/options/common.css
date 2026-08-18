@@ -191,3 +191,27 @@ pre {
 .middle {
     vertical-align: middle;
 }
+
+input,
+select,
+textarea,
+option {
+    color: var(--text-color);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
+}
+
+label,
+legend,
+summary {
+    color: var(--text-color);
+}
+
+small,
+.text-muted {
+    color: var(--text-muted);
+}
