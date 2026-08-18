@@ -69,7 +69,7 @@ This document is the binding source of truth for the active modernization/releas
 ### E. Inspector and support diagnostics
 
 - [x] Keep upstream-source curation diagnostics out of the extension UI.
-- [ ] Surface only runtime-relevant package/channel identity, installed/available version or digest, integrity state, managed-rule conflicts and actual Evo rule effects in compact Inspector/support details.
+- [x] Surface only runtime-relevant package/channel identity, installed/available version or digest, integrity state, managed-rule conflicts and actual Evo rule effects in compact Inspector/support details.
 - [x] Add an exportable support diagnostic that excludes raw browsing URLs by default and is safe to attach to bug reports.
 - [x] Keep all behavioral intelligence bounded to explicit Inspection/Guardian sessions and add a regression assertion for that invariant.
 
