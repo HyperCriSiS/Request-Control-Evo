@@ -1,3 +1,4 @@
+import { jest } from "@jest/globals";
 import { CompatibilityGuardian, MAX_GUARDIAN_EVENTS } from "../src/main/guardian.js";
 
 function fakeEvent() {
