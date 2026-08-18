@@ -59,7 +59,7 @@ form .row {
 .disabled .btn-activate {
     background: var(--success-color);
     border-color: var(--success-color);
-    color: white;
+    color: var(--on-success-color);
 }
 
 .rule-header {
