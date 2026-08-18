@@ -72,28 +72,29 @@ The Inspection Mode is intentionally local and user-triggered: start an inspecti
 
 ### Inspection session
 
-- [ ] Add an explicit `Reload & inspect` mode for the current tab; do not record normal browsing continuously.
-- [ ] Record a bounded in-memory request snapshot with request URL, method/type, first-/third-party classification, completion/error state and Request Control rule effects.
-- [ ] Keep inspection local-only and stop/remove webRequest observation when no inspection session is active.
-- [ ] Provide domain grouping, request filtering/search and direct request details in a dedicated interactive GUI.
+- [x] Add an explicit `Reload & inspect` mode for the current tab; do not record normal browsing continuously.
+- [x] Record a bounded in-memory request snapshot with request URL, method/type, first-/third-party classification, completion/error state and Request Control rule effects.
+- [x] Keep inspection local-only and stop/remove webRequest observation when no inspection session is active.
+- [x] Provide domain grouping, request filtering/search and direct request details in a dedicated interactive GUI.
 
 ### Rule from request
 
-- [ ] Create disabled rule drafts directly from an inspected request for exact-request, host, resource-type, third-party and current-site scopes.
-- [ ] Add an explicit top-level source-site matcher to the Firefox `webRequest` engine so `only on this site` is exact rather than an approximate UI promise.
-- [ ] Expose source-site scope in the expert editor and reject it explicitly in DNR compilation until exact MV3 parity is proven.
-- [ ] Show which existing Request Control rule affected a captured request and allow opening that rule in the expert editor.
+- [x] Create disabled rule drafts directly from an inspected request for exact-request, host, resource-type, third-party and current-site scopes.
+- [x] Add an explicit top-level source-site matcher to the Firefox `webRequest` engine so `only on this site` is exact rather than an approximate UI promise.
+- [ ] Expose source-site scope as a dedicated editable field in the expert editor.
+- [x] Reject source-site scope explicitly in DNR compilation until exact MV3 parity is proven.
+- [x] Show which existing Request Control rule affected a captured request and allow opening that rule in the expert editor.
 
 ### Optional guided assistant
 
-- [ ] Keep the assistant opt-in behind `Guided rule…`; it must not replace or hide the expert editor.
-- [ ] Explain the selected request and proposed scope in human-readable language before creating a draft.
-- [ ] Reuse the same deterministic rule builder as the direct Rule-from-Request actions; do not require a cloud/LLM service.
+- [x] Keep the assistant opt-in behind `Guided rule…`; it must not replace or hide the expert editor.
+- [x] Explain the selected request and proposed scope in human-readable language before creating a draft.
+- [x] Reuse the same deterministic rule builder as the direct Rule-from-Request actions; do not require a cloud/LLM service.
 
 ### Validation
 
-- [ ] Add unit coverage for inspection classification/grouping, bounded session storage, source-site matching, rule-draft generation and DNR rejection boundaries.
-- [ ] Run full CI and only mark Phase 5 implementation items complete after the branch is green.
+- [x] Add unit coverage for inspection classification/grouping, bounded session storage, source-site matching, rule-draft generation and DNR rejection boundaries.
+- [x] Run full CI and only mark Phase 5 implementation items complete after the branch is green.
 
 ## Blockers / dependencies
 
@@ -105,4 +106,4 @@ The Inspection Mode is intentionally local and user-triggered: start an inspecti
 
 ## Completion status
 
-**Not fully completed.** The 1.17.0 milestone remains complete, but Phase 4 is active and is now the authoritative next-work sequence.
+**Not fully completed.** The 1.17.0 milestone remains complete. Phase 4 and Phase 5 are active post-1.17 workstreams; the first Inspection Mode implementation is validated, while dedicated expert-editor source-scope editing remains open.
