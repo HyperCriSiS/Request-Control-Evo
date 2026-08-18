@@ -1,1 +1,0 @@
-Temporary marker used only to trigger a fresh GitHub security check set for the validated 1.18.0 promotion.
