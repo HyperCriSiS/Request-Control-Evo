@@ -73,7 +73,7 @@ export function matchPatternToRegExp(pattern) {
         regex += "[^/]+?";
     } else if (host) {
         if (/^\*\./.test(host)) {
-            regex += "[^/]*?";
+            regex += "(?:[^./]+\\.)*";
             host = host.substring(2);
         }
         regex += host.replace(regexpChars, "\\$&");

@@ -35,7 +35,7 @@ These remain unsupported rather than being approximated:
 - multiple `includes`, regexp `includes`, non-ASCII `includes`, and any `includes` combined with a scoped match-pattern instead of `allUrls`;
 - `anyTLD` registrable-domain matching;
 - per-rule `incognito` conditions;
-- top-level source-site (`pattern.source`) matching used by Inspection Mode; Firefox evaluates it against tracked top-level tab context, and no exact DNR translation is claimed yet;
+- top-level source-site (`pattern.source`) matching used by Inspection Mode. Chromium 145+ exposes `topDomains`, but that condition is session-rule-only, domain-only, automatically includes subdomains, and falls back to the initiator domain when no top-level frame exists. The normal compiler therefore continues to reject source scope until a capability-gated subset is proven exact;
 - `same-domain` / `third-party-domain` because Chromium private-registry semantics differ from the current ICANN-only reference behavior;
 - `same-origin` / `third-party-origin` because DNR `domainType` does not compare full origins;
 - host/path/resource/method values outside the compiler's exact subset.
@@ -52,3 +52,14 @@ Request Control can compose multiple redirect/filter operations at the same sema
 4. `disabled`: emit nothing.
 
 Any future compiler expansion must first add parity/regression coverage proving that the new mapping preserves the Firefox reference semantics.
+
+## Source-site parity investigation (Phase 9)
+
+Chrome 145 introduced `topDomains` / `excludedTopDomains`, which is the first DNR condition tied to the associated top-level frame rather than only to the request initiator. This narrows the historical parity gap, but it is not a drop-in translation for Request Control `pattern.source`:
+
+- `topDomains` is supported only for session-scoped rules;
+- it represents domains only, while Request Control source entries are WebExtension match patterns with scheme, host and path;
+- a listed DNR domain also matches all of its subdomains;
+- requests without an associated top-level frame use the initiator domain instead.
+
+Phase 9 therefore keeps default/persistent source-scope compilation unsupported. Any later activation must be capability-gated and covered by boundary fixtures that prove no host, scheme, path, port or context broadening.
