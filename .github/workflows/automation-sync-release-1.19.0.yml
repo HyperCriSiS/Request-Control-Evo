@@ -1,0 +1,30 @@
+name: Synchronize 1.19.0 release tree
+
+on:
+  push:
+    branches:
+      - release/1.19.0
+    paths:
+      - .github/workflows/automation-sync-release-1.19.0.yml
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: release/1.19.0
+          fetch-depth: 0
+      - name: Replace release tree with validated dev tree
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin dev master
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git read-tree --reset -u origin/dev
+          git commit -m "Release Request Control 1.19.0"
+          git push origin HEAD:release/1.19.0
