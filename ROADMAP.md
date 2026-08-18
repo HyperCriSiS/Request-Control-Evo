@@ -8,11 +8,11 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Current status
 
-**Status: 1.18.0 milestone completed; post-1.18 development active**
+**Status: 1.18.1 released; Phase 8 compatibility diagnostics in progress**
 
 Request Control 1.18.0 is released on `master` at `3110baa7`, and the 1.18.0 milestone is complete. The release was produced by Release run `32126387364` from the validated candidate: tag `1.18.0`, GitHub release, ZIP and unsigned XPI were created successfully. The ZIP and XPI are byte-identical at 207884 bytes with SHA-256 `22ee7b029156853d95b0c93197224e64abdc4599448470bf174877ec62d9f4f6`. Mozilla signing was skipped because AMO credentials were not configured, and the workflow recorded that skip as non-fatal.
 
-The active `dev` branch has already moved beyond the released candidate and includes bundled opt-in showcase rulesets at `bffc4653`. That work belongs to post-1.18 development and must not be conflated with the frozen 1.18.0 release contents. Existing guardrails remain in force: Firefox `webRequest` behavior is canonical, unsupported DNR semantics stay explicit, Inspection Mode remains bounded/local/opt-in, and guided workflows do not replace the expert editor.
+The bundled opt-in showcase rulesets that followed 1.18.0 are published separately as Request Control 1.18.1. The patch release is on `master` at `49fa1814940f2347bd345b898574a96f093b6c5d` and was produced by Release run `32127317095`. GitHub release `372266035` contains byte-identical ZIP and unsigned XPI assets, each 216149 bytes with SHA-256 `94d9438fa6753fbb55c697140323fcf32482edeec2570b8fc9c14d01b04a9124`. Mozilla signing was skipped because AMO credentials were not configured, and the workflow recorded that skip as non-fatal. Existing guardrails remain in force: Firefox `webRequest` behavior is canonical, unsupported DNR semantics stay explicit, Inspection Mode remains bounded/local/opt-in, and guided workflows do not replace the expert editor.
 
 The 1.18.0 promotion PR passed audit, lint, tests, build, build-lint/checker and both real CodeQL analysis jobs. GitHub's separate agentic Advanced Security check repeatedly failed before analysis because its service requested unsupported model `claude-opus-4.6`; the standard protected merge nevertheless completed normally without an admin bypass.
 
@@ -115,6 +115,17 @@ The 1.18.0 promotion PR passed audit, lint, tests, build, build-lint/checker and
 - [x] Promote the validated 1.18.1 candidate to `master` via PR #38; master release commit `49fa1814940f2347bd345b898574a96f093b6c5d`.
 - [x] Verify Release run `32127317095` creates tag `1.18.1`, GitHub release `372266035`, ZIP and byte-identical unsigned XPI. Both assets are 216149 bytes with SHA-256 `94d9438fa6753fbb55c697140323fcf32482edeec2570b8fc9c14d01b04a9124`; Mozilla signing was skipped because AMO credentials were not configured.
 
+## Phase 8 — on-demand compatibility diagnostics and Referrer protection
+
+- [ ] Port the Compatibility Guardian onto the current Inspection/Runtime architecture without adding continuous request monitoring.
+- [ ] Keep Guardian request listeners strictly on-demand, bounded to the selected tab/session and automatically removed after stop/timeout/tab close.
+- [ ] Add explicit Referer protection modes: browser default, balanced cross-origin origin-only, same-origin only and no-referrer.
+- [ ] Ensure browser-default Referer mode registers no `onBeforeSendHeaders` listener and does not alter browser behavior.
+- [ ] Preserve HTTPS-to-HTTP privacy downgrade protection in balanced mode.
+- [ ] Add regression coverage for Guardian lifecycle/scoring and Referer header transformations/listener lifecycle.
+- [ ] Run the complete audit/lint/test/build/build-lint/checker suite before marking Phase 8 complete.
+
+
 ## Blockers / dependencies
 
 - No release blocker remains for 1.18.0 or 1.18.1; both milestones are published and verified.
@@ -127,4 +138,4 @@ The 1.18.0 promotion PR passed audit, lint, tests, build, build-lint/checker and
 
 ## Completion status
 
-**Phases 1–7 are complete.** The 1.18.0 milestone remains immutable, and the separate 1.18.1 patch release publishes the bundled showcase rulesets with the strict first-party safety warning, byte-identical ZIP/XPI artifacts and explicit Mozilla-signing status. Further development belongs to the next roadmap phase.
+**Phases 1–7 are complete. Phase 8 is in progress.** The 1.18.0 milestone remains immutable, and 1.18.1 is published and verified. The next active work is the on-demand Compatibility Guardian and configurable Referrer protection, with browser-default behavior remaining listener-free.
