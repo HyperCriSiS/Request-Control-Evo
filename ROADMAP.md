@@ -64,8 +64,8 @@ The Inspection Mode is intentionally local and user-triggered: start an inspecti
 
 ### Validation/release
 
-- [ ] Run lint, tests, build, build-lint/checker and security checks for the complete post-1.17 UI/community phase.
-- [ ] Update user-facing documentation and changelog only after the implemented behavior is stable.
+- [x] Run lint, tests, build, build-lint/checker and security checks for the complete post-1.17 UI/community phase.
+- [x] Update user-facing documentation and changelog only after the implemented behavior is stable.
 - [ ] Prepare the next release only after the above work is fully validated.
 
 ## Phase 5 — Inspection Mode and guided rule creation
@@ -106,4 +106,4 @@ The Inspection Mode is intentionally local and user-triggered: start an inspecti
 
 ## Completion status
 
-**Not fully completed.** The 1.17.0 milestone remains complete and Phase 5 is fully implemented/validated. Phase 4 implementation is complete; the remaining work is final full-CI validation, documentation confirmation and preparation of the next release.
+**Not fully completed.** The 1.17.0 milestone remains complete. Phase 4 implementation, validation and documentation are complete, and Phase 5 is fully implemented/validated. The remaining roadmap item is preparation of the next release.
