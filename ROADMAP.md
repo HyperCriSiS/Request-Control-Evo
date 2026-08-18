@@ -64,13 +64,13 @@ This document is the binding source of truth for the active modernization/releas
 
 - [x] Keep Community structurally separate from Official; popularity/reactions never imply Official trust.
 - [x] Keep Custom sources as an explicit advanced user-owned channel.
-- [ ] Add a maintainer promotion workflow: Community candidate → provenance preservation → curation/risk/conflict/fixture gates → explicit review → Official package.
+- [x] Add a maintainer promotion workflow: Community candidate → provenance preservation → curation/risk/conflict/fixture gates → explicit review → Official package.
 
 ### E. Inspector and support diagnostics
 
 - [x] Keep upstream-source curation diagnostics out of the extension UI.
 - [ ] Surface only runtime-relevant package/channel identity, installed/available version or digest, integrity state, managed-rule conflicts and actual Evo rule effects in compact Inspector/support details.
-- [ ] Add an exportable support diagnostic that excludes raw browsing URLs by default and is safe to attach to bug reports.
+- [x] Add an exportable support diagnostic that excludes raw browsing URLs by default and is safe to attach to bug reports.
 - [ ] Keep all behavioral intelligence bounded to explicit Inspection/Guardian sessions and add a regression assertion for that invariant.
 
 ### F. Observatory readiness
