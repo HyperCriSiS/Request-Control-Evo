@@ -281,8 +281,11 @@ async function getCommunityCatalog() {
                 }
                 return response.json();
             })
-            .finally(() => {
-                communityCatalogPromise = null;
+            .then((catalog) => {
+                if (!catalog || !Array.isArray(catalog.ruleSets)) {
+                    throw new Error("Invalid community catalog");
+                }
+                return catalog;
             });
     }
     return communityCatalogPromise;
@@ -291,6 +294,13 @@ async function getCommunityCatalog() {
 function humanReadableSource(src) {
     try {
         const url = new URL(src);
+        if (url.hostname === "raw.githubusercontent.com") {
+            const parts = url.pathname.split("/").filter(Boolean);
+            if (parts.length >= 4) {
+                const [owner, repo, ref, ...path] = parts;
+                return `https://github.com/${owner}/${repo}/blob/${ref}/${path.join("/")}`;
+            }
+        }
         if (url.hostname === "tumpio.github.io" && url.pathname.startsWith("/requestcontrol/rules/")) {
             return "https://github.com/tumpio/requestcontrol/tree/master/rules";
         }
@@ -415,94 +425,99 @@ function setupGitHubCommunityShare() {
         return;
     }
 
-    const section = document.createElement("section");
-    section.id = "github-community-share";
-    section.className = "github-community-share";
+    const details = document.createElement("details");
+    details.id = "github-community-share";
+    details.className = "community-share";
+    details.open = true;
 
-    const heading = document.createElement("h3");
-    heading.textContent = message("github_community_title", "GitHub Community");
+    const summary = document.createElement("summary");
+    summary.textContent = message("github_community", "GitHub Community");
 
-    const intro = document.createElement("p");
-    intro.textContent = message(
-        "github_community_intro",
-        "Share selected local rules through a reviewable GitHub submission. Request Control does not store GitHub credentials."
+    const description = document.createElement("p");
+    description.textContent = message(
+        "github_community_description",
+        "Share selected local rules for review in the Request Control community repository."
     );
-
-    const controls = document.createElement("div");
-    controls.className = "github-community-controls";
-    const select = document.createElement("select");
-    select.multiple = true;
-    select.size = 7;
-    select.setAttribute("aria-label", message("github_community_select", "Select rules to share"));
 
     const actions = document.createElement("div");
-    actions.className = "github-community-actions";
-    const exportButton = document.createElement("button");
-    exportButton.type = "button";
-    exportButton.className = "btn btn-primary";
-    exportButton.textContent = message("github_community_export", "Export selected rules");
-    const submit = document.createElement("a");
-    submit.className = "btn";
-    submit.target = "_blank";
-    submit.rel = "noopener noreferrer";
-    submit.href = `https://github.com/${COMMUNITY_REPOSITORY}/issues/new?template=ruleset-submission.yml`;
-    submit.textContent = message("github_community_submit", "Open GitHub submission");
-    actions.append(exportButton, submit);
+    actions.className = "community-share-actions";
 
-    const status = document.createElement("p");
-    status.className = "note";
-    status.textContent = message(
-        "github_community_note",
-        "Only the rules you select are exported. Browsing and inspection data are never included automatically."
+    const share = document.createElement("button");
+    share.id = "shareRulesGitHub";
+    share.className = "btn primary";
+    share.type = "button";
+    share.textContent = message("share_selected_github", "Share selected rules on GitHub");
+
+    const repository = document.createElement("a");
+    repository.className = "btn";
+    repository.target = "_blank";
+    repository.rel = "noopener noreferrer";
+    repository.href = `https://github.com/${COMMUNITY_REPOSITORY}`;
+    repository.textContent = message("open_community_repository", "Open community repository");
+
+    const status = document.createElement("span");
+    status.className = "community-share-status";
+
+    actions.append(share, repository, status);
+    details.append(summary, description, actions);
+
+    const myLists = Array.from(tab.querySelectorAll("details")).find(
+        (item) => item.querySelector("summary")?.dataset.i18n === "my_lists"
     );
+    tab.insertBefore(details, myLists || null);
 
-    controls.append(select, actions);
-    section.append(heading, intro, controls, status);
+    const getSelectedRules = () =>
+        Array.from(document.querySelectorAll("rule-list")).flatMap((list) => list.selected || []);
 
-    async function getLocalRules() {
-        const { rules = [] } = await browser.storage.local.get("rules");
-        return Array.isArray(rules) ? rules : Object.values(rules || {});
-    }
+    const update = () => {
+        const count = getSelectedRules().length;
+        share.disabled = count === 0;
+        status.textContent = count
+            ? message("github_share_selected_count", `${count} selected rule(s) ready to share.`, count)
+            : message("github_share_select_rules", "Select one or more rules in the Rules tab first.");
+    };
 
-    async function update() {
-        const rules = (await getLocalRules()).sort((a, b) =>
-            (a.title || "").localeCompare(b.title || "")
-        );
-        select.replaceChildren();
-        for (const rule of rules) {
-            const option = document.createElement("option");
-            option.value = rule.uuid;
-            option.textContent = rule.title || rule.uuid;
-            select.append(option);
-        }
-        exportButton.disabled = !rules.length;
-    }
-
-    exportButton.addEventListener("click", async () => {
-        const selected = new Set(Array.from(select.selectedOptions, (option) => option.value));
-        if (!selected.size) {
-            alert(message("github_community_choose_rule", "Select at least one rule to export."));
-            return;
-        }
-        const rules = (await getLocalRules()).filter((rule) => selected.has(rule.uuid));
-        const payload = {
-            format: 1,
-            exportedAt: new Date().toISOString(),
-            rules,
-        };
-        const serialized = JSON.stringify(payload);
-        if (serialized.length > 500000) {
-            alert(message("github_community_too_large", "The selected export is too large. Export fewer rules."));
-            return;
-        }
-        exportJsonFile("request-control-community-rules.json", payload);
-    });
-
-    browser.storage.onChanged.addListener((changes, areaName) => {
-        if (areaName === "local" && changes.rules) {
+    share.addEventListener("click", async () => {
+        const selected = getSelectedRules();
+        if (selected.length === 0) {
             update();
+            return;
         }
+
+        const payload = {
+            schemaVersion: 1,
+            exportedAt: new Date().toISOString(),
+            rules: selected,
+        };
+        const json = JSON.stringify(payload, null, 2);
+        const title = message(
+            "github_share_issue_title",
+            `Rule set submission (${selected.length} rules)`,
+            selected.length
+        );
+        const intro = message(
+            "github_share_issue_intro",
+            "Generated by Request Control for community review. I reviewed this payload and removed private or sensitive values."
+        );
+
+        const url = new URL(`https://github.com/${COMMUNITY_REPOSITORY}/issues/new`);
+        url.searchParams.set("template", "rule-set-submission.md");
+        url.searchParams.set("title", title);
+
+        if (json.length <= 24000) {
+            url.searchParams.set("body", `${intro}\n\n\`\`\`json\n${json}\n\`\`\``);
+        } else {
+            exportJsonFile("request-control-community-submission.json", payload);
+            status.textContent = message(
+                "github_share_too_large",
+                "The selection is too large for a prefilled GitHub submission. A JSON file was exported; attach or paste it into the opened form."
+            );
+        }
+
+        await browser.tabs.create({ url: url.toString() });
     });
+
+    document.addEventListener("rule-selected", update);
     update();
 }
 
