@@ -50,17 +50,53 @@ The maintenance repository owns this pipeline:
 
 That repository can use ClearURLs, FastForward and other projects as reviewed research sources without adding their formats, source diagnostics or licensing policy to the extension runtime.
 
+Community → Official promotion is also explicit and review-only. The maintenance workflow preserves Community provenance, checks duplicates/UUID collisions and risk reasons, requires positive and negative fixtures, and only emits a proposed Official payload after a maintainer supplies an approval review. It never publishes automatically.
+
 ## Safe redirect subset
 
 `src/main/intelligence/redirect-safety.js` remains runtime-relevant because the Inspector can identify structural redirect targets. Automatic suggestions are limited to valid HTTP(S) targets and reject non-web schemes, credential URLs, exact loops and HTTPS-to-HTTP downgrades. Security-looking wrappers require review.
 
 This does not turn Evo into a FastForward/Skip Redirect runtime. DOM automation, timer manipulation, crowd resolution and remote script execution remain outside the safe subset.
 
+## Support diagnostics
+
+Inspection Mode can export a schema-versioned support diagnostic. It is constructed from aggregate values and identifiers instead of redacting a raw session afterwards.
+
+The default export includes:
+
+- extension/schema version;
+- aggregate request/party/tracking/affected counts;
+- resource-type counts;
+- affected rule UUID/action plus `official`, `community`, `custom`, `local` or `unknown` source channel;
+- installed/available managed package digest/version state;
+- managed-rule conflict UUIDs and stable reason codes.
+
+It does **not** include page URLs, request URLs, hostnames, query strings, request IDs or Custom source URLs.
+
 ## Wormhole Observatory
 
-`src/main/intelligence/observatory-contract.js` remains a versioned, privacy-minimized local contract only. It does not implement transport.
+`src/main/intelligence/observatory-contract.js` is a versioned, privacy-minimized local contract only. It contains no transport implementation and `background.js` does not depend on Observatory availability.
 
-A future Observatory bridge may return classifications or reviewable rule candidates, but never executable remote code. Local rule execution must remain independent from Observatory availability, and a user must be able to preview any data leaving the browser.
+### Outbound snapshot
+
+The default snapshot contains aggregate totals/resource types and per-domain statistics without hostnames. Hostnames can only be added by an explicit caller option. Full URLs, query strings, paths and page/request URLs are outside the contract.
+
+### Inbound recommendations
+
+A future Wormhole Observatory response must match the exact supported response and snapshot schema versions and identify itself as `wormhole-observatory`. Recommendations refer to a local `domainIndex`; the response does not carry a directly executable Request Control rule.
+
+Supported recommendation kinds are deliberately narrow:
+
+- `classification` — category/organization annotation plus confidence/reason codes;
+- `rule-candidate` — one of the structured operations `remove-query-parameter`, `block-host`, `block-host-type` or `unwrap-query-parameter`.
+
+Fields that could smuggle direct execution or navigation semantics — including `rule`, `action`, `url`, `redirect`, `pattern`, `regex`, `script`, `code`, `eval` and similar — are rejected. Unknown kinds/operations, invalid domain indexes and forward/backward-incompatible schema versions are rejected as well.
+
+Even a valid response is returned locally with `status: review-required`. The contract cannot apply a recommendation, mutate stored rules or execute remote code.
+
+## Bounded behavioral intelligence
+
+Inspection request listeners are attached only after an explicit Inspection `start` message and removed when no active inspection remains. Compatibility Guardian listeners similarly exist only during explicit Guardian sessions and Guardian sessions auto-expire. Regression tests guard both lifecycle boundaries.
 
 ## Failure diagnostics visible to users
 
