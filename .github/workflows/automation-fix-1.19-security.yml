@@ -1,0 +1,332 @@
+name: Repair and apply 1.19 security fixes
+
+on:
+  push:
+    branches:
+      - chore/release-1.19.0
+    paths:
+      - .github/workflows/automation-fix-1.19-security.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: chore/release-1.19.0
+          fetch-depth: 0
+      - name: Restore affected files and apply security hardening
+        shell: bash
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git revert --no-commit ec71d90843ba1d251ff8cf40d15b740a06a363ca
+          python - <<'PY'
+          from pathlib import Path
+
+          p = Path('src/options/options.js')
+          s = p.read_text()
+          needle = 'import { showRuleTestDialog } from "./rule-tester.js";\n'
+          assert needle in s
+          s = s.replace(needle, needle + 'import { normalizeImportSource } from "./import-source.js";\n', 1)
+          s = s.replace('const src = input.getAttribute("src");', 'const src = input.source;')
+          s = s.replace('const input = document.querySelector(`rule-import-input[src="${src}"]`);', 'const input = findImportInputBySource(src);')
+          old = '''            const input = document.createElement("rule-import-input");
+                      input.textContent = `${entry.category || "community"} - ${entry.name}`;
+                      input.dataset.catalog = catalog.catalog || "requestcontrol-community";
+                      input.dataset.entry = entry.id || entry.url;
+                      input.dataset.version = entry.version || catalog.version || "";
+                      input.dataset.group = entry.group || "";
+                      if (entry.sha256) {
+                          input.setAttribute("expected-sha256", entry.sha256);
+                      }
+                      input.setAttribute("src", entry.url);
+                      input.data = imports[entry.url] || {};
+                      list.append(input);'''.replace('          ', '')
+          new = '''            const source = normalizeImportSource(entry.url);
+                      if (!source) {
+                          continue;
+                      }
+          
+                      const input = document.createElement("rule-import-input");
+                      input.textContent = `${entry.category || "community"} - ${entry.name}`;
+                      input.dataset.catalog = catalog.catalog || "requestcontrol-community";
+                      input.dataset.entry = entry.id || entry.url;
+                      input.dataset.version = entry.version || catalog.version || "";
+                      input.dataset.group = entry.group || "";
+                      if (entry.sha256) {
+                          input.setAttribute("expected-sha256", entry.sha256);
+                      }
+                      input.source = source;
+                      input.data = imports[source] || imports[entry.url] || {};
+                      list.append(input);'''.replace('          ', '')
+          assert old in s
+          s = s.replace(old, new, 1)
+          old = '''    const { imports } = await browser.storage.local.get("imports");
+              const input = document.getElementById("new-import-source");
+              const duplicate = document.querySelector(`rule-import-input[src="${input.value}"]`);
+          
+              if (duplicate || (imports && input.value in imports)) {
+                  input.setCustomValidity(browser.i18n.getMessage("duplicate_entry"));
+              } else {
+                  input.setCustomValidity("");
+              }'''.replace('      ', '')
+          new = '''    const { imports } = await browser.storage.local.get("imports");
+              const input = document.getElementById("new-import-source");
+              const source = normalizeImportSource(input.value);
+          
+              if (!source) {
+                  input.setCustomValidity(browser.i18n.getMessage("analyzer_invalid_url") || "Enter a valid URL.");
+                  return;
+              }
+          
+              const duplicate = findImportInputBySource(source);
+              if (duplicate || (imports && (source in imports || input.value in imports))) {
+                  input.setCustomValidity(browser.i18n.getMessage("duplicate_entry"));
+              } else {
+                  input.setCustomValidity("");
+              }'''.replace('      ', '')
+          assert old in s
+          s = s.replace(old, new, 1)
+          old = '''    const src = this.src.value;
+              let { imports } = await browser.storage.local.get("imports");'''.replace('      ', '')
+          new = '''    const src = normalizeImportSource(this.src.value);
+              if (!src) {
+                  this.src.setCustomValidity(browser.i18n.getMessage("analyzer_invalid_url") || "Enter a valid URL.");
+                  this.src.reportValidity();
+                  return;
+              }
+          
+              let { imports } = await browser.storage.local.get("imports");'''.replace('      ', '')
+          assert old in s
+          s = s.replace(old, new, 1)
+          old = '''function createImportInput(src, data) {
+              const input = document.createElement("rule-import-input");
+              const inputs = document.getElementById("my-import-sources");
+              input.setAttribute("src", src);
+              input.setAttribute("deletable", true);
+              input.data = data;
+              inputs.append(input);
+          }'''.replace('      ', '')
+          new = '''function createImportInput(src, data) {
+              const source = normalizeImportSource(src);
+              if (!source) {
+                  return null;
+              }
+          
+              const input = document.createElement("rule-import-input");
+              const inputs = document.getElementById("my-import-sources");
+              input.source = source;
+              input.setAttribute("deletable", true);
+              input.data = data;
+              inputs.append(input);
+              return input;
+          }
+          
+          function findImportInputBySource(src) {
+              const source = normalizeImportSource(src);
+              if (!source) {
+                  return null;
+              }
+          
+              return (
+                  Array.from(document.querySelectorAll("rule-import-input")).find(
+                      (input) => input.source === source
+                  ) || null
+              );
+          }'''.replace('      ', '')
+          assert old in s
+          s = s.replace(old, new, 1)
+          p.write_text(s)
+
+          p = Path('src/options/rule-import-input.js')
+          r = p.read_text()
+          header = '''/* This Source Code Form is subject to the terms of the Mozilla Public
+           * License, v. 2.0. If a copy of the MPL was not distributed with this
+           * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+          '''.replace('          ', '')
+          assert header in r
+          r = r.replace(header, header + '\nimport { normalizeImportSource } from "./import-source.js";\n', 1)
+          r = r.replace('''        this.rules = [];
+                  this._data = {};'''.replace('      ', ''), '''        this.rules = [];
+                  this._data = {};
+                  this._source = "";'''.replace('      ', ''), 1)
+          r = r.replace('''            case "src":
+                          this.onSourceChanged(newValue);
+                          break;'''.replace('          ', ''), '''            case "src":
+                          this.source = newValue;
+                          break;'''.replace('          ', ''), 1)
+          needle = '''    get data() {
+              return this._data;
+          }
+          '''.replace('      ', '')
+          assert needle in r
+          r = r.replace(needle, '''    get source() {
+              return this._source;
+          }
+          
+          set source(value) {
+              const source = normalizeImportSource(value);
+              this._source = source || "";
+              this.onSourceChanged(this._source);
+          }
+          
+          '''.replace('      ', '') + needle, 1)
+          old = '''    onSourceChanged(src) {
+              const text = this.shadowRoot.getElementById("name");
+              if (!this.textContent.trim()) {
+                  try {
+                      text.textContent = new URL(src).hostname;
+                  } catch {
+                      text.textContent = src;
+                  }
+              }
+          
+              const url = this.shadowRoot.getElementById("url");
+              url.href = humanReadableSource(src);
+              url.title = message("view_list", "View source");
+              this.fetchRules(src);
+          }'''.replace('      ', '')
+          new = '''    onSourceChanged(src) {
+              const text = this.shadowRoot.getElementById("name");
+              const url = this.shadowRoot.getElementById("url");
+              url.title = message("view_list", "View source");
+          
+              if (!src) {
+                  if (!this.textContent.trim()) {
+                      text.textContent = "";
+                  }
+                  url.removeAttribute("href");
+                  this.rules = [];
+                  this.digest = null;
+                  return;
+              }
+          
+              if (!this.textContent.trim()) {
+                  text.textContent = new URL(src).hostname || src;
+              }
+          
+              url.href = humanReadableSource(src);
+              this.fetchRules(src);
+          }'''.replace('      ', '')
+          assert old in r
+          r = r.replace(old, new, 1)
+          r = r.replace('item.url === this.getAttribute("src")', 'normalizeImportSource(item.url) === this.source')
+          old = '''        this.digest = null;
+                  this.rules = [];
+          
+                  try {
+                      const response = await fetch(src);'''.replace('      ', '')
+          new = '''        this.digest = null;
+                  this.rules = [];
+          
+                  try {
+                      const source = normalizeImportSource(src);
+                      if (!source) {
+                          throw new TypeError("Unsupported rule source URL");
+                      }
+                      const response = await fetch(source);'''.replace('      ', '')
+          assert old in r
+          r = r.replace(old, new, 1)
+          old = '''function humanReadableSource(src) {
+              try {
+                  const url = new URL(src);'''.replace('      ', '')
+          new = '''function humanReadableSource(src) {
+              const source = normalizeImportSource(src);
+              if (!source) {
+                  return "about:blank";
+              }
+          
+              try {
+                  const url = new URL(source);'''.replace('      ', '')
+          assert old in r
+          r = r.replace(old, new, 1)
+          idx = r.index('function humanReadableSource')
+          prefix, tail = r[:idx], r[idx:]
+          tail = tail.replace('        return src;\n    } catch {\n        return src;\n    }\n}', '        return source;\n    } catch {\n        return "about:blank";\n    }\n}', 1)
+          r = prefix + tail
+          r = r.replace('input.src = browser.runtime.getURL(preset.path);', 'input.source = browser.runtime.getURL(preset.path);')
+          p.write_text(r)
+
+          p = Path('src/options/options.html')
+          h = p.read_text()
+          h = h.replace('<script defer src="rule-import-input.js"></script>', '<script defer type="module" src="rule-import-input.js"></script>')
+          p.write_text(h)
+
+          Path('src/options/import-source.js').write_text('''/* This Source Code Form is subject to the terms of the Mozilla Public
+           * License, v. 2.0. If a copy of the MPL was not distributed with this
+           * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+          
+          const ALLOWED_IMPORT_PROTOCOLS = new Set([
+              "http:",
+              "https:",
+              "moz-extension:",
+              "chrome-extension:",
+          ]);
+          
+          export function normalizeImportSource(value) {
+              if (typeof value !== "string" || !value.trim()) {
+                  return null;
+              }
+          
+              try {
+                  const url = new URL(value.trim());
+                  if (!ALLOWED_IMPORT_PROTOCOLS.has(url.protocol)) {
+                      return null;
+                  }
+                  return url.href;
+              } catch {
+                  return null;
+              }
+          }
+          '''.replace('          ', ''))
+
+          p = Path('test/source-scope-editor.test.js')
+          t = p.read_text().replace('https://missing-path.example.com', 'https://localhost')
+          p.write_text(t)
+
+          Path('test/import-source-security.test.js').write_text('''import fs from "node:fs";
+          import { normalizeImportSource } from "../src/options/import-source.js";
+          
+          const optionsJs = fs.readFileSync(new URL("../src/options/options.js", import.meta.url), "utf8");
+          
+          test("rule import sources allow only network and extension protocols", () => {
+              expect(normalizeImportSource("https://example.com/rules.json")).toBe(
+                  "https://example.com/rules.json"
+              );
+              expect(normalizeImportSource("http://localhost:8080/rules.json")).toBe(
+                  "http://localhost:8080/rules.json"
+              );
+              expect(normalizeImportSource("moz-extension://1234/rules/list.json")).toBe(
+                  "moz-extension://1234/rules/list.json"
+              );
+              expect(normalizeImportSource("chrome-extension://abcdefghijkl/rules/list.json")).toBe(
+                  "chrome-extension://abcdefghijkl/rules/list.json"
+              );
+          });
+          
+          test("rule import sources reject executable and embedded-document schemes", () => {
+              expect(normalizeImportSource("javascript:alert(document.domain)")).toBeNull();
+              expect(normalizeImportSource("data:text/html,<script>alert(1)</script>")).toBeNull();
+              expect(normalizeImportSource("vbscript:msgbox(1)")).toBeNull();
+              expect(normalizeImportSource("not a URL")).toBeNull();
+          });
+          
+          test("dynamic import sources are not interpolated into selectors or src attributes", () => {
+              expect(optionsJs).not.toContain('setAttribute("src", src)');
+              expect(optionsJs).not.toContain('rule-import-input[src="${');
+              expect(optionsJs).toContain("findImportInputBySource");
+              expect(optionsJs).toContain("normalizeImportSource");
+          });
+          '''.replace('          ', ''))
+          PY
+          rm .github/workflows/automation-fix-1.19-security.yml
+          node --check src/options/options.js
+          node --check src/options/rule-import-input.js
+          node --check src/options/import-source.js
+          git add -A
+          git commit -m "fix: harden rule import sources before 1.19.0"
+          git push origin HEAD:chore/release-1.19.0
