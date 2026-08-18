@@ -1,0 +1,74 @@
+name: Prepare 1.19.0 release metadata
+
+on:
+  push:
+    branches:
+      - chore/release-1.19.0
+    paths:
+      - .github/workflows/automation-prepare-1.19.0.yml
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: chore/release-1.19.0
+      - name: Update release metadata and roadmap
+        shell: bash
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          import json
+
+          manifest = Path('manifest.json')
+          data = json.loads(manifest.read_text())
+          data['version'] = '1.19.0'
+          manifest.write_text(json.dumps(data, indent=4, ensure_ascii=False) + '\n')
+
+          changelog = Path('CHANGELOG.md')
+          text = changelog.read_text()
+          entry = '''## [1.19.0] - Aug. 18, 2026
+          - Add the on-demand Compatibility Guardian for bounded per-tab diagnostics, including lifecycle cleanup and local scoring without continuous browsing surveillance.
+          - Add configurable Referer protection modes for browser-default, balanced cross-origin origin-only, same-origin only and no-referrer behavior; browser-default remains listener-free and balanced mode preserves HTTPS-to-HTTP downgrade protection.
+          - Harden source-site semantics and add capability-gated Chromium 145+ session `topDomains` compilation for the proven `*://*.domain/*` subset while preserving explicit unsupported diagnostics for neighboring forms.
+          - Improve Firefox Android responsiveness across options, rule selection, imports, popup, inspector, analyzer and dialogs with dynamic viewport sizing, larger touch targets and regression coverage for mobile-only breakage.
+          '''
+          if '## [1.19.0]' not in text:
+              text = text.replace('## [Unreleased]\n', '## [Unreleased]\n\n' + entry, 1)
+          changelog.write_text(text)
+
+          roadmap = Path('ROADMAP.md')
+          text = roadmap.read_text()
+          text = text.replace(
+              '**Status: 1.18.1 released; Phase 9 source-site parity hardening complete**',
+              '**Status: 1.18.1 released; Phase 10 / 1.19.0 release finalization in progress**'
+          )
+          phase = '''## Phase 10 — Firefox Android hardening and 1.19.0 release finalization
+
+          - [x] Carry the fully validated Phase 8 Compatibility Guardian and Referer-protection work forward from `dev`.
+          - [x] Carry the fully validated Phase 9 source-site semantic hardening and capability-gated Chromium session `topDomains` subset forward from `dev`.
+          - [x] Harden Firefox Android options, rule-selection, popup, inspector, analyzer and dialog layouts; retain mobile rule selection and add dedicated regression coverage.
+          - [x] Align `manifest.json` and `CHANGELOG.md` at 1.19.0 because the post-1.18.1 development line contains new user-facing capabilities, not only patch fixes.
+          - [ ] Validate the complete 1.19.0 candidate through audit, lint, tests, build, build-lint/checker and security checks.
+          - [ ] Promote the validated candidate to `master` without rewriting the immutable 1.18.x release history.
+          - [ ] Verify the 1.19.0 tag, GitHub release, ZIP/XPI digests and Mozilla-signing status after publication.
+
+          '''
+          if '## Phase 10 —' not in text:
+              text = text.replace('## Blockers / dependencies\n', phase + '## Blockers / dependencies\n', 1)
+          old = '**Phases 1–9 are complete.** The 1.18.0 milestone remains immutable, 1.18.1 is published and verified, and Phase 9 fixes the Firefox source-site match-pattern boundary/port semantics while adding only the explicitly capability-gated, session-only `*://*.domain/*` Chromium `topDomains` subset. All neighboring source-scope forms remain conservative explicit unsupported diagnostics. Further work belongs to a new post-Phase-9 roadmap phase.'
+          new = '**Phases 1–9 are complete. Phase 10 is active.** The 1.19.0 candidate packages the already-validated Compatibility Guardian, Referer protection, source-site/DNR parity hardening and Firefox Android responsive-UI work into the next minor release. Promotion and post-release verification remain pending until the complete candidate is green.'
+          text = text.replace(old, new)
+          roadmap.write_text(text)
+          PY
+
+          rm .github/workflows/automation-prepare-1.19.0.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifest.json CHANGELOG.md ROADMAP.md .github/workflows/automation-prepare-1.19.0.yml
+          git commit -m "chore: prepare Request Control 1.19.0"
+          git push origin HEAD:chore/release-1.19.0
