@@ -4,24 +4,33 @@ const optionsHtml = fs.readFileSync(new URL("../src/options/options.html", impor
 const optionsJs = fs.readFileSync(new URL("../src/options/options.js", import.meta.url), "utf8");
 const importJs = fs.readFileSync(new URL("../src/options/rule-import-input.js", import.meta.url), "utf8");
 
-test("imports are grouped into recommended, community and advanced custom sections", () => {
-    expect(optionsHtml).toContain('id="recommended-rule-lists"');
+test("imports are split into official, community and advanced custom channels", () => {
+    expect(optionsHtml).toContain('id="official-rule-lists"');
     expect(optionsHtml).toContain('id="community-rule-lists"');
     expect(optionsHtml).toContain('id="custom-rule-lists"');
-    expect(optionsHtml).not.toContain('data-i18n="common_lists"');
-    expect(optionsHtml).not.toContain('data-i18n="site_specific_lists"');
+    expect(optionsHtml).not.toContain('id="recommended-rule-lists"');
 });
 
-test("animated per-row loading dots are no longer rendered", () => {
-    expect(optionsHtml).not.toContain("loading-dots.js");
-    expect(optionsHtml).not.toContain("<loading-dots");
+test("official packages expose individual and bulk update states", () => {
+    expect(optionsHtml).toContain('id="official-update-count"');
+    expect(optionsHtml).toContain('id="official-update-all"');
+    expect(optionsJs).toContain("refreshOfficialUpdateState");
+    expect(optionsJs).toContain("updateAllOfficial");
+    expect(importJs).toContain("get updateAvailable()");
 });
 
-test("community and custom sources are lazy while bundled payloads use packaged files", () => {
+test("official and community catalogs are remote while bundled presets are no longer rendered", () => {
+    expect(optionsJs).toContain("/official/catalog.json");
+    expect(optionsJs).toContain("/community/catalog.json");
     expect(optionsJs).toContain('communityDetails.addEventListener("toggle"');
-    expect(optionsJs).toContain('input.setAttribute("lazy", "")');
-    expect(importJs).toContain("input.fetchSource = localSource");
-    expect(importJs).toContain("browser.runtime.getURL(preset.path)");
+    expect(importJs).not.toContain("setupRecommendedRulesets");
+    expect(importJs).not.toContain("browser.runtime.getURL(preset.path)");
+});
+
+test("remote package integrity failures cannot become importable updates", () => {
+    expect(importJs).toContain("this.digest = null");
+    expect(importJs).toContain('message("integrity_failed"');
+    expect(importJs).toContain("Array.isArray(parsed) ? parsed : [parsed]");
 });
 
 test("GitHub sharing lives with selected rules and requires explicit review", () => {

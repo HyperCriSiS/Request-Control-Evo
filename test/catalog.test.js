@@ -110,3 +110,26 @@ test("reconcileManagedRules adopts an identical legacy rule but protects a diffe
         {uuid: "b", reason: "uuid-collision-or-legacy-local-modified"},
     ]);
 });
+
+test("reconcileManagedRules migrates a legacy source alias without persisting migration metadata", async () => {
+    const legacySource = {
+        id: "https://tumpio.github.io/requestcontrol/rules/privacy-common-params.json",
+        url: "https://tumpio.github.io/requestcontrol/rules/privacy-common-params.json",
+        version: "legacy",
+    };
+    const local = await createManagedRule(rule("a"), legacySource);
+    const officialSource = {
+        id: "requestcontrol-official/privacy-common-params",
+        url: "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/official/rules/privacy-common-params.json",
+        version: "1.0.0",
+        aliases: [legacySource.id],
+        legacyPaths: ["rules/privacy-common-params.json"],
+    };
+
+    const result = await reconcileManagedRules([local], [rule("a", ["utm_*", "fbclid"])], officialSource);
+    expect(result.updated).toEqual(["a"]);
+    expect(result.conflicts).toEqual([]);
+    expect(result.rules[0].source.id).toBe("requestcontrol-official/privacy-common-params");
+    expect(result.rules[0].source.aliases).toBeUndefined();
+    expect(result.rules[0].source.legacyPaths).toBeUndefined();
+});
