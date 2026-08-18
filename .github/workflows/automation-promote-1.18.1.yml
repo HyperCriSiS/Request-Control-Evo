@@ -1,0 +1,29 @@
+name: Synchronize 1.18.1 release metadata
+
+on:
+  push:
+    branches:
+      - chore/promote-1.18.1
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Copy validated release metadata from dev
+        run: |
+          git fetch origin dev
+          git checkout origin/dev -- manifest.json CHANGELOG.md ROADMAP.md
+          git rm .github/workflows/automation-promote-1.18.1.yml
+          git add manifest.json CHANGELOG.md ROADMAP.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: promote Request Control 1.18.1 metadata"
+          git push origin HEAD:chore/promote-1.18.1
