@@ -20,7 +20,9 @@ A fresh release-blocker audit on the same candidate found no open issues and no 
 
 Release preparation has started using the repository's established branch convention: `release/1.17.0` was created from validated `dev` commit `0bf7e883`. A minor-version bump is appropriate because the candidate adds user-visible SPA/history-state behavior and new exact compatibility semantics beyond the 1.16.1 baseline. The remaining release work is to align `manifest.json` and `CHANGELOG.md` on that release branch, promote the validated release candidate to `master`, and verify the self-contained release workflow/tag/artifact result.
 
-The release metadata is now aligned at 1.17.0 (`6e331d5c`). PR #18 promotes `release/1.17.0` to `master`. Its only merge conflicts were the expected `CHANGELOG.md` and `manifest.json` version-history overlap with 1.16.1; those were resolved by retaining the validated 1.17.0 release metadata while merging current `master` in `c1d69b91`. PR #18 merged successfully to `master` as `959e6f6e`; the release workflow is now running and release artifact verification remains open.
+The release metadata is now aligned at 1.17.0 (`6e331d5c`). PR #18 promoted `release/1.17.0` to `master`. Its only merge conflicts were the expected `CHANGELOG.md` and `manifest.json` version-history overlap with 1.16.1; those were resolved by retaining the validated 1.17.0 release metadata while merging current `master` in `c1d69b91`. PR #18 merged successfully to `master` as `959e6f6e`; the release workflow is running and release artifact verification remains open.
+
+Dependency maintenance has also been refreshed on `chore/dependency-refresh-2026-08`: direct maintained tooling baselines were advanced where newer compatible releases are available, the lockfile was regenerated, legacy vulnerable `js-yaml` and `brace-expansion` instances were moved to patched versions, and CI now includes an explicit high/critical npm-audit gate. The only currently accepted high-severity audit roots are the two known `image-size` advisories inherited through the current Mozilla `addons-linter`/`web-ext` toolchain; the gate is keyed to those exact GHSA IDs so any additional high/critical advisory remains a hard failure.
 
 ## Phase 1 — modernization baseline
 
@@ -29,6 +31,7 @@ The release metadata is now aligned at 1.17.0 (`6e331d5c`). PR #18 promotes `rel
 - [x] Integrate SPA/history-state navigation support into `dev`.
 - [x] Add the conservative MV3/DNR compiler foundation to `dev`.
 - [x] Keep Firefox `webRequest` behavior as the reference semantics rather than silently replacing it with approximate DNR behavior.
+- [x] Refresh maintained npm dependency baselines and the lockfile, remove the known patched legacy `js-yaml`/`brace-expansion` vulnerabilities, and add a CI audit gate that rejects unapproved high/critical findings.
 
 ## Phase 2 — prove and expand exact MV3/DNR parity
 
@@ -72,10 +75,11 @@ The release metadata is now aligned at 1.17.0 (`6e331d5c`). PR #18 promotes `rel
 - No current normal CI blocker is known on `dev`; Build #183 is fully green on candidate commit `451dcfe9`.
 - No open issue or open pull request currently identifies a release blocker in this fork.
 - The release workflow is self-contained and idempotent: a stable SemVer version on `master` triggers verification/build, tag creation, GitHub release creation, and optional Mozilla signing when credentials are configured.
+- The dependency audit gate blocks new high/critical npm advisories. Two exact `image-size` GHSA roots inherited through the current Mozilla linter/signing toolchain are temporarily accepted because the installed dependency chain exposes no patched replacement; their exception is advisory-specific rather than package-wide.
 - The parity harness intentionally covers only semantics already representable exactly or narrowly scoped candidates before activation. Browser-specific or custom matcher semantics require dedicated positive and negative evidence before compiler support is broadened.
 - MV3 feature growth is constrained by `declarativeNetRequest` expressiveness. Unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
 - Multiple includes, regexp includes, non-ASCII includes and scoped match-pattern + include combinations remain outside the activated compiler subset until exact parity is separately proven.
 
 ## Completion status
 
-**Not fully completed.** The modernization baseline is released, the bounded `<all_urls>` + one non-regexp ASCII include compiler support is implemented, boundary-tested, documented, and fully green through Build #183. The current final candidate has no open issue/PR release blocker and no missing genuinely new real-world/catalog semantic requiring another fixture. Release metadata for 1.17.0 is aligned and PR #18 is open against `master`; the remaining work is successful PR validation/promotion and verification of the resulting release workflow/tag/artifact state. After those steps are complete, this roadmap can be marked **fully completed**.
+**Not fully completed.** The modernization baseline is released, the bounded `<all_urls>` + one non-regexp ASCII include compiler support is implemented, boundary-tested, documented, and fully green through Build #183. The current final candidate has no open issue/PR release blocker and no missing genuinely new real-world/catalog semantic requiring another fixture. Release metadata for 1.17.0 is aligned and PR #18 has merged to `master` as `959e6f6e`; the remaining release task is verification of the resulting release workflow, tag, GitHub release, release ZIP, and Mozilla signing status. Dependency maintenance has been refreshed in parallel with patched legacy transitive versions and a permanent high/critical audit gate. After release verification is complete, this roadmap can be marked **fully completed**.
