@@ -5,6 +5,7 @@
 import { buildInspectionBlockRule, summarizeInspection } from "../main/analysis/inspection.js";
 import { uuid } from "../util/uuid.js";
 import { getInspectionMessage } from "./strings.js";
+import { renderRuleSourceDetails } from "./rule-source-details.js";
 
 const params = new URLSearchParams(location.search);
 const targetTabId = Number(params.get("tabId"));
@@ -317,6 +318,9 @@ function renderDetails() {
     ruleWrap.classList.toggle("hidden", !request.effect?.rule?.uuid);
     if (request.effect?.rule?.uuid) {
         ruleButton.textContent = request.effect.rule.title || request.effect.rule.tag || request.effect.rule.uuid;
+        void renderRuleSourceDetails(ruleWrap, request.effect.rule.uuid);
+    } else {
+        void renderRuleSourceDetails(ruleWrap, null);
     }
 
     const siteScopedAvailable = isInspectableUrl(state.session?.pageUrl);
