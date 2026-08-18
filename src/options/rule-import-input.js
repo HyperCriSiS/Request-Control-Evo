@@ -234,6 +234,10 @@ class RuleImportInput extends HTMLElement {
         return this._data;
     }
 
+    get updateAvailable() {
+        return Boolean(this._data?.imported && this.digest && this._data.imported.digest !== this.digest);
+    }
+
     set data(value = {}) {
         const imported = this.shadowRoot.getElementById("imported");
         const update = this.shadowRoot.getElementById("update");
@@ -285,9 +289,14 @@ class RuleImportInput extends HTMLElement {
             if (this.expectedSha256 && this.digest !== this.expectedSha256) {
                 integrity.hidden = false;
                 integrity.textContent = message("integrity_failed", "Integrity check failed");
+                this.digest = null;
                 return;
             }
-            this.rules = JSON.parse(text);
+            const parsed = JSON.parse(text);
+            this.rules = Array.isArray(parsed) ? parsed : [parsed];
+            if (this.rules.some((rule) => !rule || typeof rule !== "object")) {
+                throw new TypeError("Invalid rule payload");
+            }
             count.hidden = false;
             if (this.rules.length === 1) {
                 count.textContent = browser.i18n.getMessage("count_rule") || "1 rule";
@@ -295,6 +304,8 @@ class RuleImportInput extends HTMLElement {
                 count.textContent = browser.i18n.getMessage("count_rules", this.rules.length) || `${this.rules.length} rules`;
             }
         } catch {
+            this.digest = null;
+            this.rules = [];
             count.hidden = false;
             count.textContent = message("import_unavailable", "Unavailable");
         } finally {
@@ -342,84 +353,4 @@ async function digest(text, algorithm = "SHA-256") {
     const digest = await crypto.subtle.digest(algorithm, data);
     const bytes = Array.from(new Uint8Array(digest));
     return bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-function setupRecommendedRulesets() {
-    const list = document.getElementById("recommended-rule-list");
-    if (!list || list.dataset.ready === "true") {
-        return;
-    }
-    list.dataset.ready = "true";
-
-    const privacy = message("privacy", "Privacy");
-    const other = message("other", "Other");
-    const bundledSource = "https://github.com/HyperCriSiS/Request-Control-Evo/tree/dev/rules";
-    const presets = [
-        {
-            path: "rules/privacy-common-redirectors.json",
-            source: "https://tumpio.github.io/requestcontrol/rules/privacy-common-redirectors.json",
-            title: `${privacy} - ${message("imports_skip_redirectors", "Skip common URL redirectors")}`,
-        },
-        {
-            path: "rules/privacy-common-params.json",
-            source: "https://tumpio.github.io/requestcontrol/rules/privacy-common-params.json",
-            title: `${privacy} - ${message("imports_remove_parameters", "Remove tracking URL parameters")}`,
-        },
-        {
-            path: "rules/privacy-common-images.json",
-            source: "https://tumpio.github.io/requestcontrol/rules/privacy-common-images.json",
-            title: `${privacy} - ${message("imports_remove_image_parameters", "Remove image tracking parameters")}`,
-        },
-        {
-            path: "rules/privacy-block-beacon-and-ping.json",
-            source: "https://tumpio.github.io/requestcontrol/rules/privacy-block-beacon-and-ping.json",
-            title: `${privacy} - ${message("imports_block_beacon_and_ping", "Block beacon and ping requests")}`,
-        },
-        {
-            path: "rules/other-skip-image-downsamplers.json",
-            source: "https://tumpio.github.io/requestcontrol/rules/other-skip-image-downsamplers.json",
-            title: `${other} - ${message("imports_skip_image_downsamplers", "Skip image downsamplers")}`,
-        },
-        ...["amazon", "bing", "duckduckgo", "facebook", "google", "youtube"].map((site) => ({
-            path: `rules/privacy-${site}.json`,
-            source: `https://tumpio.github.io/requestcontrol/rules/privacy-${site}.json`,
-            title: `${privacy} - ${site === "duckduckgo" ? "DuckDuckGo" : site[0].toUpperCase() + site.slice(1)}`,
-        })),
-        { path: "rules/media-original-quality.json", title: browser.i18n.getMessage("special_media_original_title"), description: browser.i18n.getMessage("special_media_original_description") },
-        { path: "rules/privacy-enhanced-embeds.json", title: browser.i18n.getMessage("special_privacy_embeds_title"), description: browser.i18n.getMessage("special_privacy_embeds_description") },
-        { path: "rules/developer-direct-raw.json", title: browser.i18n.getMessage("special_developer_raw_title"), description: browser.i18n.getMessage("special_developer_raw_description") },
-        { path: "rules/search-engine-escape.json", title: browser.i18n.getMessage("special_search_escape_title"), description: browser.i18n.getMessage("special_search_escape_description") },
-        { path: "rules/privacy-aggressive-direct-links.json", title: browser.i18n.getMessage("special_aggressive_links_title"), description: browser.i18n.getMessage("special_aggressive_links_description") },
-        { path: "rules/web-canonical-desktop.json", title: browser.i18n.getMessage("special_canonical_desktop_title"), description: browser.i18n.getMessage("special_canonical_desktop_description") },
-        { path: "rules/special-text-first-low-bandwidth.json", title: browser.i18n.getMessage("special_text_first_title"), description: browser.i18n.getMessage("special_text_first_description") },
-        { path: "rules/special-first-party-firewall.json", title: browser.i18n.getMessage("special_first_party_title"), description: browser.i18n.getMessage("special_first_party_description"), warning: true },
-    ];
-
-    for (const preset of presets) {
-        const input = document.createElement("rule-import-input");
-        const localSource = browser.runtime.getURL(preset.path);
-        input.fetchSource = localSource;
-        if (preset.warning) {
-            input.setAttribute("warning", "");
-        }
-        input.source = preset.source || localSource;
-        input.sourceHomepage = bundledSource;
-        input.dataset.bundledPath = preset.path;
-        input.title = preset.description || preset.title;
-        input.description = preset.description || "";
-        const label = document.createElement("span");
-        label.textContent = preset.title;
-        input.append(label);
-        list.append(input);
-    }
-}
-
-function setupImportExtras() {
-    setupRecommendedRulesets();
-}
-
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", setupImportExtras, { once: true });
-} else {
-    setupImportExtras();
 }
