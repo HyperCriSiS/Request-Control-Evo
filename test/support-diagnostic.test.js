@@ -2,12 +2,14 @@ import {
     SUPPORT_DIAGNOSTIC_SCHEMA_VERSION,
     buildSupportDiagnostic,
     summarizeImportState,
+    summarizeRuleRuntimeState,
     summarizeRuleSource,
 } from "../src/main/analysis/support-diagnostic.js";
 
 const secretRequestUrl = "https://tracker.secret.example/pixel?token=private-value";
 const secretPageUrl = "https://private.example/account?session=secret";
 const secretCustomSource = "https://rules.private.example/user/rules.json?token=source-secret";
+const officialSource = "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/official/rules/privacy-common-params.json";
 
 test("rule source summaries expose channel identity without remote URLs", () => {
     expect(summarizeRuleSource({uuid: "local"})).toEqual({channel: "local"});
@@ -17,7 +19,7 @@ test("rule source summaries expose channel identity without remote URLs", () => 
             catalog: "requestcontrol-official",
             entry: "privacy-common-params",
             version: "1.2.0",
-            url: "https://raw.githubusercontent.com/example.json",
+            url: officialSource,
         },
     })).toEqual({
         channel: "official",
@@ -30,7 +32,7 @@ test("rule source summaries expose channel identity without remote URLs", () => 
     })).toEqual({channel: "custom"});
 });
 
-test("import summary omits source keys and keeps update/conflict reason codes", () => {
+test("import summary omits source keys and keeps update, integrity and conflict reason codes", () => {
     const packages = summarizeImportState({
         [secretCustomSource]: {
             deletable: true,
@@ -40,7 +42,7 @@ test("import summary omits source keys and keeps update/conflict reason codes", 
                 conflicts: [{uuid: "custom-rule", reason: "local-modified"}],
             },
         },
-        "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/official/rules/privacy-common-params.json": {
+        [officialSource]: {
             imported: {
                 catalog: "requestcontrol-official",
                 entry: "privacy-common-params",
@@ -53,11 +55,56 @@ test("import summary omits source keys and keeps update/conflict reason codes", 
     });
 
     expect(packages).toEqual([
-        expect.objectContaining({channel: "custom", updateAvailable: true}),
-        expect.objectContaining({channel: "official", packageId: "privacy-common-params", updateAvailable: false}),
+        expect.objectContaining({channel: "custom", updateAvailable: true, integrityStatus: "not-required"}),
+        expect.objectContaining({
+            channel: "official",
+            packageId: "privacy-common-params",
+            updateAvailable: false,
+            integrityStatus: "verified-at-import",
+        }),
     ]);
     expect(JSON.stringify(packages)).not.toContain(secretCustomSource);
     expect(packages[0].conflicts).toEqual([{uuid: "custom-rule", reason: "local-modified"}]);
+});
+
+test("matched rule runtime state combines source, update and rule-specific conflicts", () => {
+    const rule = {
+        uuid: "official-rule",
+        managed: true,
+        source: {
+            catalog: "requestcontrol-official",
+            entry: "privacy-common-params",
+            version: "1.0.0",
+            url: officialSource,
+        },
+    };
+    const imports = {
+        [officialSource]: {
+            imported: {
+                catalog: "requestcontrol-official",
+                entry: "privacy-common-params",
+                version: "1.0.0",
+                digest: "installed",
+                availableDigest: "available",
+                availableVersion: "1.1.0",
+                conflicts: [
+                    {uuid: "other-rule", reason: "local-modified"},
+                    {uuid: "official-rule", reason: "baseline-unknown"},
+                ],
+            },
+        },
+    };
+
+    expect(summarizeRuleRuntimeState(rule, imports)).toEqual({
+        channel: "official",
+        packageId: "privacy-common-params",
+        version: "1.0.0",
+        integrityStatus: "verified-at-import",
+        updateAvailable: true,
+        availableVersion: "1.1.0",
+        conflictReason: "baseline-unknown",
+        lastCheckStatus: null,
+    });
 });
 
 test("support diagnostic is privacy-minimized by construction", () => {
@@ -91,7 +138,7 @@ test("support diagnostic is privacy-minimized by construction", () => {
             catalog: "requestcontrol-official",
             entry: "privacy-common-params",
             version: "1.0.0",
-            url: "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/official/rules/privacy-common-params.json",
+            url: officialSource,
         },
     }];
 
