@@ -35,7 +35,7 @@ These remain unsupported rather than being approximated:
 - multiple `includes`, regexp `includes`, non-ASCII `includes`, and any `includes` combined with a scoped match-pattern instead of `allUrls`;
 - `anyTLD` registrable-domain matching;
 - per-rule `incognito` conditions;
-- top-level source-site (`pattern.source`) matching used by Inspection Mode. Chromium 145+ exposes `topDomains`, but that condition is session-rule-only, domain-only, automatically includes subdomains, and falls back to the initiator domain when no top-level frame exists. The normal compiler therefore continues to reject source scope until a capability-gated subset is proven exact;
+- top-level source-site (`pattern.source`) matching remains unsupported in the default/static/dynamic compiler path. A capability-gated session-rule subset is supported only for `*://*.domain/*`, which maps to `topDomains`; exact-host, fixed-scheme, explicit-port and constrained-path source patterns remain unsupported;
 - `same-domain` / `third-party-domain` because Chromium private-registry semantics differ from the current ICANN-only reference behavior;
 - `same-origin` / `third-party-origin` because DNR `domainType` does not compare full origins;
 - host/path/resource/method values outside the compiler's exact subset.
@@ -62,4 +62,10 @@ Chrome 145 introduced `topDomains` / `excludedTopDomains`, which is the first DN
 - a listed DNR domain also matches all of its subdomains;
 - requests without an associated top-level frame use the initiator domain instead.
 
-Phase 9 therefore keeps default/persistent source-scope compilation unsupported. Any later activation must be capability-gated and covered by boundary fixtures that prove no host, scheme, path, port or context broadening.
+Phase 9 therefore keeps default/persistent source-scope compilation unsupported. The compiler now accepts a deliberately narrow session-only form when the caller explicitly supplies `capabilities: { topDomains: true }` together with `rulesetScope: "session"`:
+
+- `*://*.example.com/*` -> `topDomains: ["example.com"]`;
+- multiple such source patterns remain OR semantics through one deduplicated `topDomains` list;
+- exact-host, fixed-scheme, explicit-port, constrained-path, non-ASCII and non-session forms remain explicit `source-matcher-unsupported` diagnostics.
+
+This capability is not enabled by default and does not change the Firefox runtime. Boundary fixtures cover the activated form and its immediately neighboring rejected forms.

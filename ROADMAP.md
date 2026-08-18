@@ -125,8 +125,8 @@ This document is the binding source of truth for the active modernization/releas
 - [x] Re-audit the Firefox source-site matcher against current WebExtension match-pattern semantics before using it as the DNR parity reference.
 - [x] Fix wildcard source hosts so `*.example.com` matches the bare domain and real subdomains, but not unrelated suffix hosts such as `badexample.com`.
 - [x] Re-evaluate Chromium 145+ `topDomains` / `excludedTopDomains` and document the session-only, domain-only and no-top-frame fallback constraints.
-- [ ] Add capability-gated DNR source-scope compilation only for a subset whose scheme/host/path/port/context semantics are proven lossless; otherwise preserve `source-matcher-unsupported`.
-- [ ] Add direct positive/negative parity fixtures for every activated source-scope form and explicit rejection fixtures for neighboring unsupported forms.
+- [x] Add capability-gated DNR source-scope compilation only for the proven session-only `*://*.domain/*` subset; default/static/dynamic and neighboring source forms preserve `source-matcher-unsupported`.
+- [x] Add direct positive/negative boundary fixtures for the activated session `topDomains` form plus explicit rejection fixtures for exact-host, fixed-scheme, explicit-port, constrained-path and non-session forms.
 - [ ] Run audit, lint, tests, build, build-lint/checker and security checks before marking Phase 9 complete.
 
 ## Blockers / dependencies
