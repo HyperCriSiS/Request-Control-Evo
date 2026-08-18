@@ -7,6 +7,7 @@ on:
     paths:
       - manifest.json
       - .github/workflows/release.yml
+      - .github/actions/setup-pandoc/action.yml
   workflow_dispatch:
 
 permissions:
@@ -67,9 +68,9 @@ jobs:
           TAG_VERSION=$(node -p "require('./manifest.json').version")
           test "$TAG_VERSION" = "$VERSION"
 
-      - name: Install build dependency
+      - name: Install Pandoc
         if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'false'
-        run: sudo apt-get update && sudo apt-get install -y pandoc
+        uses: ./.github/actions/setup-pandoc
 
       - name: Verify and build release artifact
         if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'false'
