@@ -20,6 +20,12 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
+          sed -i 's/7rllZWVlZWV\/+e1txnXpllAj/7rllZWVlZWV\/+e1TxnXpllAj/' .phase11-patch-01
+          sed -i 's/t4vy4hbHdCiFSfxcrowRJf/t4vy4hbHdCiFSfxCrowRJf/' .phase11-patch-03
+          test "$(git hash-object .phase11-patch-00)" = "6d75dd28e830054a09cc1616d55b5b2abcab9d69"
+          test "$(git hash-object .phase11-patch-01)" = "60776d6b33310819f0800c07458b8b5be8a1b6c5"
+          test "$(git hash-object .phase11-patch-02)" = "7085bb46c44eea0ad2ef3547294cb3c64d397920"
+          test "$(git hash-object .phase11-patch-03)" = "7d66d6038b14b4c9df3468c643365cfe4d7f6e89"
           cat .phase11-patch-00 .phase11-patch-01 .phase11-patch-02 .phase11-patch-03 \
             | base64 -d | gzip -d > /tmp/phase11.patch
           patch -p1 --forward --batch < /tmp/phase11.patch
