@@ -1,0 +1,43 @@
+name: Complete 1.18.1 roadmap verification
+
+on:
+  push:
+    branches:
+      - docs/complete-1.18.1-roadmap
+
+permissions:
+  contents: write
+
+jobs:
+  update:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Record verified 1.18.1 release
+        run: |
+          python <<'PY'
+          from pathlib import Path
+
+          path = Path('ROADMAP.md')
+          text = path.read_text()
+          replacements = {
+              '- [ ] Promote the validated 1.18.1 candidate to `master`.': '- [x] Promote the validated 1.18.1 candidate to `master` via PR #38; master release commit `49fa1814940f2347bd345b898574a96f093b6c5d`.',
+              '- [ ] Verify the 1.18.1 tag, GitHub release, ZIP/XPI artifacts and Mozilla signing status.': '- [x] Verify Release run `32127317095` creates tag `1.18.1`, GitHub release `372266035`, ZIP and byte-identical unsigned XPI. Both assets are 216149 bytes with SHA-256 `94d9438fa6753fbb55c697140323fcf32482edeec2570b8fc9c14d01b04a9124`; Mozilla signing was skipped because AMO credentials were not configured.',
+              '- No release blocker remains for 1.18.0; the milestone is published and verified.': '- No release blocker remains for 1.18.0 or 1.18.1; both milestones are published and verified.',
+              '**The 1.18.0 milestone remains fully completed and immutable.** Phase 7 tracks the post-1.18 bundled showcase-ruleset work and its 1.18.1 patch release separately. The showcase implementation and final master synchronization are complete; release metadata is aligned and only promotion plus artifact verification remain open.': '**Phases 1–7 are complete.** The 1.18.0 milestone remains immutable, and the separate 1.18.1 patch release publishes the bundled showcase rulesets with the strict first-party safety warning, byte-identical ZIP/XPI artifacts and explicit Mozilla-signing status. Further development belongs to the next roadmap phase.'
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f'ROADMAP anchor not found: {old}')
+              text = text.replace(old, new, 1)
+          path.write_text(text)
+          PY
+
+          git rm .github/workflows/automation-complete-1.18.1-roadmap.yml
+          git add ROADMAP.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "docs: complete 1.18.1 roadmap milestone"
+          git push origin HEAD:docs/complete-1.18.1-roadmap
