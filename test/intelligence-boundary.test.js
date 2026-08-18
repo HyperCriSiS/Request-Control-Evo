@@ -23,8 +23,8 @@ test("Guardian listener activation remains inside explicit start lifecycle", () 
     expect(calls).toHaveLength(1);
 
     const startMethod = guardian.slice(
-        guardian.indexOf("start(tabId)"),
-        guardian.indexOf("stop(tabId)")
+        guardian.indexOf("\n    start(tabId) {"),
+        guardian.indexOf("\n    stop(tabId) {")
     );
     expect(startMethod).toContain("this.ensureListeners();");
     expect(guardian).toContain("this.cleanupListeners();");
