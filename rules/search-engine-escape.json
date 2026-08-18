@@ -1,0 +1,46 @@
+[
+    {
+        "uuid": "6ae5eac8-1c44-4a6f-ac2c-7d8a4ac90301",
+        "title": "Google searches to DuckDuckGo",
+        "description": "Redirect Google result-page searches to DuckDuckGo while preserving the search terms. Disabled by default because it intentionally changes the user's chosen search provider.",
+        "tag": "special-search-engine-escape",
+        "pattern": {
+            "scheme": "*",
+            "host": [
+                "www.google.com",
+                "google.com"
+            ],
+            "path": [
+                "/search?*q=*"
+            ]
+        },
+        "types": [
+            "main_frame"
+        ],
+        "action": "redirect",
+        "active": false,
+        "redirectUrl": "[href=https://duckduckgo.com/?q={search/.*[?&]q=([^&]+).*/$1}]"
+    },
+    {
+        "uuid": "6ae5eac8-1c44-4a6f-ac2c-7d8a4ac90302",
+        "title": "Bing searches to DuckDuckGo",
+        "description": "Redirect Bing result-page searches to DuckDuckGo while preserving the search terms. Disabled by default because it intentionally changes the user's chosen search provider.",
+        "tag": "special-search-engine-escape",
+        "pattern": {
+            "scheme": "*",
+            "host": [
+                "www.bing.com",
+                "bing.com"
+            ],
+            "path": [
+                "/search?*q=*"
+            ]
+        },
+        "types": [
+            "main_frame"
+        ],
+        "action": "redirect",
+        "active": false,
+        "redirectUrl": "[href=https://duckduckgo.com/?q={search/.*[?&]q=([^&]+).*/$1}]"
+    }
+]
