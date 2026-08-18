@@ -2,14 +2,15 @@
 
 This document is the binding source of truth for the active modernization/release line. Historical design notes remain in `docs/roadmap.md` and related documents, but implementation status must be reflected here.
 
-**Status: 1.18.1 released; Phase 10 / 1.19.0 release finalization in progress**
+**Status: 1.19.0 released and verified; Phase 10 complete**
 
 ## Release history and current baseline
 
 - Request Control 1.17.0 is released from `master`.
 - Request Control 1.18.0 is released from `master`; its tag and release assets remain immutable.
 - Request Control 1.18.1 is released from `master` with the bundled showcase rulesets.
-- `dev` is the active development branch and contains the released 1.18.1 baseline plus later validated work.
+- Request Control 1.19.0 is released from `master` with the Compatibility Guardian, Referer protection, source-site/DNR hardening, Firefox Android UI fixes and hardened import-source handling.
+- `dev` is the active development branch and contains the released 1.19.0 baseline.
 - Dependency and CI policy: current direct dependency baselines, lockfile refreshes, advisory-specific audit gate and checksum-verified Pandoc setup remain mandatory.
 
 ## Phase 1 — reliability and modernization baseline
@@ -135,13 +136,13 @@ This document is the binding source of truth for the active modernization/releas
 - [x] Carry the fully validated Phase 9 source-site semantic hardening and capability-gated Chromium session `topDomains` subset forward from `dev`.
 - [x] Harden Firefox Android options, rule-selection, popup, inspector, analyzer and dialog layouts; retain mobile rule selection and add dedicated regression coverage.
 - [x] Align `manifest.json` and `CHANGELOG.md` at 1.19.0 because the post-1.18.1 development line contains new user-facing capabilities, not only patch fixes.
-- [ ] Validate the complete 1.19.0 candidate through audit, lint, tests, build, build-lint/checker and security checks.
-- [ ] Promote the validated candidate to `master` without rewriting the immutable 1.18.x release history.
-- [ ] Verify the 1.19.0 tag, GitHub release, ZIP/XPI digests and Mozilla-signing status after publication.
+- [x] Validate the complete 1.19.0 candidate through audit, lint, tests, build, build-lint/checker and security checks; PR #46 passed the full project CI and both CodeQL analyses, with zero open code-scanning, Dependabot or secret-scanning alerts at the release gate.
+- [x] Promote the validated candidate to `master` without rewriting the immutable 1.18.x release history; PR #46 merged as `d2001728b4887d74a244717920de6e4b10827745` from a `master`-based promotion branch whose Git tree matched validated `dev`.
+- [x] Verify the 1.19.0 tag and GitHub release through Release run `32152724142`; `request_control-1.19.0.zip` and `.xpi` are both 225938 bytes with SHA-256 `3da8de30075b2f6e11e3fa265f26d60e89b038c23e5cf0b8fbd19aff9ab56e82`. Mozilla signing was skipped because AMO credentials are not configured.
 
 ## Blockers / dependencies
 
-- No release blocker remains for 1.18.0 or 1.18.1; both milestones are published and verified.
+- No release blocker remains for 1.18.0, 1.18.1 or 1.19.0; all three milestones are published and verified.
 - GitHub's agentic `github-advanced-security` PR check currently fails at service startup with `400 The requested model is not supported` for `claude-opus-4.6`. The repository's actual `Analyze (actions)` and `Analyze (javascript-typescript)` CodeQL jobs pass; treat the agentic service failure as an external GitHub platform issue unless its behavior changes.
 - No code blocker is currently known for the theme/import-presentation work.
 - Fully credential-less direct writes to GitHub are intentionally not assumed. The preferred community publication design keeps authentication on GitHub (submission/review UI) rather than storing a personal access token or secret inside the extension.
@@ -151,4 +152,4 @@ This document is the binding source of truth for the active modernization/releas
 
 ## Completion status
 
-**Phases 1–9 are complete. Phase 10 is active.** The 1.19.0 candidate packages the already-validated Compatibility Guardian, Referer protection, source-site/DNR parity hardening and Firefox Android responsive-UI work into the next minor release. Promotion and post-release verification remain pending until the complete candidate is green.
+**Phases 1–10 are complete.** Request Control 1.19.0 is published and verified. The release contains the Compatibility Guardian, Referer protection, source-site/DNR parity hardening, Firefox Android responsive-UI work and hardened rule-import source handling. The next development work belongs to a new Phase 11.
