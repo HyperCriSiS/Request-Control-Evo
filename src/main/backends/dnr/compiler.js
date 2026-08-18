@@ -230,6 +230,16 @@ function compileUrlConditions(pattern) {
             ],
         };
     }
+    if (pattern.source && (Array.isArray(pattern.source) ? pattern.source.length > 0 : true)) {
+        return {
+            diagnostics: [
+                diagnostic(
+                    "source-matcher-unsupported",
+                    "Top-level source-site matching is available in the Firefox webRequest engine but does not yet have a proven exact DNR translation."
+                ),
+            ],
+        };
+    }
     if (pattern.anyTLD) {
         return {
             diagnostics: [
@@ -328,6 +338,7 @@ function compileUrlConditions(pattern) {
     if (hostExpansion.error) {
         return { diagnostics: [hostExpansion.error] };
     }
+
     const paths = Array.isArray(pattern.path) ? pattern.path : [pattern.path == null ? "" : pattern.path];
     const conditions = [];
 

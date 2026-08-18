@@ -11,13 +11,13 @@
     transition: top 0.15s ease-out;
     top: 0;
     z-index: 100;
-    background-color: #d50000;
-    color: #fff;
+    background-color: var(--danger-color);
+    color: var(--on-danger-color);
     border-radius: 4px;
     padding: 1em;
     font-weight: bold;
     font-size: 0.9em;
-    box-shadow: 0 0 5px #888888;
+    box-shadow: 0 0 5px var(--shadow-color);
 }
 
 #close {

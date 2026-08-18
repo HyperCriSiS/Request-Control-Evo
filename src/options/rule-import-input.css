@@ -1,7 +1,87 @@
+:host {
+    display: block;
+    color: var(--text-color);
+}
+
+* {
+    box-sizing: border-box;
+}
+
 * + * {
     margin: initial;
 }
 
+.import-row {
+    list-style: none;
+    display: grid;
+    gap: 0.35rem;
+    padding: 0.7rem 0.15rem;
+    color: var(--text-color);
+    border-bottom: 1px solid var(--border-color);
+}
+
+.import-row:last-child {
+    border-bottom: 0;
+}
+
+.import-heading,
+.import-actions,
+.import-meta,
+.rating {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+}
+
+.import-heading {
+    justify-content: space-between;
+}
+
+.import-name {
+    min-width: 12rem;
+    flex: 1 1 18rem;
+    font-weight: 650;
+    color: var(--text-color);
+}
+
+.import-actions {
+    justify-content: flex-end;
+}
+
+.description {
+    margin: 0;
+    max-width: 58rem;
+    color: var(--text-muted);
+    font-size: 0.84rem;
+    line-height: 1.4;
+}
+
+.import-meta {
+    color: var(--text-muted);
+    font-size: 0.78rem;
+}
+
+.source-link,
+.rating-link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    color: var(--primary-color);
+    text-decoration: none;
+}
+
+.source-link:hover,
+.rating-link:hover {
+    text-decoration: underline;
+}
+
 #delete {
     margin-left: 0.3em;
+}
+
+@media (prefers-color-scheme: dark) {
+    img {
+        filter: invert(0.88);
+    }
 }

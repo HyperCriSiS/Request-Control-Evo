@@ -90,7 +90,7 @@ a.disabled {
 .btn-danger {
     background: var(--danger-color);
     border-color: var(--danger-color);
-    color: white;
+    color: var(--on-danger-color);
 }
 
 .btn-danger:hover:not(:disabled):not(.disabled) {
@@ -101,7 +101,7 @@ a.disabled {
 .btn.primary {
     background: var(--primary-color);
     border-color: var(--primary-color);
-    color: white;
+    color: var(--on-primary-color);
     font-weight: 700;
 }
 
@@ -190,4 +190,28 @@ pre {
 
 .middle {
     vertical-align: middle;
+}
+
+input,
+select,
+textarea,
+option {
+    color: var(--text-color);
+}
+
+input::placeholder,
+textarea::placeholder {
+    color: var(--text-muted);
+    opacity: 1;
+}
+
+label,
+legend,
+summary {
+    color: var(--text-color);
+}
+
+small,
+.text-muted {
+    color: var(--text-muted);
 }

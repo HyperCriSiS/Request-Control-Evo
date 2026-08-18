@@ -1,0 +1,145 @@
+<!-- This Source Code Form is subject to the terms of the Mozilla Public
+   - License, v. 2.0. If a copy of the MPL was not distributed with this
+   - file, You can obtain one at http://mozilla.org/MPL/2.0/. -->
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>Inspection Mode</title>
+        <link rel="stylesheet" href="inspector.css" />
+        <script defer type="module" src="localize.js"></script>
+        <script defer type="module" src="inspector.js"></script>
+    </head>
+    <body>
+        <header class="page-header">
+            <div>
+                <p class="eyebrow" data-i18n="inspection_mode"></p>
+                <h1 data-i18n="inspection_title"></h1>
+                <p id="target-title" class="target-title"></p>
+                <p id="target-url" class="target-url"></p>
+            </div>
+            <div class="header-actions">
+                <button id="start" class="button primary" data-i18n="inspection_reload_start"></button>
+                <button id="stop" class="button" data-i18n="inspection_stop" disabled></button>
+                <button id="clear" class="button subtle" data-i18n="inspection_clear"></button>
+            </div>
+        </header>
+
+        <main>
+            <section class="notice">
+                <div>
+                    <strong id="status" data-i18n="inspection_ready"></strong>
+                    <p id="status-detail" data-i18n="inspection_ready_detail"></p>
+                </div>
+                <span id="recording-dot" class="recording-dot" aria-hidden="true"></span>
+            </section>
+
+            <section id="stats" class="stats" aria-label="Inspection summary">
+                <article><strong id="stat-total">0</strong><span data-i18n="inspection_requests"></span></article>
+                <article><strong id="stat-first">0</strong><span data-i18n="inspection_first_party"></span></article>
+                <article><strong id="stat-third">0</strong><span data-i18n="inspection_third_party"></span></article>
+                <article title="Hostname heuristic only"><strong id="stat-tracking">0</strong><span data-i18n="inspection_tracking_hints"></span></article>
+                <article><strong id="stat-affected">0</strong><span data-i18n="inspection_rule_affected"></span></article>
+            </section>
+
+            <section class="privacy-note">
+                <strong data-i18n="inspection_local_only"></strong>
+                <span data-i18n="inspection_local_only_detail"></span>
+                <span id="dropped" class="warning hidden"></span>
+            </section>
+
+            <section class="workspace">
+                <aside class="domains-panel panel">
+                    <div class="panel-header">
+                        <div>
+                            <h2 data-i18n="inspection_domains"></h2>
+                            <small id="domain-count"></small>
+                        </div>
+                        <button id="all-domains" class="link-button" data-i18n="inspection_show_all"></button>
+                    </div>
+                    <div id="domain-list" class="domain-list empty-list" data-i18n="inspection_no_data"></div>
+                </aside>
+
+                <section class="requests-panel panel">
+                    <div class="panel-header request-toolbar">
+                        <div>
+                            <h2 data-i18n="inspection_request_list"></h2>
+                            <small id="request-count"></small>
+                        </div>
+                        <div class="filters">
+                            <select id="request-filter" aria-label="Request filter">
+                                <option value="all" data-i18n="inspection_filter_all"></option>
+                                <option value="third-party" data-i18n="inspection_filter_third_party"></option>
+                                <option value="affected" data-i18n="inspection_filter_affected"></option>
+                                <option value="tracking" data-i18n="inspection_filter_tracking"></option>
+                            </select>
+                            <input id="request-search" type="search" data-i18n-placeholder="inspection_search_placeholder" />
+                        </div>
+                    </div>
+                    <div id="request-list" class="request-list empty-list" data-i18n="inspection_no_data"></div>
+                </section>
+            </section>
+
+            <section id="details" class="details panel hidden">
+                <div class="panel-header">
+                    <div>
+                        <p class="eyebrow" data-i18n="inspection_selected_request"></p>
+                        <h2 id="detail-host"></h2>
+                    </div>
+                    <span id="detail-effect" class="effect-badge hidden"></span>
+                </div>
+                <dl class="detail-grid">
+                    <div><dt data-i18n="inspection_request_url"></dt><dd id="detail-url"></dd></div>
+                    <div><dt data-i18n="inspection_request_type"></dt><dd id="detail-type"></dd></div>
+                    <div><dt data-i18n="inspection_request_method"></dt><dd id="detail-method"></dd></div>
+                    <div><dt data-i18n="inspection_party"></dt><dd id="detail-party"></dd></div>
+                    <div><dt data-i18n="inspection_request_status"></dt><dd id="detail-status"></dd></div>
+                    <div id="detail-rule-wrap" class="hidden"><dt data-i18n="inspection_matched_rule"></dt><dd><button id="detail-rule" class="link-button"></button></dd></div>
+                </dl>
+
+                <div class="rule-actions">
+                    <div>
+                        <h3 data-i18n="inspection_quick_rule"></h3>
+                        <p data-i18n="inspection_rule_disabled_note"></p>
+                    </div>
+                    <div class="quick-buttons">
+                        <button class="button" data-rule-scope="exact-request" data-i18n="inspection_block_request"></button>
+                        <button class="button" data-rule-scope="host" data-i18n="inspection_block_host"></button>
+                        <button class="button" data-rule-scope="site-host" data-i18n="inspection_block_host_here"></button>
+                        <button class="button" data-rule-scope="site-host-type" data-i18n="inspection_block_type_here"></button>
+                        <button class="button" data-rule-scope="third-party-host" data-i18n="inspection_block_third_party_host"></button>
+                        <button id="assistant-toggle" class="button primary" data-i18n="inspection_guided_rule"></button>
+                    </div>
+                </div>
+
+                <div id="assistant" class="assistant hidden">
+                    <div>
+                        <p class="eyebrow" data-i18n="inspection_assistant_optional"></p>
+                        <h3 data-i18n="inspection_assistant_question"></h3>
+                        <p id="assistant-context"></p>
+                    </div>
+                    <label>
+                        <span data-i18n="inspection_assistant_scope"></span>
+                        <select id="assistant-scope">
+                            <option value="exact-request" data-i18n="inspection_scope_exact"></option>
+                            <option value="host" data-i18n="inspection_scope_host"></option>
+                            <option value="host-type" data-i18n="inspection_scope_host_type"></option>
+                            <option value="site-host" data-i18n="inspection_scope_site"></option>
+                            <option value="site-host-type" data-i18n="inspection_scope_site_type"></option>
+                            <option value="third-party-host" data-i18n="inspection_scope_third_party"></option>
+                        </select>
+                    </label>
+                    <div class="assistant-preview">
+                        <strong data-i18n="inspection_assistant_preview"></strong>
+                        <p id="assistant-preview"></p>
+                    </div>
+                    <div class="assistant-actions">
+                        <button id="assistant-create" class="button primary" data-i18n="inspection_create_draft"></button>
+                    </div>
+                </div>
+                <p id="rule-result" class="rule-result hidden"></p>
+            </section>
+        </main>
+    </body>
+</html>

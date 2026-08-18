@@ -3,7 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { groupRuleInputs } from "./rule-grouping.js";
-import { newRuleInput } from "./rule-input.js";
+import { newRuleInput } from "./source-scope-editor.js";
 
 class RuleList extends HTMLElement {
     constructor() {

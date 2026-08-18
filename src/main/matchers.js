@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { createRegexpPattern } from "../util/regexp.js";
+import { createRegexpPattern, matchPatternToRegExp } from "../util/regexp.js";
 import { libTld, UrlParser } from "./url.js";
 
 export class BaseMatcher {
@@ -34,6 +34,18 @@ export class IncludeMatcher {
 export class ExcludeMatcher extends IncludeMatcher {
     test(request) {
         return !super.test(request);
+    }
+}
+
+export class SourceMatcher {
+    constructor(values) {
+        const patterns = Array.isArray(values) ? values : [values];
+        this.patterns = patterns.map(matchPatternToRegExp);
+    }
+
+    test(request) {
+        const sourceUrl = request.topLevelUrl || request.documentUrl || request.originUrl;
+        return typeof sourceUrl === "string" && this.patterns.some((pattern) => pattern.test(sourceUrl));
     }
 }
 
