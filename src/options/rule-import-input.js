@@ -331,12 +331,6 @@ function humanReadableSource(src) {
                 return `https://github.com/${owner}/${repo}/blob/${ref}/${path.join("/")}`;
             }
         }
-        if (url.hostname === "tumpio.github.io" && url.pathname.startsWith("/requestcontrol/rules/")) {
-            return "https://github.com/tumpio/requestcontrol/tree/master/rules";
-        }
-        if (url.protocol === "moz-extension:" || url.protocol === "chrome-extension:") {
-            return "https://github.com/HyperCriSiS/Request-Control-Evo/tree/dev/rules";
-        }
         return source;
     } catch {
         return "about:blank";
