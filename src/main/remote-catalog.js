@@ -9,22 +9,6 @@ export const CATALOG_CHANNEL = Object.freeze({
     COMMUNITY: "community",
 });
 
-function normalizeStringArray(value) {
-    return Array.isArray(value) ? value.filter((item) => typeof item === "string" && item.trim()).map((item) => item.trim()) : [];
-}
-
-function pathMatches(value, legacyPaths) {
-    if (!value || !legacyPaths.length) {
-        return false;
-    }
-    try {
-        const pathname = new URL(value).pathname.replace(/^\/+/, "");
-        return legacyPaths.some((path) => pathname.endsWith(path.replace(/^\/+/, "")));
-    } catch {
-        return false;
-    }
-}
-
 export function validateRemoteCatalog(catalog, expectedChannel) {
     const errors = [];
     if (catalog?.schemaVersion !== REMOTE_CATALOG_SCHEMA_VERSION) errors.push("unsupported-schema-version");
@@ -41,43 +25,19 @@ export function validateRemoteCatalog(catalog, expectedChannel) {
     return errors;
 }
 
-export function catalogEntryMigration(entry = {}) {
+export function findCatalogImportState(imports = {}, _entry = {}, currentSource = "") {
     return {
-        legacySources: normalizeStringArray(entry.legacySources),
-        legacySourceIds: normalizeStringArray(entry.legacySourceIds),
-        legacyPaths: normalizeStringArray(entry.legacyPaths),
+        key: currentSource,
+        data: imports[currentSource] || {},
     };
 }
 
-export function findCatalogImportState(imports = {}, entry = {}, currentSource = "") {
-    if (imports[currentSource]) {
-        return { key: currentSource, data: imports[currentSource], legacy: false };
-    }
-
-    const migration = catalogEntryMigration(entry);
-    for (const source of migration.legacySources) {
-        if (imports[source]) {
-            return { key: source, data: imports[source], legacy: true };
-        }
-    }
-
-    for (const [key, data] of Object.entries(imports)) {
-        if (pathMatches(key, migration.legacyPaths)) {
-            return { key, data, legacy: true };
-        }
-    }
-    return { key: currentSource, data: {}, legacy: false };
-}
-
 export function buildCatalogSource(catalog, entry, sourceUrl) {
-    const migration = catalogEntryMigration(entry);
     return {
         id: `${catalog.catalog}/${entry.id}`,
         url: sourceUrl,
         catalog: catalog.catalog,
         entry: entry.id,
         version: entry.version || catalog.version,
-        aliases: [...migration.legacySourceIds, ...migration.legacySources],
-        legacyPaths: migration.legacyPaths,
     };
 }
