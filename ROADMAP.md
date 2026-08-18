@@ -2,7 +2,7 @@
 
 This document is the binding source of truth for the active modernization/release line. Historical design notes remain in `docs/roadmap.md` and related documents, but implementation status must be reflected here.
 
-**Status: 1.18.1 released; Phase 9 source-site parity hardening complete**
+**Status: 1.18.1 released; Phase 10 / 1.19.0 release finalization in progress**
 
 ## Release history and current baseline
 
@@ -129,6 +129,16 @@ This document is the binding source of truth for the active modernization/releas
 - [x] Add direct positive/negative boundary fixtures for the activated session `topDomains` form plus explicit rejection fixtures for exact-host, fixed-scheme, explicit-port, constrained-path and non-session forms.
 - [x] Run audit, lint, tests, build, build-lint/checker and security checks before marking Phase 9 complete; PR #42 Build run `32145208740` is green across all required project jobs, with no open code-scanning, secret-scanning or Dependabot alerts on validation.
 
+## Phase 10 — Firefox Android hardening and 1.19.0 release finalization
+
+- [x] Carry the fully validated Phase 8 Compatibility Guardian and Referer-protection work forward from `dev`.
+- [x] Carry the fully validated Phase 9 source-site semantic hardening and capability-gated Chromium session `topDomains` subset forward from `dev`.
+- [x] Harden Firefox Android options, rule-selection, popup, inspector, analyzer and dialog layouts; retain mobile rule selection and add dedicated regression coverage.
+- [x] Align `manifest.json` and `CHANGELOG.md` at 1.19.0 because the post-1.18.1 development line contains new user-facing capabilities, not only patch fixes.
+- [ ] Validate the complete 1.19.0 candidate through audit, lint, tests, build, build-lint/checker and security checks.
+- [ ] Promote the validated candidate to `master` without rewriting the immutable 1.18.x release history.
+- [ ] Verify the 1.19.0 tag, GitHub release, ZIP/XPI digests and Mozilla-signing status after publication.
+
 ## Blockers / dependencies
 
 - No release blocker remains for 1.18.0 or 1.18.1; both milestones are published and verified.
@@ -141,4 +151,4 @@ This document is the binding source of truth for the active modernization/releas
 
 ## Completion status
 
-**Phases 1–9 are complete.** The 1.18.0 milestone remains immutable, 1.18.1 is published and verified, and Phase 9 fixes the Firefox source-site match-pattern boundary/port semantics while adding only the explicitly capability-gated, session-only `*://*.domain/*` Chromium `topDomains` subset. All neighboring source-scope forms remain conservative explicit unsupported diagnostics. Further work belongs to a new post-Phase-9 roadmap phase.
+**Phases 1–9 are complete. Phase 10 is active.** The 1.19.0 candidate packages the already-validated Compatibility Guardian, Referer protection, source-site/DNR parity hardening and Firefox Android responsive-UI work into the next minor release. Promotion and post-release verification remain pending until the complete candidate is green.

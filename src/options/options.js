@@ -10,6 +10,7 @@ import { showAlertPopup } from "./alert-popup.js";
 import { showChangelog } from "./changelog-dialog.js";
 import { OPTION_CHANGE_ICON, OPTION_SHOW_COUNTER } from "./constants.js";
 import { showRuleTestDialog } from "./rule-tester.js";
+import { normalizeImportSource } from "./import-source.js";
 
 document.addEventListener("DOMContentLoaded", async () => {
     const { rules } = await browser.storage.local.get("rules");
@@ -187,7 +188,7 @@ document.addEventListener("rule-import-show-imported", (e) => {
 document.addEventListener("rule-import-import-list", async (e) => {
     const input = e.target;
     let { imports } = await browser.storage.local.get("imports");
-    const src = input.getAttribute("src");
+    const src = input.source;
     const rulesToImport = input.rules.filter((rule) => rule.uuid);
 
     if (!imports) {
@@ -264,7 +265,7 @@ async function setupImportsTab() {
             if (data.deletable) {
                 createImportInput(src, data);
             } else {
-                const input = document.querySelector(`rule-import-input[src="${src}"]`);
+                const input = findImportInputBySource(src);
                 if (input) {
                     input.data = data;
                 }
@@ -312,6 +313,11 @@ async function setupCommunityCatalog(imports) {
             if (!entry || !entry.url || !entry.name) {
                 continue;
             }
+            const source = normalizeImportSource(entry.url);
+            if (!source) {
+                continue;
+            }
+
             const input = document.createElement("rule-import-input");
             input.textContent = `${entry.category || "community"} - ${entry.name}`;
             input.dataset.catalog = catalog.catalog || "requestcontrol-community";
@@ -321,8 +327,8 @@ async function setupCommunityCatalog(imports) {
             if (entry.sha256) {
                 input.setAttribute("expected-sha256", entry.sha256);
             }
-            input.setAttribute("src", entry.url);
-            input.data = imports[entry.url] || {};
+            input.source = source;
+            input.data = imports[source] || imports[entry.url] || {};
             list.append(input);
         }
 
@@ -336,9 +342,15 @@ async function setupCommunityCatalog(imports) {
 async function checkImportSourceValidity() {
     const { imports } = await browser.storage.local.get("imports");
     const input = document.getElementById("new-import-source");
-    const duplicate = document.querySelector(`rule-import-input[src="${input.value}"]`);
+    const source = normalizeImportSource(input.value);
 
-    if (duplicate || (imports && input.value in imports)) {
+    if (!source) {
+        input.setCustomValidity(browser.i18n.getMessage("analyzer_invalid_url") || "Enter a valid URL.");
+        return;
+    }
+
+    const duplicate = findImportInputBySource(source);
+    if (duplicate || (imports && (source in imports || input.value in imports))) {
         input.setCustomValidity(browser.i18n.getMessage("duplicate_entry"));
     } else {
         input.setCustomValidity("");
@@ -347,7 +359,13 @@ async function checkImportSourceValidity() {
 
 async function onImportSourceAdded(e) {
     e.preventDefault();
-    const src = this.src.value;
+    const src = normalizeImportSource(this.src.value);
+    if (!src) {
+        this.src.setCustomValidity(browser.i18n.getMessage("analyzer_invalid_url") || "Enter a valid URL.");
+        this.src.reportValidity();
+        return;
+    }
+
     let { imports } = await browser.storage.local.get("imports");
 
     if (!imports) {
@@ -364,7 +382,7 @@ async function onImportSourceAdded(e) {
 
 async function onImportSourceDeleted(e) {
     const input = e.target;
-    const src = input.getAttribute("src");
+    const src = input.source;
     const { imports } = await browser.storage.local.get("imports");
 
     if (!imports || !(src in imports)) {
@@ -391,7 +409,7 @@ async function onRemoveImportedRules(e) {
         document.querySelectorAll("rule-list").forEach((list) => list.removeAll());
         createRuleInputs(newRules);
     }
-    const src = input.getAttribute("src");
+    const src = input.source;
     const { imports } = await browser.storage.local.get("imports");
 
     if (imports && src in imports) {
@@ -404,12 +422,31 @@ async function onRemoveImportedRules(e) {
 }
 
 function createImportInput(src, data) {
+    const source = normalizeImportSource(src);
+    if (!source) {
+        return null;
+    }
+
     const input = document.createElement("rule-import-input");
     const inputs = document.getElementById("my-import-sources");
-    input.setAttribute("src", src);
+    input.source = source;
     input.setAttribute("deletable", true);
     input.data = data;
     inputs.append(input);
+    return input;
+}
+
+function findImportInputBySource(src) {
+    const source = normalizeImportSource(src);
+    if (!source) {
+        return null;
+    }
+
+    return (
+        Array.from(document.querySelectorAll("rule-import-input")).find(
+            (input) => input.source === source
+        ) || null
+    );
 }
 
 function toggleImportSelectedButton() {

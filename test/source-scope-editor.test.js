@@ -16,5 +16,5 @@ test("expert rule list decorates rule inputs with source-site editing", () => {
 });
 
 test("source-site editor validation rejects malformed match patterns", () => {
-    expect(() => new SourceMatcher(["https://missing-path.example.com"])).toThrow(TypeError);
+    expect(() => new SourceMatcher(["https://localhost"])).toThrow(TypeError);
 });
