@@ -12,6 +12,8 @@ import { OPTION_CHANGE_ICON, OPTION_SHOW_COUNTER } from "./constants.js";
 import { showRuleTestDialog } from "./rule-tester.js";
 import { normalizeImportSource } from "./import-source.js";
 
+const COMMUNITY_REPOSITORY = "HyperCriSiS/requestcontrol-rules";
+
 document.addEventListener("DOMContentLoaded", async () => {
     const { rules } = await browser.storage.local.get("rules");
 
@@ -77,6 +79,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         const selected = getSelectedRules();
         exportObject(fileName, selected);
     });
+
+    document.getElementById("shareSelectedRulesGitHub").addEventListener("click", showCommunityShareDialog);
 
     document.getElementById("removeSelectedRules").addEventListener("click", async () => {
         const selected = new Set(getSelectedRules().map((rule) => rule.uuid));
@@ -273,42 +277,48 @@ async function setupImportsTab() {
         });
     }
 
-    const importTab = document.querySelector('a[href="#tab-imports"]');
-    const loadCommunityCatalog = async () => {
-        if (importTab.dataset.communityLoaded === "true") {
-            return;
+    const communityDetails = document.getElementById("community-rule-lists");
+    communityDetails.addEventListener("toggle", () => {
+        if (communityDetails.open) {
+            setupCommunityCatalog(imports || {});
         }
-        importTab.dataset.communityLoaded = "true";
-        await setupCommunityCatalog(imports || {});
-    };
-    importTab.addEventListener("click", loadCommunityCatalog);
-    if (location.hash === "#tab-imports") {
-        loadCommunityCatalog();
-    }
+    });
+
+    const customDetails = document.getElementById("custom-rule-lists");
+    customDetails.addEventListener("toggle", () => {
+        if (customDetails.open) {
+            customDetails.querySelectorAll("rule-import-input").forEach((input) => input.load());
+        }
+    });
 
     document.getElementById("import-source-form").addEventListener("submit", onImportSourceAdded);
     document.getElementById("new-import-source").addEventListener("input", checkImportSourceValidity);
 }
 
 async function setupCommunityCatalog(imports) {
+    const details = document.getElementById("community-rule-lists");
+    if (details.dataset.loaded === "true" || details.dataset.loading === "true") {
+        return;
+    }
+
+    const status = document.getElementById("community-rule-status");
+    const list = document.getElementById("community-rule-list");
+    details.dataset.loading = "true";
+    status.hidden = false;
+    status.textContent = browser.i18n.getMessage("imports_community_loading") || "Loading community catalog…";
+
     const catalogUrl = "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/catalog.json";
     try {
         const response = await fetch(catalogUrl, { cache: "no-store" });
         if (!response.ok) {
-            return;
+            throw new Error(`Community catalog request failed: ${response.status}`);
         }
         const catalog = await response.json();
         if (!catalog || !Array.isArray(catalog.ruleSets)) {
-            return;
+            throw new Error("Invalid community catalog");
         }
 
-        const container = document.getElementById("tab-imports");
-        const details = document.createElement("details");
-        details.open = true;
-        const summary = document.createElement("summary");
-        summary.textContent = "Request Control Community";
-        const list = document.createElement("ul");
-
+        const importedChecks = [];
         for (const entry of catalog.ruleSets) {
             if (!entry || !entry.url || !entry.name) {
                 continue;
@@ -319,7 +329,9 @@ async function setupCommunityCatalog(imports) {
             }
 
             const input = document.createElement("rule-import-input");
-            input.textContent = `${entry.category || "community"} - ${entry.name}`;
+            input.setAttribute("lazy", "");
+            input.textContent = entry.name;
+            input.description = entry.description || "";
             input.dataset.catalog = catalog.catalog || "requestcontrol-community";
             input.dataset.entry = entry.id || entry.url;
             input.dataset.version = entry.version || catalog.version || "";
@@ -328,14 +340,28 @@ async function setupCommunityCatalog(imports) {
                 input.setAttribute("expected-sha256", entry.sha256);
             }
             input.source = source;
+            if (entry.homepage) {
+                input.sourceHomepage = entry.homepage;
+            }
+            if (entry.ratingIssue) {
+                const repository = entry.ratingRepository || catalog.ratingRepository || COMMUNITY_REPOSITORY;
+                input.communityReview = `https://github.com/${repository}/issues/${entry.ratingIssue}`;
+            }
             input.data = imports[source] || imports[entry.url] || {};
             list.append(input);
+            if (input.data.imported) {
+                importedChecks.push(input.load());
+            }
         }
 
-        details.append(summary, list);
-        container.prepend(details);
+        details.dataset.loaded = "true";
+        status.hidden = true;
+        await Promise.allSettled(importedChecks);
     } catch {
-        // Community catalog is optional; built-in and user lists continue to work offline.
+        status.hidden = false;
+        status.textContent = browser.i18n.getMessage("imports_community_unavailable") || "Community catalog is currently unavailable.";
+    } finally {
+        delete details.dataset.loading;
     }
 }
 
@@ -429,10 +455,14 @@ function createImportInput(src, data) {
 
     const input = document.createElement("rule-import-input");
     const inputs = document.getElementById("my-import-sources");
+    input.setAttribute("lazy", "");
     input.source = source;
     input.setAttribute("deletable", true);
     input.data = data;
     inputs.append(input);
+    if (document.getElementById("custom-rule-lists")?.open) {
+        input.load();
+    }
     return input;
 }
 
@@ -529,6 +559,82 @@ function updateLists() {
         list.toggle();
     });
     toggleEmpty();
+}
+
+function showCommunityShareDialog() {
+    const selected = getSelectedRules();
+    if (selected.length === 0) {
+        return;
+    }
+
+    const payload = {
+        schemaVersion: 1,
+        exportedAt: new Date().toISOString(),
+        rules: selected,
+    };
+    const json = JSON.stringify(payload, null, 2);
+
+    const dialog = document.createElement("modal-dialog");
+    dialog.className = "community-share-dialog";
+
+    const title = document.createElement("span");
+    title.slot = "title";
+    title.textContent = browser.i18n.getMessage("share_rules_title") || "Share rules with the community";
+
+    const content = document.createElement("div");
+    content.slot = "content";
+    content.className = "community-share-content";
+
+    const description = document.createElement("p");
+    description.textContent = browser.i18n.getMessage("share_rules_description", selected.length) ||
+        `${selected.length} selected rules will be prepared for public review in the Request Control community repository.`;
+
+    const warning = document.createElement("p");
+    warning.className = "community-share-warning";
+    warning.textContent = browser.i18n.getMessage("share_rules_public_warning") ||
+        "GitHub submissions are public. Review URLs, parameters and rule descriptions for private or sensitive values before continuing.";
+
+    const preview = document.createElement("details");
+    preview.className = "community-share-preview";
+    const previewSummary = document.createElement("summary");
+    previewSummary.textContent = browser.i18n.getMessage("share_rules_preview") || "Preview JSON";
+    const pre = document.createElement("pre");
+    pre.textContent = json;
+    preview.append(previewSummary, pre);
+
+    const actions = document.createElement("div");
+    actions.className = "community-share-actions";
+    const download = document.createElement("button");
+    download.type = "button";
+    download.className = "btn";
+    download.textContent = browser.i18n.getMessage("share_rules_download_json") || "Download JSON";
+    download.addEventListener("click", () => exportObject("request-control-community-submission.json", payload));
+
+    const continueButton = document.createElement("button");
+    continueButton.type = "button";
+    continueButton.className = "btn btn-dark";
+    continueButton.textContent = browser.i18n.getMessage("share_rules_continue_github") || "Continue to GitHub";
+    continueButton.addEventListener("click", async () => {
+        const url = new URL(`https://github.com/${COMMUNITY_REPOSITORY}/issues/new`);
+        url.searchParams.set("template", "rule-set-submission.md");
+        url.searchParams.set(
+            "title",
+            browser.i18n.getMessage("github_share_issue_title", selected.length) || `Rule set submission (${selected.length} rules)`
+        );
+        const intro = browser.i18n.getMessage("github_share_issue_intro") ||
+            "Generated by Request Control for community review. I reviewed this payload and removed private or sensitive values.";
+        if (json.length <= 24000) {
+            url.searchParams.set("body", `${intro}\n\n\`\`\`json\n${json}\n\`\`\``);
+        } else {
+            exportObject("request-control-community-submission.json", payload);
+        }
+        await browser.tabs.create({ url: url.toString() });
+        dialog.remove();
+    });
+    actions.append(download, continueButton);
+    content.append(description, warning, preview, actions);
+    dialog.append(title, content);
+    document.body.append(dialog);
 }
 
 function toggleEmpty() {

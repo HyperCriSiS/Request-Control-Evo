@@ -14,7 +14,6 @@
         <script defer src="../util/tab.js"></script>
         <script defer type="module" src="../util/i18n.js"></script>
         <script defer src="type-input.js"></script>
-        <script defer src="loading-dots.js"></script>
         <script defer type="module" src="rule-import-input.js"></script>
         <script defer type="module" src="../util/tags-input/src/tags-input.js"></script>
         <script defer type="module" src="rule-list.js"></script>
@@ -107,6 +106,16 @@
                             <span class="badge badge-light selected-count">0</span>
                         </button>
                         <button
+                            id="shareSelectedRulesGitHub"
+                            class="btn btn-selected-action"
+                            disabled="disabled"
+                            autocomplete="off"
+                        >
+                            <img src="/icons/ionicons/open-outline.svg" width="16" />
+                            <span data-i18n="share_selected_community"></span>
+                            <span class="badge badge-light selected-count">0</span>
+                        </button>
+                        <button
                             id="removeSelectedRules"
                             class="btn btn-danger btn-selected-action"
                             disabled="disabled"
@@ -121,29 +130,24 @@
                 </div>
             </div>
             <div id="tab-imports" class="tab-pane">
-                <details open>
-                    <summary data-i18n="common_lists"></summary>
-                    <ul>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-common-redirectors.json"><span data-i18n="privacy"></span> - <span data-i18n="imports_skip_redirectors"></span></rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-common-params.json"><span data-i18n="privacy"></span> - <span data-i18n="imports_remove_parameters"></span></rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-common-images.json"><span data-i18n="privacy"></span> - <span data-i18n="imports_remove_image_parameters"></span></rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-block-beacon-and-ping.json"><span data-i18n="privacy"></span> - <span data-i18n="imports_block_beacon_and_ping"></span></rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/other-skip-image-downsamplers.json"><span data-i18n="other"></span> - <span data-i18n="imports_skip_image_downsamplers"></span></rule-import-input>
-                    </ul>
+                <div class="imports-intro">
+                    <h3 data-i18n="imports_rule_packages"></h3>
+                    <p data-i18n="imports_rule_packages_description"></p>
+                </div>
+                <details id="recommended-rule-lists" class="imports-section" open>
+                    <summary data-i18n="imports_recommended"></summary>
+                    <p class="imports-section-description" data-i18n="imports_recommended_description"></p>
+                    <ul id="recommended-rule-list"></ul>
                 </details>
-                <details open>
-                    <summary data-i18n="site_specific_lists"></summary>
-                    <ul>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-amazon.json"><span data-i18n="privacy"></span> - Amazon</rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-bing.json"><span data-i18n="privacy"></span> - Bing</rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-duckduckgo.json"><span data-i18n="privacy"></span> - DuckDuckGo</rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-facebook.json"><span data-i18n="privacy"></span> - Facebook</rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-google.json"><span data-i18n="privacy"></span> - Google</rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-youtube.json"><span data-i18n="privacy"></span> - YouTube</rule-import-input>
-                    </ul>
+                <details id="community-rule-lists" class="imports-section">
+                    <summary data-i18n="imports_community"></summary>
+                    <p class="imports-section-description" data-i18n="imports_community_description"></p>
+                    <p id="community-rule-status" class="imports-section-status" data-i18n="imports_community_open_to_load"></p>
+                    <ul id="community-rule-list"></ul>
                 </details>
-                <details open>
-                    <summary data-i18n="my_lists"></summary>
+                <details id="custom-rule-lists" class="imports-section">
+                    <summary data-i18n="imports_custom_source"></summary>
+                    <p class="imports-section-description" data-i18n="imports_custom_source_description"></p>
                     <ul id="my-import-sources"></ul>
                     <form id="import-source-form">
                         <input id="new-import-source" name="src" required type="url" data-i18n-placeholder="add_url_to_rules"></input>
@@ -651,9 +655,9 @@
                     <slot id="name"></slot>
                 </label>
                 <a id="url" target="_blank" data-i18n-title="view_list"><img src="/icons/ionicons/open-outline.svg" height="20" class="middle"></a>
-                <loading-dots id="loading"></loading-dots>
                 <img id="error" src="/icons/ionicons/warning-outline.svg" height="20" class="middle" hidden/>
                 <span id="count" class="badge badge-info"></span>
+                <span id="integrity" class="badge badge-danger" hidden></span>
                 <span id="imported" class="badge badge-success" data-i18n="imported" hidden></span>
                 <span id="update" class="badge badge-notify" data-i18n="update" hidden></span>
                 <button id="show-imported" class="btn text" data-i18n-title="show_imported_rules" hidden><img src="/icons/ionicons/list-outline.svg" height="20" class="middle"/></button>
