@@ -112,12 +112,12 @@ The 1.18.0 promotion PR passed audit, lint, tests, build, build-lint/checker and
 - [x] Localize bundled preset titles/descriptions, add visible warning styling, document activation policy and add concrete regression coverage for the showcase transformations and matcher behavior.
 - [x] Synchronize the final showcase-ruleset tree to `master` via PR #35 / commit `09202d592f6e863ef2ec16911460a6dfcc22547e`; the already-published 1.18.0 tag/release remains immutable.
 - [x] Align release metadata at 1.18.1 and validate the patch candidate.
-- [ ] Promote the validated 1.18.1 candidate to `master`.
-- [ ] Verify the 1.18.1 tag, GitHub release, ZIP/XPI artifacts and Mozilla signing status.
+- [x] Promote the validated 1.18.1 candidate to `master` via PR #38; master release commit `49fa1814940f2347bd345b898574a96f093b6c5d`.
+- [x] Verify Release run `32127317095` creates tag `1.18.1`, GitHub release `372266035`, ZIP and byte-identical unsigned XPI. Both assets are 216149 bytes with SHA-256 `94d9438fa6753fbb55c697140323fcf32482edeec2570b8fc9c14d01b04a9124`; Mozilla signing was skipped because AMO credentials were not configured.
 
 ## Blockers / dependencies
 
-- No release blocker remains for 1.18.0; the milestone is published and verified.
+- No release blocker remains for 1.18.0 or 1.18.1; both milestones are published and verified.
 - GitHub's agentic `github-advanced-security` PR check currently fails at service startup with `400 The requested model is not supported` for `claude-opus-4.6`. The repository's actual `Analyze (actions)` and `Analyze (javascript-typescript)` CodeQL jobs pass; treat the agentic service failure as an external GitHub platform issue unless its behavior changes.
 - No code blocker is currently known for the theme/import-presentation work.
 - Fully credential-less direct writes to GitHub are intentionally not assumed. The preferred community publication design keeps authentication on GitHub (submission/review UI) rather than storing a personal access token or secret inside the extension.
@@ -127,4 +127,4 @@ The 1.18.0 promotion PR passed audit, lint, tests, build, build-lint/checker and
 
 ## Completion status
 
-**The 1.18.0 milestone remains fully completed and immutable.** Phase 7 tracks the post-1.18 bundled showcase-ruleset work and its 1.18.1 patch release separately. The showcase implementation and final master synchronization are complete; release metadata is aligned and only promotion plus artifact verification remain open.
+**Phases 1–7 are complete.** The 1.18.0 milestone remains immutable, and the separate 1.18.1 patch release publishes the bundled showcase rulesets with the strict first-party safety warning, byte-identical ZIP/XPI artifacts and explicit Mozilla-signing status. Further development belongs to the next roadmap phase.
