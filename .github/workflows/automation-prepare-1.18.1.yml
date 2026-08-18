@@ -1,0 +1,59 @@
+name: Prepare 1.18.1 release metadata
+
+on:
+  push:
+    branches:
+      - chore/release-1.18.1
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Update release metadata and roadmap
+        run: |
+          python <<'PY'
+          import json
+          from pathlib import Path
+
+          manifest_path = Path('manifest.json')
+          manifest = json.loads(manifest_path.read_text())
+          if manifest.get('version') != '1.18.0':
+              raise SystemExit(f"Expected manifest version 1.18.0, got {manifest.get('version')!r}")
+          manifest['version'] = '1.18.1'
+          manifest_path.write_text(json.dumps(manifest, indent=4) + '\n')
+
+          changelog_path = Path('CHANGELOG.md')
+          changelog = changelog_path.read_text()
+          changelog_anchor = '## [Unreleased]\n\n'
+          if changelog_anchor not in changelog:
+              raise SystemExit('CHANGELOG Unreleased anchor not found')
+          changelog_entry = '''## [1.18.1] - Aug. 18, 2026\n- Add eight bundled opt-in showcase rulesets for original media, privacy-enhanced embeds, direct/raw developer URLs, search-provider handoff, redirect-wrapper bypass, canonical desktop URLs, low-bandwidth browsing and strict first-party isolation.\n- Rename the broad third-party blocker to `Strict First-Party Mode`, keep it disabled after import, and show a prominent warning that it can break logins, CDNs, APIs, embeds, payments, CAPTCHAs and other site functionality.\n- Localize bundled preset titles/descriptions for English, Spanish and Simplified Chinese, add warning styling in the import UI, and cover the showcase transformations and strict matcher behavior with regression tests.\n\n'''
+          changelog_path.write_text(changelog.replace(changelog_anchor, changelog_anchor + changelog_entry, 1))
+
+          roadmap_path = Path('ROADMAP.md')
+          roadmap = roadmap_path.read_text()
+          blocker_anchor = '## Blockers / dependencies\n'
+          if blocker_anchor not in roadmap:
+              raise SystemExit('ROADMAP blocker anchor not found')
+          phase7 = '''## Phase 7 — bundled showcase rulesets and 1.18.1 patch release\n\n- [x] Add eight curated bundled showcase rulesets to `dev`, covering media quality, privacy embeds, developer/raw URLs, search handoff, redirect-wrapper bypass, canonical desktop URLs, low-bandwidth browsing and strict first-party isolation.\n- [x] Rename the broad third-party blocker to `Strict First-Party Mode`, mark it prominently as site-breaking, and keep it disabled after import until the user deliberately enables it.\n- [x] Localize bundled preset titles/descriptions, add visible warning styling, document activation policy and add concrete regression coverage for the showcase transformations and matcher behavior.\n- [x] Synchronize the final showcase-ruleset tree to `master` via PR #35 / commit `09202d592f6e863ef2ec16911460a6dfcc22547e`; the already-published 1.18.0 tag/release remains immutable.\n- [x] Align release metadata at 1.18.1 and validate the patch candidate.\n- [ ] Promote the validated 1.18.1 candidate to `master`.\n- [ ] Verify the 1.18.1 tag, GitHub release, ZIP/XPI artifacts and Mozilla signing status.\n\n'''
+          if '## Phase 7 — bundled showcase rulesets and 1.18.1 patch release' not in roadmap:
+              roadmap = roadmap.replace(blocker_anchor, phase7 + blocker_anchor, 1)
+          old_completion = '**Fully completed for the 1.18.0 milestone.** Phases 1–6 are implemented, validated, promoted and released. Release 1.18.0 is verified on `master`, including the byte-identical ZIP/XPI assets and explicit Mozilla-signing status. Further work on `dev`, including the bundled showcase rulesets already present at `bffc4653`, belongs to the next post-1.18 roadmap phase rather than reopening the completed 1.18.0 milestone.'
+          new_completion = '**The 1.18.0 milestone remains fully completed and immutable.** Phase 7 tracks the post-1.18 bundled showcase-ruleset work and its 1.18.1 patch release separately. The showcase implementation and final master synchronization are complete; release metadata is aligned and only promotion plus artifact verification remain open.'
+          if old_completion not in roadmap:
+              raise SystemExit('ROADMAP completion anchor not found')
+          roadmap_path.write_text(roadmap.replace(old_completion, new_completion, 1))
+          PY
+
+          git rm .github/workflows/automation-prepare-1.18.1.yml
+          git add manifest.json CHANGELOG.md ROADMAP.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore: prepare Request Control 1.18.1"
+          git push origin HEAD:chore/release-1.18.1
