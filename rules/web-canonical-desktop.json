@@ -18,7 +18,7 @@
         ],
         "action": "redirect",
         "active": false,
-        "redirectUrl": "[scheme=https][host=en.wikipedia.org]"
+        "redirectUrl": "[protocol=https][host=en.wikipedia.org]"
     },
     {
         "uuid": "81275835-2604-42f3-a7a2-1c4e67230502",
@@ -39,7 +39,7 @@
         ],
         "action": "redirect",
         "active": false,
-        "redirectUrl": "[scheme=https][host=de.wikipedia.org]"
+        "redirectUrl": "[protocol=https][host=de.wikipedia.org]"
     },
     {
         "uuid": "81275835-2604-42f3-a7a2-1c4e67230503",
@@ -60,6 +60,6 @@
         ],
         "action": "redirect",
         "active": false,
-        "redirectUrl": "[scheme=https][host=www.youtube.com]"
+        "redirectUrl": "[protocol=https][host=www.youtube.com]"
     }
 ]
