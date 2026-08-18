@@ -20,6 +20,8 @@ A fresh release-blocker audit on the same candidate found no open issues and no 
 
 Release preparation has started using the repository's established branch convention: `release/1.17.0` was created from validated `dev` commit `0bf7e883`. A minor-version bump is appropriate because the candidate adds user-visible SPA/history-state behavior and new exact compatibility semantics beyond the 1.16.1 baseline. The remaining release work is to align `manifest.json` and `CHANGELOG.md` on that release branch, promote the validated release candidate to `master`, and verify the self-contained release workflow/tag/artifact result.
 
+The release metadata is now aligned at 1.17.0 (`6e331d5c`). PR #18 promotes `release/1.17.0` to `master`. Its only merge conflicts were the expected `CHANGELOG.md` and `manifest.json` version-history overlap with 1.16.1; those were resolved by retaining the validated 1.17.0 release metadata while merging current `master` in `c1d69b91`. Promotion remains open until the PR checks complete successfully.
+
 ## Phase 1 — modernization baseline
 
 - [x] Modernize the extension architecture/tooling and integrate the modernization work into `dev`.
@@ -61,7 +63,7 @@ Release preparation has started using the repository's established branch conven
 - [x] Check for release-blocking compatibility regressions without broadening scope unnecessarily; no open issues or pull requests identify a blocker, and the final candidate CI is green.
 - [x] Re-run the full regression/build suite on the final candidate state; Build #183 is green across `test`, `lint`, `build`, `lint-build`, and `checker`.
 - [x] Create `release/1.17.0` from the validated `dev` candidate using the established release-branch convention (`0bf7e883`).
-- [ ] Set `manifest.json` to version 1.17.0 and add a matching `CHANGELOG.md` section on `release/1.17.0`.
+- [x] Set `manifest.json` to version 1.17.0 and add a matching `CHANGELOG.md` section on `release/1.17.0` (`6e331d5c`); merge-only conflicts with the 1.16.1 `master` metadata were resolved without changing release semantics in `c1d69b91`.
 - [ ] Promote the validated 1.17.0 release candidate to `master` through the established release workflow.
 - [ ] Verify the self-contained release workflow creates the 1.17.0 tag, GitHub release and release ZIP successfully; record Mozilla signing status without treating absent signing credentials as a code failure.
 
@@ -76,4 +78,4 @@ Release preparation has started using the repository's established branch conven
 
 ## Completion status
 
-**Not fully completed.** The modernization baseline is released, the bounded `<all_urls>` + one non-regexp ASCII include compiler support is implemented, boundary-tested, documented, and fully green through Build #183. The current final candidate has no open issue/PR release blocker and no missing genuinely new real-world/catalog semantic requiring another fixture. Release preparation for 1.17.0 has started on `release/1.17.0`; the remaining work is version/changelog alignment, promotion to `master`, and verification of the resulting release workflow/tag/artifact state. After those steps are complete, this roadmap can be marked **fully completed**.
+**Not fully completed.** The modernization baseline is released, the bounded `<all_urls>` + one non-regexp ASCII include compiler support is implemented, boundary-tested, documented, and fully green through Build #183. The current final candidate has no open issue/PR release blocker and no missing genuinely new real-world/catalog semantic requiring another fixture. Release metadata for 1.17.0 is aligned and PR #18 is open against `master`; the remaining work is successful PR validation/promotion and verification of the resulting release workflow/tag/artifact state. After those steps are complete, this roadmap can be marked **fully completed**.
