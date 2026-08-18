@@ -12,7 +12,7 @@
         "types": ["image", "main_frame"],
         "action": "redirect",
         "active": true,
-        "redirectUrl": "[pathname={pathname/^(\/wikipedia\/[^\/]+)\/thumb\/(.+\/[^\/]+)\/[^\/]+$/$1/$2}]"
+        "redirectUrl": "[pathname={pathname/^(\\/wikipedia\\/[^\\/]+)\\/thumb\\/(.+\\/[^\\/]+)\\/[^\\/]+$/$1/$2}]"
     },
     {
         "uuid": "5e638b8f-b217-4753-84a7-e124c4e5b203",
@@ -27,6 +27,6 @@
         "types": ["main_frame"],
         "action": "redirect",
         "active": true,
-        "redirectUrl": "[search.name=orig]"
+        "redirectUrl": "{href/([?&]name=)[^&]*/$1orig}"
     }
 ]

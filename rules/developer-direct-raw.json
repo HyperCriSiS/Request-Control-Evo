@@ -12,7 +12,7 @@
         "types": ["main_frame"],
         "action": "redirect",
         "active": false,
-        "redirectUrl": "[protocol=https][host=raw.githubusercontent.com][pathname={pathname/^(\/[^\/]+\/[^\/]+)\/blob\/(.*)$/$1/$2}]"
+        "redirectUrl": "[protocol=https][host=raw.githubusercontent.com][pathname={pathname/^(\\/[^\\/]+\\/[^\\/]+)\\/blob\\/(.*)$/$1/$2}]"
     },
     {
         "uuid": "aa3c7f92-b55f-4ca8-bf95-0a566667a102",
@@ -27,6 +27,6 @@
         "types": ["main_frame"],
         "action": "redirect",
         "active": false,
-        "redirectUrl": "[pathname={pathname/\/-\/blob\///-/raw/}]"
+        "redirectUrl": "[pathname={pathname/\\/-\\/blob\\///-/raw/}]"
     }
 ]
