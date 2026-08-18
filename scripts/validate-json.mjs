@@ -17,8 +17,7 @@ async function collectJsonFiles(path) {
 
 const files = [
     "manifest.json",
-    ...await collectJsonFiles("rules"),
-    ...await collectJsonFiles("_locales")
+    ...await collectJsonFiles("_locales"),
 ];
 
 for (const file of files) {

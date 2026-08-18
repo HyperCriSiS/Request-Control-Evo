@@ -11,9 +11,6 @@ const ENTRY = {
     version: "1.0.0",
     url: "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/official/rules/privacy-common-params.json",
     sha256: "a".repeat(64),
-    legacySources: ["https://tumpio.github.io/requestcontrol/rules/privacy-common-params.json"],
-    legacySourceIds: ["requestcontrol-community/privacy-common-params"],
-    legacyPaths: ["rules/privacy-common-params.json"],
 };
 
 const CATALOG = {
@@ -29,29 +26,28 @@ test("official catalog schema is channel-bound and complete", () => {
     expect(validateRemoteCatalog(CATALOG, CATALOG_CHANNEL.COMMUNITY)).toContain("unexpected-channel");
 });
 
-test("legacy imported state is found by exact source or packaged path", () => {
-    const exact = findCatalogImportState({
-        "https://tumpio.github.io/requestcontrol/rules/privacy-common-params.json": { imported: { digest: "old" } },
-    }, ENTRY, ENTRY.url);
-    expect(exact.legacy).toBe(true);
-    expect(exact.data.imported.digest).toBe("old");
+test("catalog import state uses only the current exact source", () => {
+    const imports = {
+        [ENTRY.url]: { imported: { digest: "current" } },
+        "https://example.test/old-source.json": { imported: { digest: "old" } },
+    };
 
-    const packaged = findCatalogImportState({
-        "moz-extension://abcdef/rules/privacy-common-params.json": { imported: { digest: "bundled" } },
-    }, ENTRY, ENTRY.url);
-    expect(packaged.legacy).toBe(true);
-    expect(packaged.data.imported.digest).toBe("bundled");
+    expect(findCatalogImportState(imports, ENTRY, ENTRY.url)).toEqual({
+        key: ENTRY.url,
+        data: imports[ENTRY.url],
+    });
+    expect(findCatalogImportState(imports, ENTRY, "https://example.test/missing.json")).toEqual({
+        key: "https://example.test/missing.json",
+        data: {},
+    });
 });
 
-test("catalog source carries migration aliases transiently", () => {
-    expect(buildCatalogSource(CATALOG, ENTRY, ENTRY.url)).toMatchObject({
+test("catalog source contains only current remote identity", () => {
+    expect(buildCatalogSource(CATALOG, ENTRY, ENTRY.url)).toEqual({
         id: "requestcontrol-official/privacy-common-params",
+        url: ENTRY.url,
         catalog: "requestcontrol-official",
         entry: "privacy-common-params",
-        aliases: expect.arrayContaining([
-            "requestcontrol-community/privacy-common-params",
-            "https://tumpio.github.io/requestcontrol/rules/privacy-common-params.json",
-        ]),
-        legacyPaths: ["rules/privacy-common-params.json"],
+        version: "1.0.0",
     });
 });

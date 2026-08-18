@@ -4,6 +4,7 @@
 
 import { ALL_URLS, createRequestFilters } from "./main/api.js";
 import { RequestController } from "./main/control.js";
+import { migrateManagedSourceState } from "./main/catalog.js";
 import { InspectionStore } from "./main/inspection/store.js";
 import { guardian } from "./main/guardian.js";
 import { NavigationAdapter } from "./main/navigation.js";
@@ -21,12 +22,29 @@ const navigation = new NavigationAdapter({
     navigate: updateTab,
     replaceHistory: replaceHistoryState,
 });
-const storageKeys = ["rules", "disabled", "referrerProtectionMode"];
+const storageKeys = ["rules", "imports", "disabled", "referrerProtectionMode"];
 
-browser.storage.local.get(storageKeys).then(init);
-browser.storage.onChanged.addListener(onOptionsChanged);
+bootstrap();
 browser.runtime.onMessage.addListener(onRuntimeMessage);
 browser.tabs.onRemoved.addListener(onInspectionTabRemoved);
+
+async function bootstrap() {
+    let options = await browser.storage.local.get(storageKeys);
+    const migration = migrateManagedSourceState(options.rules || [], options.imports || {});
+    if (migration.changed) {
+        await browser.storage.local.set({
+            rules: migration.rules,
+            imports: migration.imports,
+        });
+        options = {
+            ...options,
+            rules: migration.rules,
+            imports: migration.imports,
+        };
+    }
+    browser.storage.onChanged.addListener(onOptionsChanged);
+    init(options);
+}
 
 function init(options) {
     configureReferrerProtection(options.referrerProtectionMode || "browser");

@@ -5,6 +5,7 @@ import {
     canonicalStringify,
     createManagedRule,
     isManagedRuleModified,
+    migrateManagedSourceState,
     reconcileManagedRules,
     ruleDigest,
 } from "../src/main/catalog.js";
@@ -99,7 +100,7 @@ test("reconcileManagedRules removes an upstream-deleted rule only when unchanged
     expect(result.rules.map(({uuid}) => uuid)).toEqual(["b"]);
 });
 
-test("reconcileManagedRules adopts an identical legacy rule but protects a different UUID collision", async () => {
+test("reconcileManagedRules adopts an identical local rule but protects a different UUID collision", async () => {
     const identical = rule("a");
     const collision = rule("b", ["local-only"]);
     const result = await reconcileManagedRules([identical, collision], [rule("a"), rule("b")], SOURCE);
@@ -107,29 +108,50 @@ test("reconcileManagedRules adopts an identical legacy rule but protects a diffe
     expect(result.unchanged).toEqual(["a"]);
     expect(result.rules.find(({uuid}) => uuid === "a").managed).toBe(true);
     expect(result.conflicts).toEqual([
-        {uuid: "b", reason: "uuid-collision-or-legacy-local-modified"},
+        {uuid: "b", reason: "uuid-collision-or-local-rule"},
     ]);
 });
 
-test("reconcileManagedRules migrates a legacy source alias without persisting migration metadata", async () => {
-    const legacySource = {
-        id: "https://tumpio.github.io/requestcontrol/rules/privacy-common-params.json",
-        url: "https://tumpio.github.io/requestcontrol/rules/privacy-common-params.json",
+test("managed-source migration demotes unknown remote rules without changing rule behavior", async () => {
+    const oldSource = {
+        id: "retired-remote-source",
+        url: "https://old.example/rules.json",
         version: "legacy",
     };
-    const local = await createManagedRule(rule("a"), legacySource);
-    const officialSource = {
+    const managed = await createManagedRule(rule("a", ["utm_*", "fbclid"]), oldSource);
+    const result = migrateManagedSourceState([managed], {
+        [oldSource.url]: { imported: { uuids: ["a"], digest: "old" } },
+    });
+
+    expect(result.changed).toBe(true);
+    expect(result.demoted).toBe(1);
+    expect(result.pruned).toBe(1);
+    expect(result.imports).toEqual({});
+    expect(result.rules[0].managed).toBeUndefined();
+    expect(result.rules[0].source).toBeUndefined();
+    expect(result.rules[0].paramsFilter.values).toEqual(["utm_*", "fbclid"]);
+});
+
+test("managed-source migration preserves current catalog and explicit custom sources", async () => {
+    const officialUrl = "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/official/rules/privacy-common-params.json";
+    const customUrl = "https://rules.example/custom.json";
+    const official = await createManagedRule(rule("a"), {
         id: "requestcontrol-official/privacy-common-params",
-        url: "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/official/rules/privacy-common-params.json",
+        url: officialUrl,
+        catalog: "requestcontrol-official",
+        entry: "privacy-common-params",
         version: "1.0.0",
-        aliases: [legacySource.id],
-        legacyPaths: ["rules/privacy-common-params.json"],
+    });
+    const custom = await createManagedRule(rule("b"), { id: customUrl, url: customUrl });
+    const imports = {
+        [officialUrl]: { imported: { uuids: ["a"], catalog: "requestcontrol-official", entry: "privacy-common-params" } },
+        [customUrl]: { deletable: true, imported: { uuids: ["b"] } },
     };
 
-    const result = await reconcileManagedRules([local], [rule("a", ["utm_*", "fbclid"])], officialSource);
-    expect(result.updated).toEqual(["a"]);
-    expect(result.conflicts).toEqual([]);
-    expect(result.rules[0].source.id).toBe("requestcontrol-official/privacy-common-params");
-    expect(result.rules[0].source.aliases).toBeUndefined();
-    expect(result.rules[0].source.legacyPaths).toBeUndefined();
+    const result = migrateManagedSourceState([official, custom], imports);
+    expect(result.changed).toBe(false);
+    expect(result.demoted).toBe(0);
+    expect(result.pruned).toBe(0);
+    expect(result.rules.every((item) => item.managed)).toBe(true);
+    expect(result.imports).toEqual(imports);
 });

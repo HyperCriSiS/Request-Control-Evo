@@ -14,7 +14,7 @@ The user-visible import model is intentionally limited to three channels:
 2. **Community** — separately published community packages from `requestcontrol-rules/community/`.
 3. **Custom** — an explicitly configured compatible URL supplied by the user.
 
-The former Built-in/Recommended package section is retired as a user-facing source. Existing packaged JSON files remain temporarily as compatibility assets for one migration cycle so older source identities can be recognized safely; they are not presented as a second official catalog.
+Built-in/Recommended is removed as a rule-distribution channel. The extension does not ship a duplicate Official rule corpus; users who want to preserve historical or third-party rules can import them as ordinary local rules.
 
 ## Official update model
 
@@ -30,7 +30,7 @@ Users can:
 
 Managed-rule reconciliation remains UUID-based. A locally modified managed rule is preserved and reported as a conflict instead of being overwritten. Rules removed upstream are removed locally only when their managed baseline is still unchanged.
 
-Legacy `tumpio.github.io` source URLs, previous Community IDs and packaged extension URLs are accepted as migration aliases. After a successful reconciliation, the rule is stored under the stable `requestcontrol-official/<package>` source identity; transient migration aliases are not persisted into rule exports.
+Historical remote-source aliases are not recognized. On upgrade, managed rules whose source is not a current catalog package or an explicit Custom source keep their rule payload unchanged but lose `managed`/`source` metadata and become ordinary local rules. This keeps user rules while preventing retired remote identities from remaining part of Evo runtime behavior.
 
 An unavailable catalog or failed integrity check never disables existing rules. A package whose SHA-256 does not match the catalog is not importable/updateable.
 

@@ -28,23 +28,69 @@ function unmanagedRuleData(rule) {
     return copy;
 }
 
-function persistedSource(source) {
-    const copy = cloneJson(source);
-    delete copy.aliases;
-    delete copy.legacyPaths;
-    return copy;
-}
-
 function sourceReferenceMatches(value, source) {
     if (!value) return false;
-    if ([source.id, source.url, ...(source.aliases || [])].filter(Boolean).includes(value)) return true;
-    if (!Array.isArray(source.legacyPaths) || source.legacyPaths.length === 0) return false;
+    return [source.id, source.url].filter(Boolean).includes(value);
+}
+
+const CURRENT_CATALOG_PATHS = Object.freeze({
+    "requestcontrol-official": "/HyperCriSiS/requestcontrol-rules/main/official/rules/",
+    "requestcontrol-community": "/HyperCriSiS/requestcontrol-rules/main/community/rules/",
+});
+
+function isCurrentCatalogUrl(value, catalog) {
+    const pathPrefix = CURRENT_CATALOG_PATHS[catalog];
+    if (!value || !pathPrefix) return false;
     try {
-        const pathname = new URL(value).pathname.replace(/^\/+/, "");
-        return source.legacyPaths.some((path) => pathname.endsWith(String(path).replace(/^\/+/, "")));
+        const url = new URL(value);
+        return url.protocol === "https:" && url.hostname === "raw.githubusercontent.com" && url.pathname.startsWith(pathPrefix);
     } catch {
         return false;
     }
+}
+
+function isCurrentCatalogSource(source) {
+    if (!source?.catalog || !source?.entry || !source?.id || !source?.url) return false;
+    return source.id === `${source.catalog}/${source.entry}` && isCurrentCatalogUrl(source.url, source.catalog);
+}
+
+function isCurrentCustomSource(source, imports) {
+    if (!source || !imports) return false;
+    const state = imports[source.url] || imports[source.id];
+    return Boolean(state?.deletable);
+}
+
+export function migrateManagedSourceState(rules = [], imports = {}) {
+    let demoted = 0;
+    let pruned = 0;
+    const cleanedImports = {};
+
+    for (const [key, data] of Object.entries(imports || {})) {
+        if (data?.deletable || Object.keys(CURRENT_CATALOG_PATHS).some((catalog) => isCurrentCatalogUrl(key, catalog))) {
+            cleanedImports[key] = data;
+        } else {
+            pruned += 1;
+        }
+    }
+
+    const cleanedRules = (rules || []).map((rule) => {
+        if (!rule?.managed) return rule;
+        if (isCurrentCatalogSource(rule.source) || isCurrentCustomSource(rule.source, cleanedImports)) return rule;
+
+        const copy = cloneJson(rule);
+        delete copy.managed;
+        delete copy.source;
+        demoted += 1;
+        return copy;
+    });
+
+    return {
+        rules: cleanedRules,
+        imports: cleanedImports,
+        changed: demoted > 0 || pruned > 0,
+        demoted,
+        pruned,
+    };
 }
 
 async function sha256(text) {
@@ -69,7 +115,7 @@ export async function createManagedRule(rule, source) {
     const upstreamDigest = await ruleDigest(copy);
     copy.managed = true;
     copy.source = {
-        ...persistedSource(source),
+        ...cloneJson(source),
         upstreamDigest,
     };
     return copy;
@@ -160,7 +206,7 @@ export async function reconcileManagedRules(localRules, incomingRules, source) {
             result.push(localRule);
             changes.conflicts.push({
                 uuid: localRule.uuid,
-                reason: "uuid-collision-or-legacy-local-modified",
+                reason: "uuid-collision-or-local-rule",
             });
         }
     }
