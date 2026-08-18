@@ -292,6 +292,7 @@ function markLegacyImportedRules(rules, imported, source) {
 }
 
 async function setupImportsTab() {
+    ensureOfficialImportSection();
     const { imports } = await browser.storage.local.get("imports");
     const importState = imports || {};
 
@@ -320,6 +321,56 @@ async function setupImportsTab() {
     document.getElementById("official-update-all").addEventListener("click", updateAllOfficial);
     document.getElementById("import-source-form").addEventListener("submit", onImportSourceAdded);
     document.getElementById("new-import-source").addEventListener("input", checkImportSourceValidity);
+}
+
+function ensureOfficialImportSection() {
+    const existing = document.getElementById("official-rule-lists");
+    if (existing) return existing;
+
+    const details = document.createElement("details");
+    details.id = "official-rule-lists";
+    details.className = "imports-section";
+    details.open = true;
+
+    const summary = document.createElement("summary");
+    const title = document.createElement("span");
+    title.textContent = browser.i18n.getMessage("imports_official") || "Official";
+    const badge = document.createElement("span");
+    badge.id = "official-update-count";
+    badge.className = "badge badge-notify";
+    badge.hidden = true;
+    summary.append(title, badge);
+
+    const description = document.createElement("p");
+    description.className = "imports-section-description";
+    description.textContent = browser.i18n.getMessage("imports_official_description") ||
+        "Maintainer-reviewed Request Control Evo packages with independent remote updates.";
+
+    const status = document.createElement("p");
+    status.id = "official-rule-status";
+    status.className = "imports-section-status";
+    status.textContent = browser.i18n.getMessage("imports_official_loading") || "Checking official rule packages…";
+
+    const updateAll = document.createElement("button");
+    updateAll.id = "official-update-all";
+    updateAll.type = "button";
+    updateAll.className = "btn";
+    updateAll.hidden = true;
+    updateAll.disabled = true;
+    updateAll.textContent = browser.i18n.getMessage("imports_update_all") || "Update all";
+
+    const list = document.createElement("ul");
+    list.id = "official-rule-list";
+    details.append(summary, description, status, updateAll, list);
+
+    const recommended = document.getElementById("recommended-rule-lists");
+    const community = document.getElementById("community-rule-lists");
+    if (recommended) {
+        recommended.replaceWith(details);
+    } else if (community) {
+        community.before(details);
+    }
+    return details;
 }
 
 async function setupOfficialCatalog(imports) {

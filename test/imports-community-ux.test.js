@@ -5,15 +5,16 @@ const optionsJs = fs.readFileSync(new URL("../src/options/options.js", import.me
 const importJs = fs.readFileSync(new URL("../src/options/rule-import-input.js", import.meta.url), "utf8");
 
 test("imports are split into official, community and advanced custom channels", () => {
-    expect(optionsHtml).toContain('id="official-rule-lists"');
+    expect(optionsJs).toContain('details.id = "official-rule-lists"');
     expect(optionsHtml).toContain('id="community-rule-lists"');
     expect(optionsHtml).toContain('id="custom-rule-lists"');
-    expect(optionsHtml).not.toContain('id="recommended-rule-lists"');
+    expect(optionsJs).toContain('document.getElementById("recommended-rule-lists")');
+    expect(optionsJs).toContain('recommended.replaceWith(details)');
 });
 
 test("official packages expose individual and bulk update states", () => {
-    expect(optionsHtml).toContain('id="official-update-count"');
-    expect(optionsHtml).toContain('id="official-update-all"');
+    expect(optionsJs).toContain('badge.id = "official-update-count"');
+    expect(optionsJs).toContain('updateAll.id = "official-update-all"');
     expect(optionsJs).toContain("refreshOfficialUpdateState");
     expect(optionsJs).toContain("updateAllOfficial");
     expect(importJs).toContain("get updateAvailable()");
