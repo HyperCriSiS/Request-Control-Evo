@@ -11,6 +11,7 @@ import {
     MethodMatcher,
     OriginMatcher,
     RequestMatcher,
+    SourceMatcher,
     ThirdPartyDomainMatcher,
     ThirdPartyOriginMatcher,
 } from "./matchers.js";
@@ -53,6 +54,10 @@ export function createRequestMatcher(pattern, hostnamesWithoutSuffix = []) {
 
     if (pattern.excludes) {
         matchers.push(new ExcludeMatcher(pattern.excludes));
+    }
+
+    if (pattern.source) {
+        matchers.push(new SourceMatcher(pattern.source));
     }
 
     switch (pattern.origin) {

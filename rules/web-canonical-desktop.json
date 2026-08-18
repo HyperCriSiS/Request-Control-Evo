@@ -1,0 +1,29 @@
+[
+    {
+        "uuid": "81275835-2604-42f3-a7a2-1c4e67230501",
+        "title": "English Wikipedia mobile to desktop",
+        "description": "Normalize en.m.wikipedia.org navigation to the canonical desktop host while preserving path and query parameters.",
+        "tag": "special-web-canonical-desktop",
+        "pattern": {"scheme": "*", "host": ["en.m.wikipedia.org"], "path": ["*"]},
+        "types": ["main_frame"], "action": "redirect", "active": false,
+        "redirectUrl": "[protocol=https][host=en.wikipedia.org]"
+    },
+    {
+        "uuid": "81275835-2604-42f3-a7a2-1c4e67230502",
+        "title": "German Wikipedia mobile to desktop",
+        "description": "Normalize de.m.wikipedia.org navigation to the canonical desktop host while preserving path and query parameters.",
+        "tag": "special-web-canonical-desktop",
+        "pattern": {"scheme": "*", "host": ["de.m.wikipedia.org"], "path": ["*"]},
+        "types": ["main_frame"], "action": "redirect", "active": false,
+        "redirectUrl": "[protocol=https][host=de.wikipedia.org]"
+    },
+    {
+        "uuid": "81275835-2604-42f3-a7a2-1c4e67230503",
+        "title": "YouTube mobile to desktop",
+        "description": "Normalize m.youtube.com navigation to www.youtube.com while preserving path and query parameters.",
+        "tag": "special-web-canonical-desktop",
+        "pattern": {"scheme": "*", "host": ["m.youtube.com"], "path": ["*"]},
+        "types": ["main_frame"], "action": "redirect", "active": false,
+        "redirectUrl": "[protocol=https][host=www.youtube.com]"
+    }
+]

@@ -118,15 +118,23 @@ pre {
     padding: 0.55rem;
 }
 
-#showRules {
+#showRules,
+#inspectCurrent,
+#analyzeCurrent {
     background: var(--surface);
     color: var(--text);
     border: 1px solid var(--border);
 }
 
-#showRules:hover {
+#showRules:hover,
+#inspectCurrent:hover,
+#analyzeCurrent:hover {
     background: var(--surface-hover);
     cursor: pointer;
+}
+
+#inspectCurrent {
+    gap: 0.3rem;
 }
 
 #toggleActive {
@@ -192,7 +200,9 @@ pre {
 
 @media (prefers-color-scheme: dark) {
     .copyButton img,
-    #showRules img {
+    #showRules img,
+    #inspectCurrent img,
+    #analyzeCurrent img {
         filter: invert(0.9);
     }
 }

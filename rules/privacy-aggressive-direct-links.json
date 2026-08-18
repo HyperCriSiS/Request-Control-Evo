@@ -1,0 +1,57 @@
+[
+    {
+        "uuid": "d15b7761-ad89-41b5-aa86-a525a9af0401",
+        "title": "Skip Google outbound redirector",
+        "description": "Open the destination carried by Google's /url redirect endpoint directly.",
+        "tag": "special-aggressive-direct-links",
+        "pattern": {"scheme": "*", "host": ["www.google.com", "google.com"], "path": ["/url?*q=*", "/url?*url=*"]},
+        "types": ["main_frame"],
+        "action": "redirect",
+        "active": false,
+        "redirectUrl": "[href={search/.*[?&](?:q|url)=([^&]+).*/$1|decodeURIComponent}]"
+    },
+    {
+        "uuid": "d15b7761-ad89-41b5-aa86-a525a9af0402",
+        "title": "Skip Facebook link shim",
+        "description": "Open the external destination carried by Facebook's l.php link shim directly.",
+        "tag": "special-aggressive-direct-links",
+        "pattern": {"scheme": "*", "host": ["www.facebook.com", "facebook.com", "l.facebook.com", "lm.facebook.com"], "path": ["/l.php?*u=*"]},
+        "types": ["main_frame"],
+        "action": "redirect",
+        "active": false,
+        "redirectUrl": "[href={search/.*[?&]u=([^&]+).*/$1|decodeURIComponent}]"
+    },
+    {
+        "uuid": "d15b7761-ad89-41b5-aa86-a525a9af0403",
+        "title": "Skip Microsoft Safe Links wrapper",
+        "description": "Extract the destination URL from safelinks.protection.outlook.com. Disabled by default because enterprise Safe Links can provide organization-level security scanning.",
+        "tag": "special-aggressive-direct-links",
+        "pattern": {"scheme": "*", "host": ["*.safelinks.protection.outlook.com"], "path": ["*url=*"]},
+        "types": ["main_frame"],
+        "action": "redirect",
+        "active": false,
+        "redirectUrl": "[href={search/.*[?&]url=([^&]+).*/$1|decodeURIComponent}]"
+    },
+    {
+        "uuid": "d15b7761-ad89-41b5-aa86-a525a9af0404",
+        "title": "Skip Reddit media wrapper",
+        "description": "Open the URL carried by Reddit's /media wrapper directly instead of the intermediate media page.",
+        "tag": "special-aggressive-direct-links",
+        "pattern": {"scheme": "*", "host": ["www.reddit.com", "reddit.com"], "path": ["/media?*url=*"]},
+        "types": ["main_frame"],
+        "action": "redirect",
+        "active": false,
+        "redirectUrl": "[href={search.url|decodeURIComponent}]"
+    },
+    {
+        "uuid": "d15b7761-ad89-41b5-aa86-a525a9af0405",
+        "title": "Skip Steam Community link filter",
+        "description": "Open destinations carried by steamcommunity.com/linkfilter directly. Disabled by default because the Steam warning page can flag suspicious destinations.",
+        "tag": "special-aggressive-direct-links",
+        "pattern": {"scheme": "*", "host": ["steamcommunity.com", "www.steamcommunity.com"], "path": ["/linkfilter/?*url=*", "/linkfilter?*url=*"]},
+        "types": ["main_frame"],
+        "action": "redirect",
+        "active": false,
+        "redirectUrl": "[href={search.url|decodeURIComponent}]"
+    }
+]

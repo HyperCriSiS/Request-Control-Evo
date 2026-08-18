@@ -11,6 +11,16 @@ permissions:
   contents: read
 
 jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm run audit
+
   lint:
     runs-on: ubuntu-latest
     steps:
@@ -72,6 +82,7 @@ jobs:
   checker:
     if: always()
     needs:
+      - audit
       - lint
       - test
       - build
@@ -80,11 +91,13 @@ jobs:
     steps:
       - name: Verify required jobs
         env:
+          AUDIT: ${{ needs.audit.result }}
           LINT: ${{ needs.lint.result }}
           TEST: ${{ needs.test.result }}
           BUILD: ${{ needs.build.result }}
           LINT_BUILD: ${{ needs.lint-build.result }}
         run: |
+          test "$AUDIT" = "success"
           test "$LINT" = "success"
           test "$TEST" = "success"
           test "$BUILD" = "success"
