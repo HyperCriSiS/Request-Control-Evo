@@ -108,7 +108,7 @@ This document is the binding source of truth for the active modernization/releas
 - [x] Synchronize the final showcase-ruleset tree to `master` via PR #35 / commit `09202d592f6e863ef2ec16911460a6dfcc22547e`; the already-published 1.18.0 tag/release remains immutable.
 - [x] Align release metadata at 1.18.1 and validate the patch candidate.
 - [x] Promote the validated 1.18.1 candidate to `master` via PR #38; master release commit `49fa1814940f2347bd345b898574a96f093b6c5d`.
-- [x] Verify Release run `32127317095` creates tag `1.18.1`, GitHub release `372266035`, ZIP and byte-identical unsigned XPI. Both assets are 216149 bytes with SHA-256 `94d9438fa6753fbb55c697140323fcf32482edeec2570b8fc9c14d01b04a9124`; Mozilla signing was skipped because AMO credentials were not configured.
+- [x] Verify Release run `32127317095` creates tag `1.18.1`, GitHub release `372266035`, ZIP and byte-identical unsigned XPI. Both assets are 216149 bytes with SHA-256 `94d9438fa6753fbb55c697140323fcf32482edeec2570b8fc9c14d01b04a9124`; Mozilla signing was skipped because AMO credentials are not configured.
 
 ## Phase 8 — on-demand compatibility diagnostics and Referrer protection
 
@@ -149,38 +149,58 @@ This document is the binding source of truth for the active modernization/releas
 - [x] Reduce import-row visual density by keeping descriptions, source links and community review links behind per-package Details while preserving prominent warnings for risky presets.
 - [x] Restore the missing import integrity-status element expected by the rule-list integrity checker and add regression coverage for the new structure/lazy-loading boundaries.
 
-## Phase 12 — source intelligence and deterministic curation pipeline
+## Phase 12 — official remote rules, external curation and Observatory boundary
 
-### Foundation
+### Runtime / channel architecture
 
-- [x] Add a central source registry with explicit provenance, license/integration policy, capabilities and no hidden runtime-network dependency.
-- [x] Add a common redirect-safety assessment that rejects non-web targets, credential URLs, redirect loops and HTTPS-to-HTTP downgrades while flagging possible security wrappers for review.
-- [x] Add a versioned privacy-minimized Wormhole Observatory snapshot contract without implementing network transport or remote execution.
+- [x] Keep the common redirect-safety assessment in the extension runtime and reject non-web targets, credential URLs, redirect loops and HTTPS-to-HTTP downgrades while flagging possible security wrappers for review.
+- [x] Keep the versioned privacy-minimized Wormhole Observatory snapshot contract in the extension without adding transport or remote execution.
+- [x] Split rule distribution into **Official**, **Community** and **Custom** channels. Official and Community use separate versioned catalogs in `HyperCriSiS/requestcontrol-rules`.
+- [x] Retire Built-in/Recommended as a user-facing rule source. Packaged JSON rules remain hidden for one compatibility migration cycle only; new installs use Official remote packages.
+- [x] Preserve existing managed rules when Official is unavailable; remote failures never disable or remove the installed rule set.
+- [x] Validate catalog channel/schema and package SHA-256 before import/update. Integrity failures cannot become importable updates.
+- [x] Normalize single-rule and array rule packages in the import component.
 
-### Candidate curation
+### Official update UX
 
-- [x] Add a deterministic normalization/fingerprint layer for external URL-cleanup, redirect and classification candidates.
-- [x] Reject unknown/invalid sources and duplicate candidates with stable machine-readable reasons.
-- [x] Add conservative risk classification for global parameters, sensitive token-like parameters, unscoped redirects and sources that are not directly importable.
-- [x] Keep classification candidates annotation-only and separate from request-changing actions.
-- [ ] Add source-specific offline adapters that transform reviewed ClearURLs/FastForward candidate fixtures into the canonical curation format; no runtime fetching.
-- [ ] Add conflict detection against existing bundled Evo rules and produce a review report that distinguishes duplicate, narrower, broader and contradictory candidates.
-- [ ] Add generated positive/negative fixtures for accepted candidates before they can become bundled rules.
+- [x] Check the Official catalog when the Imports view is initialized and compare already-installed packages against published package digests.
+- [x] Surface an explicit per-package update state and keep the existing individual update action.
+- [x] Add an Official update counter plus **Update all** for all currently available Official package updates.
+- [x] Do not silently apply rule updates in the background; discovery and application remain separate so failures stay attributable and reviewable.
+- [x] Migrate legacy `tumpio.github.io`, previous Community IDs and packaged extension source URLs to stable `requestcontrol-official/<package>` identities during successful reconciliation.
+- [x] Preserve locally modified managed rules as conflicts rather than overwriting them during individual or bulk updates.
+- [ ] After one verified migration release, remove the hidden packaged compatibility rule assets and obsolete legacy presentation code/tests completely.
 
-### Inspector / diagnostics
+### External curation — `requestcontrol-rules`, not the extension
 
-- [ ] Surface provenance, confidence, safety level and stable reason codes in Inspector details without increasing default visual density.
-- [ ] Add an exportable support diagnostic that contains rule/source identifiers and reason codes but excludes raw browsing URLs by default.
+- [x] Move source/license policy and deterministic candidate normalization/risk tooling out of the extension and into the rule-catalog maintenance repository.
+- [x] Add offline fixture adapters for reviewed ClearURLs parameter candidates and FastForward URL-only redirect candidates; no runtime source fetching.
+- [ ] Add conflict reports against Official native rules that distinguish duplicate, narrower, broader and contradictory candidates.
+- [ ] Require generated positive/negative regression fixtures before a candidate can be promoted to Official.
+- [ ] Expand source-specific adapters only where licensing and deterministic semantics justify maintenance cost.
+
+### Community / promotion boundary
+
+- [x] Keep Community in its own catalog and repository path; popularity/reactions never imply Official trust.
+- [x] Keep Custom sources as an explicit advanced user-owned channel.
+- [ ] Add a maintainer promotion workflow from reviewed Community candidate -> curation checks -> Official package without changing the candidate's provenance history.
+
+### Inspector / support diagnostics
+
+- [x] Keep upstream-source curation diagnostics out of the extension UI.
+- [ ] Surface only runtime-relevant package/channel identity, installed/available version or digest, integrity state, managed-rule conflicts and actual Evo rule effects in compact Inspector/support details.
+- [ ] Add an exportable support diagnostic that excludes raw browsing URLs by default.
 - [ ] Keep all behavioral intelligence bounded to explicit Inspection/Guardian sessions.
 
 ### Observatory readiness
 
-- [ ] Define the reviewable response contract for future Observatory recommendations; recommendations must never be executable remote code.
+- [ ] Define the reviewable response contract for future Observatory classifications/recommendations; recommendations must never be executable remote code.
 - [ ] Add schema compatibility tests for forward/backward rejection behavior before any transport integration exists.
+- [ ] Keep Observatory availability completely independent from local rule execution and Official catalog updates.
 
 ### Validation
 
-- [ ] Run audit, lint, tests, build, build-lint/checker and security checks before marking Phase 12 complete.
+- [ ] Run audit, lint, tests, build, build-lint/checker and security checks for the extension plus catalog/curation CI in `requestcontrol-rules` before marking Phase 12 complete.
 
 ## Blockers / dependencies
 
@@ -188,10 +208,10 @@ This document is the binding source of truth for the active modernization/releas
 - GitHub's agentic `github-advanced-security` PR check currently fails at service startup with `400 The requested model is not supported` for `claude-opus-4.6`. The repository's actual `Analyze (actions)` and `Analyze (javascript-typescript)` CodeQL jobs pass; treat the agentic service failure as an external GitHub platform issue unless its behavior changes.
 - No code blocker is currently known for the theme/import-presentation work.
 - Fully credential-less direct writes to GitHub are intentionally not assumed. The preferred community publication design keeps authentication on GitHub (submission/review UI) rather than storing a personal access token or secret inside the extension.
-- GitHub community metadata and ratings are optional network features; the existing local/built-in rule functionality must remain usable when GitHub is unavailable.
+- GitHub catalog/community metadata are optional network features; the already-installed rule set must remain usable unchanged when GitHub is unavailable.
 - Source-site matching remains Firefox `webRequest` functionality by default. Chromium 145+ session `topDomains` is now available only through the explicit `rulesetScope: "session"` + `capabilities: { topDomains: true }` compiler gate for the proven `*://*.domain/*` form; default/static/dynamic, exact-host, fixed-scheme, explicit-port and constrained-path source scopes remain explicit unsupported diagnostics.
 - Inspection must remain bounded and opt-in; it must not become a persistent browsing-history collector.
 
 ## Completion status
 
-**Phases 1–11 are complete on `dev`. Phase 12 is active.** Request Control 1.19.0 remains the published release. The post-release line now focuses on source intelligence, deterministic candidate curation, diagnosable rule provenance and a privacy-preserving future Wormhole Observatory boundary without adding runtime cloud dependence.
+**Phases 1–11 are complete on `dev`. Phase 12 is active.** Request Control 1.19.0 remains the published release. The post-release line now separates the extension runtime from the Official/Community rule service and from external-source curation, while preserving managed-rule conflict safety and a privacy-preserving future Wormhole Observatory boundary.
