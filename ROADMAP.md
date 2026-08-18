@@ -2,7 +2,7 @@
 
 This document is the binding source of truth for the active modernization/release line. Historical design notes remain in `docs/roadmap.md` and related documents, but implementation status must be reflected here.
 
-**Status: 1.18.1 released; Phase 9 source-site parity hardening in progress**
+**Status: 1.18.1 released; Phase 9 source-site parity hardening complete**
 
 ## Release history and current baseline
 
@@ -127,7 +127,7 @@ This document is the binding source of truth for the active modernization/releas
 - [x] Re-evaluate Chromium 145+ `topDomains` / `excludedTopDomains` and document the session-only, domain-only and no-top-frame fallback constraints.
 - [x] Add capability-gated DNR source-scope compilation only for the proven session-only `*://*.domain/*` subset; default/static/dynamic and neighboring source forms preserve `source-matcher-unsupported`.
 - [x] Add direct positive/negative boundary fixtures for the activated session `topDomains` form plus explicit rejection fixtures for exact-host, fixed-scheme, explicit-port, constrained-path and non-session forms.
-- [ ] Run audit, lint, tests, build, build-lint/checker and security checks before marking Phase 9 complete.
+- [x] Run audit, lint, tests, build, build-lint/checker and security checks before marking Phase 9 complete; PR #42 Build run `32145208740` is green across all required project jobs, with no open code-scanning, secret-scanning or Dependabot alerts on validation.
 
 ## Blockers / dependencies
 
@@ -136,9 +136,9 @@ This document is the binding source of truth for the active modernization/releas
 - No code blocker is currently known for the theme/import-presentation work.
 - Fully credential-less direct writes to GitHub are intentionally not assumed. The preferred community publication design keeps authentication on GitHub (submission/review UI) rather than storing a personal access token or secret inside the extension.
 - GitHub community metadata and ratings are optional network features; the existing local/built-in rule functionality must remain usable when GitHub is unavailable.
-- Source-site matching remains Firefox `webRequest` functionality by default. Chromium 145+ now exposes session-only `topDomains`, but the compiler must keep returning an explicit unsupported diagnostic until a capability-gated subset is proven exact across scheme/host/path/port/context boundaries.
+- Source-site matching remains Firefox `webRequest` functionality by default. Chromium 145+ session `topDomains` is now available only through the explicit `rulesetScope: "session"` + `capabilities: { topDomains: true }` compiler gate for the proven `*://*.domain/*` form; default/static/dynamic, exact-host, fixed-scheme, explicit-port and constrained-path source scopes remain explicit unsupported diagnostics.
 - Inspection must remain bounded and opt-in; it must not become a persistent browsing-history collector.
 
 ## Completion status
 
-**Phases 1–8 are complete. Phase 9 is in progress.** The 1.18.0 milestone remains immutable, 1.18.1 is published and verified, and the on-demand Compatibility Guardian plus configurable Referrer protection are implemented and validated on PR #41. Phase 9 hardens the Firefox source-site reference semantics first, then evaluates Chromium top-level-domain DNR support conservatively without weakening explicit unsupported boundaries.
+**Phases 1–9 are complete.** The 1.18.0 milestone remains immutable, 1.18.1 is published and verified, and Phase 9 fixes the Firefox source-site match-pattern boundary/port semantics while adding only the explicitly capability-gated, session-only `*://*.domain/*` Chromium `topDomains` subset. All neighboring source-scope forms remain conservative explicit unsupported diagnostics. Further work belongs to a new post-Phase-9 roadmap phase.
