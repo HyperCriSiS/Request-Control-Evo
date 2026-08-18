@@ -6,6 +6,7 @@ on:
       - chore/dependency-refresh-2026-08
     paths:
       - package.json
+      - scripts/audit-dependencies.mjs
       - .github/workflows/automation-refresh-dependencies.yml
   workflow_dispatch:
 
@@ -25,16 +26,16 @@ jobs:
       - name: Refresh compatible dependency graph
         run: npm update --package-lock-only --ignore-scripts
 
-      - name: Verify known vulnerable legacy packages are gone
+      - name: Verify legacy vulnerable packages are gone
         run: |
           node <<'NODE'
           const fs = require('fs');
           const lock = JSON.parse(fs.readFileSync('package-lock.json', 'utf8'));
           const packages = lock.packages || {};
-          const checks = [
-            ['node_modules/js-yaml', '3.15.1'],
-            ['node_modules/brace-expansion', '1.1.16'],
-          ];
+          const minimums = new Map([
+            ['js-yaml', '3.15.1'],
+            ['brace-expansion', '1.1.16'],
+          ]);
 
           const compare = (a, b) => {
             const pa = a.split('.').map(Number);
@@ -46,17 +47,19 @@ jobs:
             return 0;
           };
 
-          for (const [path, minimum] of checks) {
-            const version = packages[path]?.version;
-            if (version && compare(version, minimum) < 0) {
-              throw new Error(`${path} remains vulnerable at ${version}; expected >= ${minimum}`);
+          for (const [packagePath, metadata] of Object.entries(packages)) {
+            if (!packagePath.startsWith('node_modules/')) continue;
+            const packageName = packagePath.split('node_modules/').at(-1);
+            const minimum = minimums.get(packageName);
+            if (!minimum || !metadata.version) continue;
+            if (compare(metadata.version, minimum) < 0) {
+              throw new Error(`${packagePath} remains vulnerable at ${metadata.version}; expected >= ${minimum}`);
             }
-            console.log(`${path}: ${version || 'deduplicated/removed'}`);
           }
           NODE
 
-      - name: Audit refreshed dependency graph
-        run: npm audit --audit-level=high
+      - name: Enforce dependency audit policy
+        run: npm run audit
 
       - name: Commit refreshed lockfile
         run: |

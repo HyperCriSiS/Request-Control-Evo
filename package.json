@@ -24,6 +24,7 @@
     "prebuild": "npm run build-manual",
     "build": "web-ext build -i=$npm_package_config_ignore --overwrite-dest --verbose",
     "deploy": "web-ext sign --verbose",
+    "audit": "node scripts/audit-dependencies.mjs",
     "lint": "eslint src test scripts && npm run lint:json && web-ext lint -i=$npm_package_config_ignore",
     "lint:json": "node scripts/validate-json.mjs"
   },
