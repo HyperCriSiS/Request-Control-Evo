@@ -330,6 +330,9 @@ function humanReadableSource(src) {
         if (url.hostname === "tumpio.github.io" && url.pathname.startsWith("/requestcontrol/rules/")) {
             return "https://github.com/tumpio/requestcontrol/tree/master/rules";
         }
+        if (url.protocol === "moz-extension:" || url.protocol === "chrome-extension:") {
+            return "https://github.com/HyperCriSiS/Request-Control-Evo/tree/dev/rules";
+        }
         return src;
     } catch {
         return src;
@@ -358,6 +361,84 @@ async function digest(text, algorithm = "SHA-256") {
     const digest = await crypto.subtle.digest(algorithm, data);
     const bytes = Array.from(new Uint8Array(digest));
     return bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function setupBundledSpecialRulesets() {
+    const tab = document.getElementById("tab-imports");
+    if (!tab || document.getElementById("bundled-special-rulesets")) {
+        return;
+    }
+
+    const presets = [
+        {
+            path: "rules/media-original-quality.json",
+            title: "Original Media / Maximum Quality",
+            description: "Request original or highest-quality media from selected thumbnail and media endpoints.",
+        },
+        {
+            path: "rules/privacy-enhanced-embeds.json",
+            title: "Privacy Enhanced Embeds",
+            description: "Use privacy-oriented embed variants and supported privacy parameters without blocking the content.",
+        },
+        {
+            path: "rules/developer-direct-raw.json",
+            title: "Developer Direct / Raw",
+            description: "Turn selected GitHub and GitLab file-view URLs into raw file responses.",
+        },
+        {
+            path: "rules/search-engine-escape.json",
+            title: "Search Engine Escape",
+            description: "Redirect Google or Bing result-page searches to DuckDuckGo. Rules are disabled until explicitly enabled.",
+        },
+        {
+            path: "rules/privacy-aggressive-direct-links.json",
+            title: "Aggressive Direct Links",
+            description: "Skip selected redirect and warning wrappers. Security-sensitive rules are disabled until explicitly enabled.",
+        },
+        {
+            path: "rules/web-canonical-desktop.json",
+            title: "Canonical Desktop Web",
+            description: "Normalize selected mobile hosts to their desktop counterparts. Rules are disabled until explicitly enabled.",
+        },
+        {
+            path: "rules/special-text-first-low-bandwidth.json",
+            title: "Text-First / Low Bandwidth",
+            description: "Block images, media and web fonts for a deliberately austere low-bandwidth mode.",
+        },
+        {
+            path: "rules/special-first-party-firewall.json",
+            title: "First-Party Firewall",
+            description: "Block third-party-domain subresources while leaving top-level navigation alone. This can break sites.",
+        },
+    ];
+
+    const details = document.createElement("details");
+    details.id = "bundled-special-rulesets";
+    details.open = true;
+
+    const summary = document.createElement("summary");
+    summary.textContent = "Request Control Evo";
+    summary.title = "Bundled showcase rulesets";
+
+    const list = document.createElement("ul");
+    for (const preset of presets) {
+        const input = document.createElement("rule-import-input");
+        input.src = browser.runtime.getURL(preset.path);
+        input.title = preset.description;
+        input.description = preset.description;
+        const label = document.createElement("span");
+        label.textContent = preset.title;
+        input.append(label);
+        list.append(input);
+    }
+
+    details.append(summary, list);
+    const commonLists = tab.querySelector("details");
+    if (commonLists?.nextSibling) {
+        tab.insertBefore(details, commonLists.nextSibling);
+    } else {
+        tab.append(details);
+    }
 }
 
 function setupGitHubCommunityShare() {
@@ -462,8 +543,13 @@ function setupGitHubCommunityShare() {
     update();
 }
 
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", setupGitHubCommunityShare, { once: true });
-} else {
+function setupImportExtras() {
+    setupBundledSpecialRulesets();
     setupGitHubCommunityShare();
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupImportExtras, { once: true });
+} else {
+    setupImportExtras();
 }
