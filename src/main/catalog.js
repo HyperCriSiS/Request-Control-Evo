@@ -28,6 +28,25 @@ function unmanagedRuleData(rule) {
     return copy;
 }
 
+function persistedSource(source) {
+    const copy = cloneJson(source);
+    delete copy.aliases;
+    delete copy.legacyPaths;
+    return copy;
+}
+
+function sourceReferenceMatches(value, source) {
+    if (!value) return false;
+    if ([source.id, source.url, ...(source.aliases || [])].filter(Boolean).includes(value)) return true;
+    if (!Array.isArray(source.legacyPaths) || source.legacyPaths.length === 0) return false;
+    try {
+        const pathname = new URL(value).pathname.replace(/^\/+/, "");
+        return source.legacyPaths.some((path) => pathname.endsWith(String(path).replace(/^\/+/, "")));
+    } catch {
+        return false;
+    }
+}
+
 async function sha256(text) {
     if (!globalThis.crypto || !globalThis.crypto.subtle) {
         throw new Error("Web Crypto API is unavailable");
@@ -50,7 +69,7 @@ export async function createManagedRule(rule, source) {
     const upstreamDigest = await ruleDigest(copy);
     copy.managed = true;
     copy.source = {
-        ...cloneJson(source),
+        ...persistedSource(source),
         upstreamDigest,
     };
     return copy;
@@ -67,10 +86,7 @@ function sourceMatches(rule, source) {
     if (!rule.source) {
         return false;
     }
-    if (source.id && rule.source.id) {
-        return source.id === rule.source.id;
-    }
-    return Boolean(source.url && rule.source.url === source.url);
+    return sourceReferenceMatches(rule.source.id, source) || sourceReferenceMatches(rule.source.url, source);
 }
 
 export async function reconcileManagedRules(localRules, incomingRules, source) {

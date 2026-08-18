@@ -3,6 +3,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { reconcileManagedRules } from "../main/catalog.js";
+import {
+    CATALOG_CHANNEL,
+    buildCatalogSource,
+    findCatalogImportState,
+    validateRemoteCatalog,
+} from "../main/remote-catalog.js";
 import { exportObject, importFile } from "../util/import-export.js";
 import { Toc } from "../util/toc.js";
 import { uuid } from "../util/uuid.js";
@@ -13,6 +19,8 @@ import { showRuleTestDialog } from "./rule-tester.js";
 import { normalizeImportSource } from "./import-source.js";
 
 const COMMUNITY_REPOSITORY = "HyperCriSiS/requestcontrol-rules";
+const OFFICIAL_CATALOG_URL = "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/official/catalog.json";
+const COMMUNITY_CATALOG_URL = "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/community/catalog.json";
 
 document.addEventListener("DOMContentLoaded", async () => {
     const { rules } = await browser.storage.local.get("rules");
@@ -117,7 +125,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         .querySelectorAll("rule-list")
         .forEach((list) => list.addEventListener("rule-edit-completed", onRuleEditCompleted));
 
-    setupImportsTab();
+    await setupImportsTab();
 });
 
 document.addEventListener("rule-created", async (e) => {
@@ -169,8 +177,6 @@ document.addEventListener("rule-deleted", async (e) => {
 
 document.addEventListener("rule-selected", updateToolbar);
 
-document.addEventListener("rule-import-selected", toggleImportSelectedButton);
-
 document.addEventListener("rule-import-deleted", onImportSourceDeleted);
 
 document.addEventListener("rule-import-delete-imported", onRemoveImportedRules);
@@ -189,29 +195,44 @@ document.addEventListener("rule-import-show-imported", (e) => {
     updateToolbar();
 });
 
-document.addEventListener("rule-import-import-list", async (e) => {
-    const input = e.target;
+document.addEventListener("rule-import-import-list", (e) => {
+    applyManagedImport(e.target).catch(showAlertPopup);
+});
+
+async function applyManagedImport(input) {
+    await input.load();
+    if (!input.digest) {
+        throw new Error(browser.i18n.getMessage("import_unavailable") || "Rule package is unavailable.");
+    }
+
     let { imports } = await browser.storage.local.get("imports");
     const src = input.source;
+    const previousKey = input.dataset.importKey || src;
     const rulesToImport = input.rules.filter((rule) => rule.uuid);
 
     if (!imports) {
         imports = {};
     }
 
+    const previousData = imports[previousKey] || input.data || {};
     if (!(src in imports)) {
-        imports[src] = input.data;
+        imports[src] = previousData;
     }
 
     const data = imports[src];
-    const source = {
-        id: input.dataset.entry ? `${input.dataset.catalog}/${input.dataset.entry}` : src,
-        url: src,
-        revision: input.etag || input.digest,
-        catalog: input.dataset.catalog || undefined,
-        entry: input.dataset.entry || undefined,
-        version: input.dataset.version || undefined,
-    };
+    const source = input.catalogDefinition && input.catalogEntry
+        ? {
+            ...buildCatalogSource(input.catalogDefinition, input.catalogEntry, src),
+            revision: input.etag || input.digest,
+        }
+        : {
+            id: input.dataset.entry ? `${input.dataset.catalog}/${input.dataset.entry}` : src,
+            url: src,
+            revision: input.etag || input.digest,
+            catalog: input.dataset.catalog || undefined,
+            entry: input.dataset.entry || undefined,
+            version: input.dataset.version || undefined,
+        };
 
     let { rules } = await browser.storage.local.get("rules");
     if (!rules) {
@@ -237,11 +258,20 @@ document.addEventListener("rule-import-import-list", async (e) => {
         availableDigest: input.digest,
         timestamp: Date.now(),
         conflicts: reconciliation.conflicts,
+        catalog: source.catalog,
+        entry: source.entry,
+        version: source.version,
     };
+    if (previousKey && previousKey !== src) {
+        delete imports[previousKey];
+    }
 
     await browser.storage.local.set({ imports });
+    input.dataset.importKey = src;
     input.data = imports[src];
-});
+    refreshOfficialUpdateState();
+    return reconciliation;
+}
 
 function markLegacyImportedRules(rules, imported, source) {
     if (!imported || !Array.isArray(imported.uuids)) {
@@ -262,25 +292,22 @@ function markLegacyImportedRules(rules, imported, source) {
 }
 
 async function setupImportsTab() {
+    ensureOfficialImportSection();
     const { imports } = await browser.storage.local.get("imports");
+    const importState = imports || {};
 
-    if (imports) {
-        Object.entries(imports).forEach(([src, data]) => {
-            if (data.deletable) {
-                createImportInput(src, data);
-            } else {
-                const input = findImportInputBySource(src);
-                if (input) {
-                    input.data = data;
-                }
-            }
-        });
-    }
+    Object.entries(importState).forEach(([src, data]) => {
+        if (data.deletable) {
+            createImportInput(src, data);
+        }
+    });
+
+    await setupOfficialCatalog(importState);
 
     const communityDetails = document.getElementById("community-rule-lists");
     communityDetails.addEventListener("toggle", () => {
         if (communityDetails.open) {
-            setupCommunityCatalog(imports || {});
+            setupCommunityCatalog(importState);
         }
     });
 
@@ -291,77 +318,194 @@ async function setupImportsTab() {
         }
     });
 
+    document.getElementById("official-update-all").addEventListener("click", updateAllOfficial);
     document.getElementById("import-source-form").addEventListener("submit", onImportSourceAdded);
     document.getElementById("new-import-source").addEventListener("input", checkImportSourceValidity);
 }
 
+function ensureOfficialImportSection() {
+    const existing = document.getElementById("official-rule-lists");
+    if (existing) return existing;
+
+    const details = document.createElement("details");
+    details.id = "official-rule-lists";
+    details.className = "imports-section";
+    details.open = true;
+
+    const summary = document.createElement("summary");
+    const title = document.createElement("span");
+    title.textContent = browser.i18n.getMessage("imports_official") || "Official";
+    const badge = document.createElement("span");
+    badge.id = "official-update-count";
+    badge.className = "badge badge-notify";
+    badge.hidden = true;
+    summary.append(title, badge);
+
+    const description = document.createElement("p");
+    description.className = "imports-section-description";
+    description.textContent = browser.i18n.getMessage("imports_official_description") ||
+        "Maintainer-reviewed Request Control Evo packages with independent remote updates.";
+
+    const status = document.createElement("p");
+    status.id = "official-rule-status";
+    status.className = "imports-section-status";
+    status.textContent = browser.i18n.getMessage("imports_official_loading") || "Checking official rule packages…";
+
+    const updateAll = document.createElement("button");
+    updateAll.id = "official-update-all";
+    updateAll.type = "button";
+    updateAll.className = "btn";
+    updateAll.hidden = true;
+    updateAll.disabled = true;
+    updateAll.textContent = browser.i18n.getMessage("imports_update_all") || "Update all";
+
+    const list = document.createElement("ul");
+    list.id = "official-rule-list";
+    details.append(summary, description, status, updateAll, list);
+
+    const recommended = document.getElementById("recommended-rule-lists");
+    const community = document.getElementById("community-rule-lists");
+    if (recommended) {
+        recommended.replaceWith(details);
+    } else if (community) {
+        community.before(details);
+    }
+    return details;
+}
+
+async function setupOfficialCatalog(imports) {
+    return setupRemoteCatalog({
+        detailsId: "official-rule-lists",
+        statusId: "official-rule-status",
+        listId: "official-rule-list",
+        catalogUrl: OFFICIAL_CATALOG_URL,
+        channel: CATALOG_CHANNEL.OFFICIAL,
+        imports,
+    });
+}
+
 async function setupCommunityCatalog(imports) {
-    const details = document.getElementById("community-rule-lists");
+    return setupRemoteCatalog({
+        detailsId: "community-rule-lists",
+        statusId: "community-rule-status",
+        listId: "community-rule-list",
+        catalogUrl: COMMUNITY_CATALOG_URL,
+        channel: CATALOG_CHANNEL.COMMUNITY,
+        imports,
+    });
+}
+
+async function setupRemoteCatalog({ detailsId, statusId, listId, catalogUrl, channel, imports }) {
+    const details = document.getElementById(detailsId);
     if (details.dataset.loaded === "true" || details.dataset.loading === "true") {
         return;
     }
 
-    const status = document.getElementById("community-rule-status");
-    const list = document.getElementById("community-rule-list");
+    const status = document.getElementById(statusId);
+    const list = document.getElementById(listId);
     details.dataset.loading = "true";
     status.hidden = false;
-    status.textContent = browser.i18n.getMessage("imports_community_loading") || "Loading community catalog…";
+    status.textContent = channel === CATALOG_CHANNEL.OFFICIAL
+        ? (browser.i18n.getMessage("imports_official_loading") || "Checking official rule packages…")
+        : (browser.i18n.getMessage("imports_community_loading") || "Loading community catalog…");
 
-    const catalogUrl = "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/catalog.json";
     try {
         const response = await fetch(catalogUrl, { cache: "no-store" });
         if (!response.ok) {
-            throw new Error(`Community catalog request failed: ${response.status}`);
+            throw new Error(`${channel} catalog request failed: ${response.status}`);
         }
         const catalog = await response.json();
-        if (!catalog || !Array.isArray(catalog.ruleSets)) {
-            throw new Error("Invalid community catalog");
+        const validation = validateRemoteCatalog(catalog, channel);
+        if (validation.length) {
+            throw new Error(`Invalid ${channel} catalog: ${validation.join(", ")}`);
         }
 
+        list.replaceChildren();
         const importedChecks = [];
         for (const entry of catalog.ruleSets) {
-            if (!entry || !entry.url || !entry.name) {
-                continue;
-            }
             const source = normalizeImportSource(entry.url);
-            if (!source) {
-                continue;
-            }
+            if (!source) continue;
 
             const input = document.createElement("rule-import-input");
             input.setAttribute("lazy", "");
+            if (entry.warning) input.setAttribute("warning", "");
             input.textContent = entry.name;
             input.description = entry.description || "";
-            input.dataset.catalog = catalog.catalog || "requestcontrol-community";
-            input.dataset.entry = entry.id || entry.url;
+            input.dataset.catalog = catalog.catalog;
+            input.dataset.entry = entry.id;
             input.dataset.version = entry.version || catalog.version || "";
-            input.dataset.group = entry.group || "";
-            if (entry.sha256) {
-                input.setAttribute("expected-sha256", entry.sha256);
-            }
+            input.dataset.channel = channel;
+            input.catalogDefinition = catalog;
+            input.catalogEntry = entry;
+            if (entry.sha256) input.setAttribute("expected-sha256", entry.sha256);
             input.source = source;
-            if (entry.homepage) {
-                input.sourceHomepage = entry.homepage;
-            }
-            if (entry.ratingIssue) {
+            if (entry.homepage) input.sourceHomepage = entry.homepage;
+
+            if (channel === CATALOG_CHANNEL.COMMUNITY && entry.ratingIssue) {
                 const repository = entry.ratingRepository || catalog.ratingRepository || COMMUNITY_REPOSITORY;
                 input.communityReview = `https://github.com/${repository}/issues/${entry.ratingIssue}`;
             }
-            input.data = imports[source] || imports[entry.url] || {};
+
+            const imported = findCatalogImportState(imports, entry, source);
+            input.dataset.importKey = imported.key || source;
+            input.data = imported.data;
             list.append(input);
-            if (input.data.imported) {
-                importedChecks.push(input.load());
-            }
+            if (input.data.imported) importedChecks.push(input.load());
         }
 
         details.dataset.loaded = "true";
-        status.hidden = true;
         await Promise.allSettled(importedChecks);
+
+        if (channel === CATALOG_CHANNEL.OFFICIAL) {
+            refreshOfficialUpdateState();
+        } else if (catalog.ruleSets.length === 0) {
+            status.hidden = false;
+            status.textContent = browser.i18n.getMessage("imports_community_empty") || "No community packages are published yet.";
+        } else {
+            status.hidden = true;
+        }
     } catch {
         status.hidden = false;
-        status.textContent = browser.i18n.getMessage("imports_community_unavailable") || "Community catalog is currently unavailable.";
+        status.textContent = channel === CATALOG_CHANNEL.OFFICIAL
+            ? (browser.i18n.getMessage("imports_official_unavailable") || "Official rule updates are currently unavailable.")
+            : (browser.i18n.getMessage("imports_community_unavailable") || "Community catalog is currently unavailable.");
     } finally {
         delete details.dataset.loading;
+    }
+}
+
+function refreshOfficialUpdateState() {
+    const list = document.getElementById("official-rule-list");
+    const status = document.getElementById("official-rule-status");
+    const badge = document.getElementById("official-update-count");
+    const button = document.getElementById("official-update-all");
+    if (!list || !status || !badge || !button) return;
+
+    const updates = Array.from(list.querySelectorAll("rule-import-input")).filter((input) => input.updateAvailable);
+    badge.hidden = updates.length === 0;
+    badge.textContent = String(updates.length);
+    button.hidden = updates.length === 0;
+    button.disabled = updates.length === 0;
+    status.hidden = false;
+    status.textContent = updates.length
+        ? (browser.i18n.getMessage("imports_official_updates_available", updates.length) || `${updates.length} official package update(s) available.`)
+        : (browser.i18n.getMessage("imports_official_up_to_date") || "Official packages are up to date.");
+}
+
+async function updateAllOfficial() {
+    const button = document.getElementById("official-update-all");
+    const inputs = Array.from(document.querySelectorAll("#official-rule-list rule-import-input")).filter((input) => input.updateAvailable);
+    button.disabled = true;
+    button.classList.add("is-loading");
+    try {
+        for (const input of inputs) {
+            await applyManagedImport(input);
+        }
+    } catch (error) {
+        showAlertPopup(error);
+    } finally {
+        button.classList.remove("is-loading");
+        refreshOfficialUpdateState();
     }
 }
 
@@ -421,7 +565,6 @@ async function onImportSourceDeleted(e) {
 
     input.remove();
     checkImportSourceValidity();
-    toggleImportSelectedButton();
 }
 
 async function onRemoveImportedRules(e) {
@@ -477,12 +620,6 @@ function findImportInputBySource(src) {
             (input) => input.source === source
         ) || null
     );
-}
-
-function toggleImportSelectedButton() {
-    const selected = document.querySelectorAll("rule-import-input[selected]");
-    const importButton = document.getElementById("importSelected");
-    importButton.disabled = selected.length === 0;
 }
 
 function onRuleEditCompleted(e) {
