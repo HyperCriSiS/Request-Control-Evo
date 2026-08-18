@@ -23,8 +23,10 @@ jobs:
 
           path = Path("src/main/backends/dnr/compiler.js")
           source = path.read_text()
+          assert "function compileSourceCondition(" not in source
 
           anchor = "function expandHosts(pattern) {"
+          assert source.count(anchor) == 1
           helper = r'''function compileSourceCondition(source, { rulesetScope, capabilities }) {
               if (!source || (Array.isArray(source) && source.length === 0)) {
                   return { condition: {}, diagnostics: [] };
@@ -66,7 +68,6 @@ jobs:
                           ],
                       };
                   }
-
                   const match = exactSessionPattern.exec(sourcePattern);
                   if (!match) {
                       return {
@@ -85,53 +86,37 @@ jobs:
           }
 
           '''
-          assert source.count(anchor) == 1
           source = source.replace(anchor, helper + anchor)
 
           old = "function compileUrlConditions(pattern) {"
-          new = "function compileUrlConditions(pattern, options = {}) {"
           assert source.count(old) == 1
-          source = source.replace(old, new)
+          source = source.replace(old, "function compileUrlConditions(pattern, options = {}) {")
 
-          old = '''    if (pattern.source && (Array.isArray(pattern.source) ? pattern.source.length > 0 : true)) {
-              return {
-                  diagnostics: [
-                      diagnostic(
-                          "source-matcher-unsupported",
-                          "Top-level source-site matching is available in the Firefox webRequest engine but does not yet have a proven exact DNR translation."
-                      ),
-                  ],
-              };
-          }
-          '''
-          assert source.count(old) == 1
-          source = source.replace(old, "")
+          start = source.index("    if (pattern.source &&")
+          end = source.index("    if (pattern.anyTLD)", start)
+          source = source[:start] + source[end:]
 
           old = "    const conditionBase = {};\n    switch (pattern.origin) {"
-          new = '''    const sourceResult = compileSourceCondition(pattern.source, options);
+          assert source.count(old) == 1
+          source = source.replace(old, '''    const sourceResult = compileSourceCondition(pattern.source, options);
               if ((sourceResult.diagnostics || []).some(({ level }) => level === "error")) {
                   return sourceResult;
               }
 
               const conditionBase = { ...(sourceResult.condition || {}) };
-              switch (pattern.origin) {'''
-          assert source.count(old) == 1
-          source = source.replace(old, new)
+              switch (pattern.origin) {''')
 
           old = 'export function compileRuleToDnr(rule, { startId = 1, allowApproximate = false } = {}) {'
-          new = 'export function compileRuleToDnr(rule, { startId = 1, allowApproximate = false, rulesetScope = "dynamic", capabilities = {} } = {}) {'
           assert source.count(old) == 1
-          source = source.replace(old, new)
+          source = source.replace(old, 'export function compileRuleToDnr(rule, { startId = 1, allowApproximate = false, rulesetScope = "dynamic", capabilities = {} } = {}) {')
 
           old = "    const conditionResult = compileUrlConditions(rule.pattern);"
-          new = "    const conditionResult = compileUrlConditions(rule.pattern, { rulesetScope, capabilities });"
           assert source.count(old) == 1
-          source = source.replace(old, new)
+          source = source.replace(old, "    const conditionResult = compileUrlConditions(rule.pattern, { rulesetScope, capabilities });")
 
           old = "    resourceTypes: DNR_RESOURCE_TYPES,\n});"
-          new = '    resourceTypes: DNR_RESOURCE_TYPES,\n    sourceSite: "topDomains-session-only-with-explicit-capability",\n});'
           assert source.count(old) == 1
-          source = source.replace(old, new)
+          source = source.replace(old, '    resourceTypes: DNR_RESOURCE_TYPES,\n    sourceSite: "topDomains-session-only-with-explicit-capability",\n});')
 
           path.write_text(source)
           PY
