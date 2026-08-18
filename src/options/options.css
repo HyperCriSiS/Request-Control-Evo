@@ -11,6 +11,9 @@
     --focus-color: #4d86cf;
     --danger-color: #c93434;
     --danger-color-hover: #a92828;
+    --success-color: #2f7d32;
+    --warning-color: #9a6518;
+    --selected-background: #e5eef9;
     --background: #f4f6f9;
     --surface-color: #ffffff;
     --surface-subtle: #f7f8fa;
@@ -36,6 +39,9 @@
         --focus-color: #8ab8ef;
         --danger-color: #c94b4b;
         --danger-color-hover: #df6262;
+        --success-color: #66bb6a;
+        --warning-color: #e6ad55;
+        --selected-background: #263a54;
         --background: #15181d;
         --surface-color: #1e2229;
         --surface-subtle: #191d23;
@@ -272,6 +278,35 @@ a {
 #tab-imports summary {
     cursor: pointer;
     font-weight: 700;
+}
+
+#tab-imports details,
+#tab-imports summary,
+#tab-imports li,
+#tab-imports label,
+#tab-imports p {
+    color: var(--text-color);
+}
+
+#tab-imports .community-share {
+    border-style: solid;
+}
+
+#tab-imports .community-share p {
+    max-width: 52rem;
+    color: var(--text-muted);
+}
+
+#tab-imports .community-share-actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.6rem;
+    align-items: center;
+}
+
+#tab-imports .community-share-status {
+    color: var(--text-muted);
+    font-size: 0.85rem;
 }
 
 #tab-imports ul {
