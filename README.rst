@@ -1,10 +1,26 @@
 |BuildStatus|
 
-Request Control - Firefox extension
------------------------------------
+Request Control Evo - Firefox extension
+---------------------------------------
 
 An extension to control HTTP requests. Provides front-end for Firefox
 `webRequest.onBeforeRequest`_ API for HTTP request management.
+
+Request Control Evo keeps the Firefox ``webRequest`` engine as the reference
+behavior and adds modern tooling around it:
+
+-  Opt-in **Inspection Mode** for reloading a page and reviewing a bounded,
+   local request snapshot without continuously recording normal browsing.
+-  **Rule from request** actions and an optional guided rule assistant that
+   create disabled drafts for review in the expert editor.
+-  Exact **source-site scope** for Firefox rules, including direct editing in
+   the expert editor. Unsupported MV3/DNR translations remain explicit rather
+   than being broadened silently.
+-  Structured community imports with descriptions, integrity hashes, optional
+   GitHub reaction ratings, and a credential-less GitHub submission flow for
+   explicitly selected local rules.
+-  Light/dark theme support based on shared semantic color tokens.
+
 
 Requests can be controlled with following rules:
 
@@ -49,8 +65,8 @@ Clone repository and setup development environment with `npm`_
 
 ::
 
-    git clone https://github.com/HyperCriSiS/requestcontrol.git
-    cd requestcontrol
+    git clone https://github.com/HyperCriSiS/Request-Control-Evo.git
+    cd Request-Control-Evo
     npm install
 
 Run in Firefox-nightly
@@ -91,11 +107,11 @@ License
     file, You can obtain one at http://mozilla.org/MPL/2.0/.
 
 .. _webRequest.onBeforeRequest: https://developer.mozilla.org/en-US/Add-ons/WebExtensions/API/webRequest/onBeforeRequest
-.. _Pattern Capturing: https://github.com/HyperCriSiS/requestcontrol/blob/master/_locales/en/manual.wiki#redirect-using-pattern-capturing
-.. _Manual: https://github.com/HyperCriSiS/requestcontrol/blob/master/_locales/en/manual.wiki
-.. _FAQ: https://github.com/HyperCriSiS/requestcontrol/issues?q=label%3Aquestion
-.. _Source code: https://github.com/HyperCriSiS/requestcontrol
-.. _License: https://github.com/HyperCriSiS/requestcontrol/blob/master/LICENSE
+.. _Pattern Capturing: https://github.com/HyperCriSiS/Request-Control-Evo/blob/master/_locales/en/manual.wiki#redirect-using-pattern-capturing
+.. _Manual: https://github.com/HyperCriSiS/Request-Control-Evo/blob/master/_locales/en/manual.wiki
+.. _FAQ: https://github.com/HyperCriSiS/Request-Control-Evo/issues?q=label%3Aquestion
+.. _Source code: https://github.com/HyperCriSiS/Request-Control-Evo
+.. _License: https://github.com/HyperCriSiS/Request-Control-Evo/blob/master/LICENSE
 .. _Upstream: https://github.com/tumpio/requestcontrol
 .. _npm: https://www.npmjs.com/
 .. _lit: https://ajusa.github.io/lit/
@@ -104,5 +120,5 @@ License
 .. _ionicons: http://ionicons.com/
 .. _tldts: https://github.com/remusao/tldts
 
-.. |BuildStatus| image:: https://github.com/HyperCriSiS/requestcontrol/workflows/Build/badge.svg?event=push&branch=master
-   :target: https://github.com/HyperCriSiS/requestcontrol/actions
+.. |BuildStatus| image:: https://github.com/HyperCriSiS/Request-Control-Evo/actions/workflows/main.yml/badge.svg?branch=master
+   :target: https://github.com/HyperCriSiS/Request-Control-Evo/actions
