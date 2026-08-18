@@ -1,0 +1,43 @@
+name: Run corrected 1.19 security patch
+
+on:
+  push:
+    branches:
+      - chore/release-1.19.0
+    paths:
+      - .github/workflows/automation-fix-1.19-security-v2.yml
+
+permissions:
+  contents: write
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: chore/release-1.19.0
+          fetch-depth: 0
+      - name: Restore and patch
+        shell: bash
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git revert --no-commit ec71d90843ba1d251ff8cf40d15b740a06a363ca
+          awk '
+            /cat > \/tmp\/security\.patch <<.PATCH./ { capture=1; next }
+            capture && /^[[:space:]]*PATCH$/ { exit }
+            capture { sub(/^          /, ""); print }
+          ' .github/workflows/automation-fix-1.19-security.yml > /tmp/security.patch
+          test -s /tmp/security.patch
+          git apply --check /tmp/security.patch
+          git apply /tmp/security.patch
+          rm .github/workflows/automation-fix-1.19-security.yml
+          rm .github/workflows/automation-fix-1.19-security-v2.yml
+          node --check src/options/options.js
+          node --check src/options/rule-import-input.js
+          node --check src/options/import-source.js
+          git add -A
+          git commit -m "fix: harden rule import sources before 1.19.0"
+          git push origin HEAD:chore/release-1.19.0
