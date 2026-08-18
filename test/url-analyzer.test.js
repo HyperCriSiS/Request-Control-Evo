@@ -3,6 +3,7 @@ import {
     analyzeUrlSamples,
     matchParameterPattern,
     suggestParameterActions,
+    suggestSafeRedirectActions,
 } from "../src/main/analysis/url-analyzer.js";
 
 test("analyzeUrl splits URL components and query parameters", () => {
@@ -79,4 +80,23 @@ test("suggestParameterActions combines catalog matches and nested URL detection"
             confidence: "catalog",
         },
     ]);
+});
+
+test("suggestSafeRedirectActions separates structural detection from redirect safety", () => {
+    const safe = analyzeUrl(
+        `https://redirect.example/?url=${encodeURIComponent("https://destination.example/article")}`
+    );
+    expect(suggestSafeRedirectActions(safe)[0]).toMatchObject({
+        type: "unwrap-query-parameter",
+        autoSuggest: true,
+        safety: {safe: true, level: "safe"},
+    });
+
+    const downgrade = analyzeUrl(
+        `https://redirect.example/?url=${encodeURIComponent("http://destination.example/article")}`
+    );
+    expect(suggestSafeRedirectActions(downgrade)[0]).toMatchObject({
+        autoSuggest: false,
+        safety: {safe: false, level: "blocked", reasons: ["https-to-http-downgrade"]},
+    });
 });

@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import {assessRedirectCandidate, shouldAutoSuggestRedirect} from "../intelligence/redirect-safety.js";
+
 const HTTP_PROTOCOLS = new Set(["http:", "https:"]);
 
 function decodeRepeatedly(value, maxRounds = 2) {
@@ -128,6 +130,26 @@ export function matchParameterPattern(name, pattern) {
 
     const escaped = pattern.replace(/[|\\{}()[\]^$+?.]/g, "\\$&").replace(/\*/g, ".*");
     return new RegExp(`^${escaped}$`, "i").test(name);
+}
+
+export function suggestSafeRedirectActions(analysis) {
+    if (!analysis.valid) {
+        return [];
+    }
+
+    return analysis.queryParameters
+        .filter((parameter) => parameter.nestedUrl)
+        .map((parameter) => {
+            const safety = assessRedirectCandidate(analysis.href, parameter.nestedUrl);
+            return {
+                type: "unwrap-query-parameter",
+                parameter: parameter.name,
+                targetUrl: parameter.nestedUrl,
+                confidence: "structural",
+                safety,
+                autoSuggest: shouldAutoSuggestRedirect(safety),
+            };
+        });
 }
 
 export function suggestParameterActions(analysis, removablePatterns = []) {
