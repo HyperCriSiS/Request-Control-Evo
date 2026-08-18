@@ -1,0 +1,33 @@
+name: Inspect 1.17.0 release conflicts
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - .github/workflows/automation-inspect-1.17.0-conflicts.yml
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v7
+        with:
+          ref: release/1.17.0
+          fetch-depth: 0
+      - name: Inspect merge conflicts against master
+        run: |
+          git fetch origin master
+          set +e
+          git merge --no-commit --no-ff origin/master
+          status=$?
+          echo "merge_exit=$status"
+          echo "conflicts_begin"
+          git diff --name-only --diff-filter=U
+          echo "conflicts_end"
+          git merge --abort >/dev/null 2>&1 || true
+          exit 0
