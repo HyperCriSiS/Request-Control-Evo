@@ -136,6 +136,64 @@ function compileIncludeCondition(pattern) {
     return { includeRegex: globRegex(include), diagnostics: [] };
 }
 
+function compileSourceCondition(source, { rulesetScope, capabilities }) {
+    if (!source || (Array.isArray(source) && source.length === 0)) {
+        return { condition: {}, diagnostics: [] };
+    }
+
+    const sourcePatterns = Array.isArray(source) ? source : [source];
+    if (!capabilities || capabilities.topDomains !== true) {
+        return {
+            diagnostics: [
+                diagnostic(
+                    "source-matcher-unsupported",
+                    "Top-level source-site matching requires an explicitly enabled DNR topDomains capability; default compilation remains unsupported."
+                ),
+            ],
+        };
+    }
+    if (rulesetScope !== "session") {
+        return {
+            diagnostics: [
+                diagnostic(
+                    "source-matcher-unsupported",
+                    "DNR topDomains is supported only for session-scoped rules, so source-site matching is not emitted for persistent/static/dynamic rules."
+                ),
+            ],
+        };
+    }
+
+    const topDomains = [];
+    const exactSessionPattern = /^\*:\/\/\*\.([a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+)\/\*$/;
+
+    for (const sourcePattern of sourcePatterns) {
+        if (typeof sourcePattern !== "string" || !isAscii(sourcePattern)) {
+            return {
+                diagnostics: [
+                    diagnostic(
+                        "source-matcher-unsupported",
+                        "The proven topDomains source subset requires ASCII WebExtension match-pattern strings."
+                    ),
+                ],
+            };
+        }
+        const match = exactSessionPattern.exec(sourcePattern);
+        if (!match) {
+            return {
+                diagnostics: [
+                    diagnostic(
+                        "source-matcher-unsupported",
+                        "Only '*://*.domain/*' source patterns are proven exact for session-scoped DNR topDomains; exact-host, fixed-scheme, port and path-constrained source patterns remain unsupported."
+                    ),
+                ],
+            };
+        }
+        topDomains.push(match[1]);
+    }
+
+    return { condition: { topDomains: [...new Set(topDomains)] }, diagnostics: [] };
+}
+
 function expandHosts(pattern) {
     const hosts = Array.isArray(pattern.host) ? pattern.host : [pattern.host];
     const expanded = [];
@@ -211,7 +269,7 @@ function pathRegex(path) {
     return result;
 }
 
-function compileUrlConditions(pattern) {
+function compileUrlConditions(pattern, options = {}) {
     if (!pattern || typeof pattern !== "object") {
         return { diagnostics: [diagnostic("missing-pattern", "A Request Control pattern is required.")] };
     }
@@ -226,16 +284,6 @@ function compileUrlConditions(pattern) {
                 diagnostic(
                     "excludes-matcher-unsupported",
                     "Request Control exclude globs/regular expressions do not have a proven exact DNR translation yet."
-                ),
-            ],
-        };
-    }
-    if (pattern.source && (Array.isArray(pattern.source) ? pattern.source.length > 0 : true)) {
-        return {
-            diagnostics: [
-                diagnostic(
-                    "source-matcher-unsupported",
-                    "Top-level source-site matching is available in the Firefox webRequest engine but does not yet have a proven exact DNR translation."
                 ),
             ],
         };
@@ -261,7 +309,12 @@ function compileUrlConditions(pattern) {
         };
     }
 
-    const conditionBase = {};
+    const sourceResult = compileSourceCondition(pattern.source, options);
+    if ((sourceResult.diagnostics || []).some(({ level }) => level === "error")) {
+        return sourceResult;
+    }
+
+    const conditionBase = { ...(sourceResult.condition || {}) };
     switch (pattern.origin) {
         case undefined:
         case null:
@@ -549,7 +602,7 @@ function conditionFingerprint(condition) {
     return JSON.stringify(Object.fromEntries(Object.entries(copy).sort(([a], [b]) => a.localeCompare(b))));
 }
 
-export function compileRuleToDnr(rule, { startId = 1, allowApproximate = false } = {}) {
+export function compileRuleToDnr(rule, { startId = 1, allowApproximate = false, rulesetScope = "dynamic", capabilities = {} } = {}) {
     if (!Number.isInteger(startId) || startId < 1) {
         throw new RangeError("startId must be an integer >= 1");
     }
@@ -571,7 +624,7 @@ export function compileRuleToDnr(rule, { startId = 1, allowApproximate = false }
         };
     }
 
-    const conditionResult = compileUrlConditions(rule.pattern);
+    const conditionResult = compileUrlConditions(rule.pattern, { rulesetScope, capabilities });
     const resourceResult = compileResourceTypes(rule.types);
     const actionResult = compileAction(rule, { allowApproximate });
     const diagnostics = [
@@ -674,4 +727,5 @@ export const dnrCompilerCapabilities = Object.freeze({
     }),
     priorities: ACTION_PRIORITIES,
     resourceTypes: DNR_RESOURCE_TYPES,
+    sourceSite: "topDomains-session-only-with-explicit-capability",
 });

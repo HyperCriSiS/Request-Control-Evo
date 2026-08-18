@@ -1,130 +1,104 @@
-name: Apply Phase 9 compiler patch
+name: Build
 
 on:
   push:
     branches:
-      - feat/source-scope-parity-phase9
+      - master
+      - dev
+  pull_request:
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  apply:
+  audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          fetch-depth: 0
-      - name: Patch compiler and restore normal CI
-        shell: bash
+          node-version-file: .node-version
+          cache: npm
+      - run: npm run audit
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm test -- --ci --coverage
+      - uses: codecov/codecov-action@v7
+        with:
+          fail_ci_if_error: false
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - uses: ./.github/actions/setup-pandoc
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web-ext-artifacts
+          path: web-ext-artifacts/*.zip
+          if-no-files-found: error
+
+  lint-build:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - uses: actions/download-artifact@v8
+        with:
+          name: web-ext-artifacts
+          path: web-ext-artifacts
+      - run: npm ci
+      - run: npm run lint-build
+
+  checker:
+    if: always()
+    needs:
+      - audit
+      - lint
+      - test
+      - build
+      - lint-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required jobs
+        env:
+          AUDIT: ${{ needs.audit.result }}
+          LINT: ${{ needs.lint.result }}
+          TEST: ${{ needs.test.result }}
+          BUILD: ${{ needs.build.result }}
+          LINT_BUILD: ${{ needs.lint-build.result }}
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-
-          path = Path("src/main/backends/dnr/compiler.js")
-          source = path.read_text()
-          assert "function compileSourceCondition(" not in source
-
-          anchor = "function expandHosts(pattern) {"
-          assert source.count(anchor) == 1
-          helper = r'''function compileSourceCondition(source, { rulesetScope, capabilities }) {
-              if (!source || (Array.isArray(source) && source.length === 0)) {
-                  return { condition: {}, diagnostics: [] };
-              }
-
-              const sourcePatterns = Array.isArray(source) ? source : [source];
-              if (!capabilities || capabilities.topDomains !== true) {
-                  return {
-                      diagnostics: [
-                          diagnostic(
-                              "source-matcher-unsupported",
-                              "Top-level source-site matching requires an explicitly enabled DNR topDomains capability; default compilation remains unsupported."
-                          ),
-                      ],
-                  };
-              }
-              if (rulesetScope !== "session") {
-                  return {
-                      diagnostics: [
-                          diagnostic(
-                              "source-matcher-unsupported",
-                              "DNR topDomains is supported only for session-scoped rules, so source-site matching is not emitted for persistent/static/dynamic rules."
-                          ),
-                      ],
-                  };
-              }
-
-              const topDomains = [];
-              const exactSessionPattern = /^\*:\/\/\*\.([a-z0-9](?:[a-z0-9-]*[a-z0-9])?(?:\.[a-z0-9](?:[a-z0-9-]*[a-z0-9])?)+)\/\*$/;
-
-              for (const sourcePattern of sourcePatterns) {
-                  if (typeof sourcePattern !== "string" || !isAscii(sourcePattern)) {
-                      return {
-                          diagnostics: [
-                              diagnostic(
-                                  "source-matcher-unsupported",
-                                  "The proven topDomains source subset requires ASCII WebExtension match-pattern strings."
-                              ),
-                          ],
-                      };
-                  }
-                  const match = exactSessionPattern.exec(sourcePattern);
-                  if (!match) {
-                      return {
-                          diagnostics: [
-                              diagnostic(
-                                  "source-matcher-unsupported",
-                                  "Only '*://*.domain/*' source patterns are proven exact for session-scoped DNR topDomains; exact-host, fixed-scheme, port and path-constrained source patterns remain unsupported."
-                              ),
-                          ],
-                      };
-                  }
-                  topDomains.push(match[1]);
-              }
-
-              return { condition: { topDomains: [...new Set(topDomains)] }, diagnostics: [] };
-          }
-
-          '''
-          source = source.replace(anchor, helper + anchor)
-
-          old = "function compileUrlConditions(pattern) {"
-          assert source.count(old) == 1
-          source = source.replace(old, "function compileUrlConditions(pattern, options = {}) {")
-
-          start = source.index("    if (pattern.source &&")
-          end = source.index("    if (pattern.anyTLD)", start)
-          source = source[:start] + source[end:]
-
-          old = "    const conditionBase = {};\n    switch (pattern.origin) {"
-          assert source.count(old) == 1
-          source = source.replace(old, '''    const sourceResult = compileSourceCondition(pattern.source, options);
-              if ((sourceResult.diagnostics || []).some(({ level }) => level === "error")) {
-                  return sourceResult;
-              }
-
-              const conditionBase = { ...(sourceResult.condition || {}) };
-              switch (pattern.origin) {''')
-
-          old = 'export function compileRuleToDnr(rule, { startId = 1, allowApproximate = false } = {}) {'
-          assert source.count(old) == 1
-          source = source.replace(old, 'export function compileRuleToDnr(rule, { startId = 1, allowApproximate = false, rulesetScope = "dynamic", capabilities = {} } = {}) {')
-
-          old = "    const conditionResult = compileUrlConditions(rule.pattern);"
-          assert source.count(old) == 1
-          source = source.replace(old, "    const conditionResult = compileUrlConditions(rule.pattern, { rulesetScope, capabilities });")
-
-          old = "    resourceTypes: DNR_RESOURCE_TYPES,\n});"
-          assert source.count(old) == 1
-          source = source.replace(old, '    resourceTypes: DNR_RESOURCE_TYPES,\n    sourceSite: "topDomains-session-only-with-explicit-capability",\n});')
-
-          path.write_text(source)
-          PY
-          node --check src/main/backends/dnr/compiler.js
-          git diff --check
-          git show 940a277c791a238400077bd48cbbc279981aed55:.github/workflows/main.yml > .github/workflows/main.yml
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add src/main/backends/dnr/compiler.js .github/workflows/main.yml
-          git commit -m "feat: add capability-gated session topDomains compilation"
-          git push
+          test "$AUDIT" = "success"
+          test "$LINT" = "success"
+          test "$TEST" = "success"
+          test "$BUILD" = "success"
+          test "$LINT_BUILD" = "success"
