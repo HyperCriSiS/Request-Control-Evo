@@ -20,7 +20,7 @@ A fresh release-blocker audit on the same candidate found no open issues and no 
 
 Release preparation has started using the repository's established branch convention: `release/1.17.0` was created from validated `dev` commit `0bf7e883`. A minor-version bump is appropriate because the candidate adds user-visible SPA/history-state behavior and new exact compatibility semantics beyond the 1.16.1 baseline. The remaining release work is to align `manifest.json` and `CHANGELOG.md` on that release branch, promote the validated release candidate to `master`, and verify the self-contained release workflow/tag/artifact result.
 
-The release metadata is now aligned at 1.17.0 (`6e331d5c`). PR #18 promotes `release/1.17.0` to `master`. Its only merge conflicts were the expected `CHANGELOG.md` and `manifest.json` version-history overlap with 1.16.1; those were resolved by retaining the validated 1.17.0 release metadata while merging current `master` in `c1d69b91`. Promotion remains open until the PR checks complete successfully.
+The release metadata is now aligned at 1.17.0 (`6e331d5c`). PR #18 promotes `release/1.17.0` to `master`. Its only merge conflicts were the expected `CHANGELOG.md` and `manifest.json` version-history overlap with 1.16.1; those were resolved by retaining the validated 1.17.0 release metadata while merging current `master` in `c1d69b91`. PR #18 merged successfully to `master` as `959e6f6e`; the release workflow is now running and release artifact verification remains open.
 
 ## Phase 1 — modernization baseline
 
@@ -64,7 +64,7 @@ The release metadata is now aligned at 1.17.0 (`6e331d5c`). PR #18 promotes `rel
 - [x] Re-run the full regression/build suite on the final candidate state; Build #183 is green across `test`, `lint`, `build`, `lint-build`, and `checker`.
 - [x] Create `release/1.17.0` from the validated `dev` candidate using the established release-branch convention (`0bf7e883`).
 - [x] Set `manifest.json` to version 1.17.0 and add a matching `CHANGELOG.md` section on `release/1.17.0` (`6e331d5c`); merge-only conflicts with the 1.16.1 `master` metadata were resolved without changing release semantics in `c1d69b91`.
-- [ ] Promote the validated 1.17.0 release candidate to `master` through the established release workflow.
+- [x] Promote the validated 1.17.0 release candidate to `master` through the established release workflow.
 - [ ] Verify the self-contained release workflow creates the 1.17.0 tag, GitHub release and release ZIP successfully; record Mozilla signing status without treating absent signing credentials as a code failure.
 
 ## Blockers / dependencies
