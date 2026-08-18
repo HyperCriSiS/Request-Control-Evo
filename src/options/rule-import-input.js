@@ -217,82 +217,56 @@ class RuleImportInput extends HTMLElement {
         const link = this.shadowRoot.getElementById("rating-link");
         const issueUrl = `https://github.com/${repository}/issues/${issueNumber}`;
         link.href = issueUrl;
+        rating.hidden = false;
 
         try {
-            const response = await fetch(`https://api.github.com/repos/${repository}/issues/${issueNumber}`, {
-                headers: { Accept: "application/vnd.github+json" },
-                cache: "no-store",
-            });
+            const response = await fetch(`https://api.github.com/repos/${repository}/issues/${issueNumber}`);
             if (!response.ok) {
                 throw new Error(`GitHub rating request failed: ${response.status}`);
             }
             const issue = await response.json();
-            const reactions = issue.reactions || {};
-            this.shadowRoot.getElementById("rating-positive").textContent = reactions["+1"] || 0;
-            this.shadowRoot.getElementById("rating-negative").textContent = reactions["-1"] || 0;
-            rating.hidden = false;
+            this.shadowRoot.getElementById("rating-positive").textContent = issue.reactions?.["+1"] || 0;
+            this.shadowRoot.getElementById("rating-negative").textContent = issue.reactions?.["-1"] || 0;
         } catch {
-            rating.hidden = true;
+            rating.title = message("community_rating_unavailable", "Community rating unavailable");
         }
     }
 
     async fetchRules(src) {
         const loading = this.shadowRoot.getElementById("loading");
-        const error = this.shadowRoot.getElementById("error");
-        const update = this.shadowRoot.getElementById("update");
-        const importList = this.shadowRoot.getElementById("import");
+        const count = this.shadowRoot.getElementById("count");
+        const integrity = this.shadowRoot.getElementById("integrity");
         loading.hidden = false;
-        error.hidden = true;
-        update.hidden = true;
-        importList.hidden = true;
-        this.disabled = true;
+        count.hidden = true;
+        integrity.hidden = true;
+        this.digest = null;
+        this.rules = [];
 
         try {
             const response = await fetch(src);
-
             if (!response.ok) {
-                throw `${response.status} - ${response.statusText}`;
+                throw new Error(`Failed to fetch rule list: ${response.status}`);
             }
-
             const text = await response.text();
-            if (this.expectedSha256) {
-                const actualSha256 = await digest(text, "SHA-256");
-                if (actualSha256 !== this.expectedSha256) {
-                    throw new Error("Rule list integrity check failed (SHA-256 mismatch)");
-                }
+            this.digest = await digest(text);
+            if (this.expectedSha256 && this.digest !== this.expectedSha256) {
+                integrity.hidden = false;
+                integrity.textContent = message("integrity_failed", "Integrity check failed");
+                return;
             }
-
-            const data = JSON.parse(text);
-            const rules = (Array.isArray(data) ? data : [data]).filter((rule) => rule.uuid);
-            this.digest = await digest(JSON.stringify(rules), "SHA-256");
-            this.etag = response.headers.get("etag");
-            this.rules = rules;
-            this.shadowRoot.getElementById("count").textContent = browser.i18n.getMessage(
-                "count_rules",
-                this.rules.length
-            );
-
-            const description = this.shadowRoot.getElementById("description");
-            if (description.hidden) {
-                const actions = [...new Set(this.rules.map((rule) => rule.action).filter(Boolean))].slice(0, 3);
-                this.description = actions.length
-                    ? message(
-                        "import_generated_description",
-                        `${this.rules.length} rules · actions: ${actions.join(", ")}`,
-                        [this.rules.length, actions.join(", ")]
-                    )
-                    : browser.i18n.getMessage("count_rules", this.rules.length);
+            this.rules = JSON.parse(text);
+            count.hidden = false;
+            if (this.rules.length === 1) {
+                count.textContent = browser.i18n.getMessage("count_rule") || "1 rule";
+            } else {
+                count.textContent = browser.i18n.getMessage("count_rules", this.rules.length) || `${this.rules.length} rules`;
             }
-
-            this.disabled = false;
-            update.hidden = !this.data.imported || this.data.imported.digest === this.digest;
-            importList.hidden = this.data.imported && update.hidden;
-        } catch (e) {
-            error.title = e;
-            error.hidden = false;
+        } catch {
+            count.hidden = false;
+            count.textContent = message("import_unavailable", "Unavailable");
+        } finally {
+            loading.hidden = true;
         }
-
-        loading.hidden = true;
     }
 }
 
@@ -330,6 +304,9 @@ function humanReadableSource(src) {
         if (url.hostname === "tumpio.github.io" && url.pathname.startsWith("/requestcontrol/rules/")) {
             return "https://github.com/tumpio/requestcontrol/tree/master/rules";
         }
+        if (url.protocol === "moz-extension:" || url.protocol === "chrome-extension:") {
+            return "https://github.com/HyperCriSiS/Request-Control-Evo/tree/dev/rules";
+        }
         return src;
     } catch {
         return src;
@@ -358,6 +335,88 @@ async function digest(text, algorithm = "SHA-256") {
     const digest = await crypto.subtle.digest(algorithm, data);
     const bytes = Array.from(new Uint8Array(digest));
     return bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
+}
+
+function setupBundledSpecialRulesets() {
+    const tab = document.getElementById("tab-imports");
+    if (!tab || document.getElementById("bundled-special-rulesets")) {
+        return;
+    }
+
+    const presets = [
+        {
+            path: "rules/media-original-quality.json",
+            title: browser.i18n.getMessage("special_media_original_title"),
+            description: browser.i18n.getMessage("special_media_original_description"),
+        },
+        {
+            path: "rules/privacy-enhanced-embeds.json",
+            title: browser.i18n.getMessage("special_privacy_embeds_title"),
+            description: browser.i18n.getMessage("special_privacy_embeds_description"),
+        },
+        {
+            path: "rules/developer-direct-raw.json",
+            title: browser.i18n.getMessage("special_developer_raw_title"),
+            description: browser.i18n.getMessage("special_developer_raw_description"),
+        },
+        {
+            path: "rules/search-engine-escape.json",
+            title: browser.i18n.getMessage("special_search_escape_title"),
+            description: browser.i18n.getMessage("special_search_escape_description"),
+        },
+        {
+            path: "rules/privacy-aggressive-direct-links.json",
+            title: browser.i18n.getMessage("special_aggressive_links_title"),
+            description: browser.i18n.getMessage("special_aggressive_links_description"),
+        },
+        {
+            path: "rules/web-canonical-desktop.json",
+            title: browser.i18n.getMessage("special_canonical_desktop_title"),
+            description: browser.i18n.getMessage("special_canonical_desktop_description"),
+        },
+        {
+            path: "rules/special-text-first-low-bandwidth.json",
+            title: browser.i18n.getMessage("special_text_first_title"),
+            description: browser.i18n.getMessage("special_text_first_description"),
+        },
+        {
+            path: "rules/special-first-party-firewall.json",
+            title: browser.i18n.getMessage("special_first_party_title"),
+            description: browser.i18n.getMessage("special_first_party_description"),
+            warning: true,
+        },
+    ];
+
+    const details = document.createElement("details");
+    details.id = "bundled-special-rulesets";
+    details.open = true;
+
+    const summary = document.createElement("summary");
+    summary.textContent = "Request Control Evo";
+    summary.title = browser.i18n.getMessage("special_rulesets_tooltip");
+
+    const list = document.createElement("ul");
+    for (const preset of presets) {
+        const input = document.createElement("rule-import-input");
+        input.src = browser.runtime.getURL(preset.path);
+        input.title = preset.description;
+        input.description = preset.description;
+        if (preset.warning) {
+            input.setAttribute("warning", "");
+        }
+        const label = document.createElement("span");
+        label.textContent = preset.title;
+        input.append(label);
+        list.append(input);
+    }
+
+    details.append(summary, list);
+    const communityLists = tab.querySelector("#community-rule-lists");
+    if (communityLists) {
+        tab.insertBefore(details, communityLists);
+    } else {
+        tab.append(details);
+    }
 }
 
 function setupGitHubCommunityShare() {
@@ -462,8 +521,13 @@ function setupGitHubCommunityShare() {
     update();
 }
 
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", setupGitHubCommunityShare, { once: true });
-} else {
+function setupImportExtras() {
+    setupBundledSpecialRulesets();
     setupGitHubCommunityShare();
+}
+
+if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", setupImportExtras, { once: true });
+} else {
+    setupImportExtras();
 }

@@ -1,0 +1,32 @@
+[
+    {
+        "uuid": "0e96a9c8-0a07-4d28-8a4b-4ea4a6e8db01",
+        "title": "Use YouTube privacy-enhanced embeds",
+        "description": "Redirect embedded YouTube players to youtube-nocookie.com while preserving the video path and query string. Main-site navigation is not affected.",
+        "tag": "special-privacy-enhanced-embeds",
+        "pattern": {
+            "scheme": "*",
+            "host": ["www.youtube.com", "youtube.com"],
+            "path": ["/embed/*"]
+        },
+        "types": ["sub_frame"],
+        "action": "redirect",
+        "active": true,
+        "redirectUrl": "[protocol=https][host=www.youtube-nocookie.com]"
+    },
+    {
+        "uuid": "0e96a9c8-0a07-4d28-8a4b-4ea4a6e8db02",
+        "title": "Enable Vimeo Do Not Track embeds",
+        "description": "Set Vimeo's supported dnt=1 player parameter on embedded videos while preserving privacy hashes and other player parameters.",
+        "tag": "special-privacy-enhanced-embeds",
+        "pattern": {
+            "scheme": "*",
+            "host": ["player.vimeo.com"],
+            "path": ["/video/*"]
+        },
+        "types": ["sub_frame"],
+        "action": "redirect",
+        "active": true,
+        "redirectUrl": "[search.dnt=1]"
+    }
+]
