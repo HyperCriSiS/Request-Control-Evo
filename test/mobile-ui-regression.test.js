@@ -2,6 +2,7 @@ import fs from "node:fs";
 
 const optionsCss = fs.readFileSync(new URL("../src/options/options.css", import.meta.url), "utf8");
 const optionsHtml = fs.readFileSync(new URL("../src/options/options.html", import.meta.url), "utf8");
+const optionsJs = fs.readFileSync(new URL("../src/options/options.js", import.meta.url), "utf8");
 const commonCss = fs.readFileSync(new URL("../src/options/common.css", import.meta.url), "utf8");
 const ruleInputCss = fs.readFileSync(new URL("../src/options/rule-input.css", import.meta.url), "utf8");
 const ruleListCss = fs.readFileSync(new URL("../src/options/rule-list.css", import.meta.url), "utf8");
@@ -38,4 +39,16 @@ test("mobile dialogs use the dynamic viewport and cannot exceed screen width", (
     expect(modalCss).toContain("height: 100dvh");
     expect(modalCss).toContain("max-width: calc(100% - 1rem)");
     expect(modalCss).toContain("max-height: calc(100dvh - 1rem)");
+});
+
+test("Firefox Android Imports renders Official, Community and Custom with reachable Official updates", () => {
+    expect(optionsJs).toContain('details.id = "official-rule-lists"');
+    expect(optionsJs).toContain('badge.id = "official-update-count"');
+    expect(optionsJs).toContain('updateAll.id = "official-update-all"');
+    expect(optionsJs).toContain('document.getElementById("official-update-all").addEventListener("click", updateAllOfficial)');
+    expect(optionsHtml).toContain('id="community-rule-lists"');
+    expect(optionsHtml).toContain('id="custom-rule-lists"');
+    expect(optionsCss).toContain("#tab-imports summary");
+    expect(optionsCss).toContain("min-height: 2.75rem");
+    expect(commonCss).toContain("min-height: 2.75rem");
 });
