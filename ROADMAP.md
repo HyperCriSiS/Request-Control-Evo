@@ -66,7 +66,7 @@ The Inspection Mode is intentionally local and user-triggered: start an inspecti
 
 - [x] Run lint, tests, build, build-lint/checker and security checks for the complete post-1.17 UI/community phase.
 - [x] Update user-facing documentation and changelog only after the implemented behavior is stable.
-- [ ] Prepare the next release only after the above work is fully validated.
+- [x] Prepare the next release only after the above work is fully validated: 1.18.0 candidate on `chore/release-1.18.0` passed audit, lint, tests, build, build-lint and checker.
 
 ## Phase 5 — Inspection Mode and guided rule creation
 
@@ -96,6 +96,13 @@ The Inspection Mode is intentionally local and user-triggered: start an inspecti
 - [x] Add unit coverage for inspection classification/grouping, bounded session storage, source-site matching, rule-draft generation and DNR rejection boundaries.
 - [x] Run full CI and only mark Phase 5 implementation items complete after the branch is green.
 
+## Phase 6 — 1.18.0 release finalization
+
+- [x] Align `manifest.json` and `CHANGELOG.md` at 1.18.0 after the released 1.17.0 baseline.
+- [x] Make unsigned XPI generation reproducible from the same validated ZIP and remove the obsolete temporary 1.17 roadmap automation.
+- [ ] Promote the validated 1.18.0 candidate to `master`.
+- [ ] Verify the 1.18.0 release workflow creates the tag, GitHub release, ZIP and byte-identical unsigned XPI; record Mozilla signing status separately.
+
 ## Blockers / dependencies
 
 - No code blocker is currently known for the theme/import-presentation work.
@@ -106,4 +113,4 @@ The Inspection Mode is intentionally local and user-triggered: start an inspecti
 
 ## Completion status
 
-**Not fully completed.** The 1.17.0 milestone remains complete. Phase 4 implementation, validation and documentation are complete, and Phase 5 is fully implemented/validated. The remaining roadmap item is preparation of the next release.
+**Not fully completed.** The 1.17.0 milestone remains complete. Phase 4 and Phase 5 are complete, and the 1.18.0 candidate is prepared and fully validated. Remaining work is promotion to `master` and verification of the resulting 1.18.0 release artifacts/signing status.
