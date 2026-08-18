@@ -4,6 +4,8 @@ const optionsCss = fs.readFileSync(new URL("../src/options/options.css", import.
 const commonCss = fs.readFileSync(new URL("../src/options/common.css", import.meta.url), "utf8");
 const ruleInputCss = fs.readFileSync(new URL("../src/options/rule-input.css", import.meta.url), "utf8");
 const modalCss = fs.readFileSync(new URL("../src/options/modal-dialog.css", import.meta.url), "utf8");
+const alertPopupCss = fs.readFileSync(new URL("../src/options/alert-popup.css", import.meta.url), "utf8");
+const ruleTesterCss = fs.readFileSync(new URL("../src/options/rule-tester.css", import.meta.url), "utf8");
 const importCss = fs.readFileSync(new URL("../src/options/rule-import-input.css", import.meta.url), "utf8");
 const importJs = fs.readFileSync(new URL("../src/options/rule-import-input.js", import.meta.url), "utf8");
 
@@ -22,6 +24,9 @@ test("dark theme exposes explicit readable foreground and state variables", () =
     expect(optionsCss).toContain("--text-color: #edf0f4");
     expect(optionsCss).toContain("--text-muted: #aab1bb");
     expect(optionsCss).toContain("--selected-background: #263a54");
+    expect(optionsCss).toContain("--on-primary-color: #15181d");
+    expect(optionsCss).toContain("--on-success-color: #15181d");
+    expect(optionsCss).toContain("--on-danger-color: #ffffff");
     expect(commonCss).toContain("color: var(--text-color)");
     expect(commonCss).toContain("color: var(--text-muted)");
 });
@@ -35,6 +40,18 @@ test("rule editor and modal no longer carry known light-only foreground/backgrou
     expect(ruleInputCss).toContain("background: var(--selected-background)");
     expect(modalCss).toContain("background-color: var(--surface-color)");
     expect(modalCss).toContain("color: var(--text-color)");
+    expect(commonCss).toContain("color: var(--on-primary-color)");
+    expect(commonCss).toContain("color: var(--on-danger-color)");
+    expect(ruleInputCss).toContain("color: var(--on-success-color)");
+    expect(ruleTesterCss).toContain("background: var(--text-color)");
+    expect(ruleTesterCss).toContain("color: var(--background)");
+    expect(alertPopupCss).toContain("background-color: var(--danger-color)");
+    expect(alertPopupCss).toContain("color: var(--on-danger-color)");
+    expect(alertPopupCss).toContain("box-shadow: 0 0 5px var(--shadow-color)");
+    for (const css of [commonCss, ruleInputCss, modalCss, importCss, ruleTesterCss, alertPopupCss]) {
+        expect(css).not.toMatch(/color:\s*(?:white|black|#fff(?:fff)?|#000(?:000)?)\b/i);
+        expect(css).not.toMatch(/background(?:-color)?:\s*(?:white|black|#fff(?:fff)?|#000(?:000)?)\b/i);
+    }
 });
 
 test("import presentation has descriptions, human source links and rating affordances", () => {
