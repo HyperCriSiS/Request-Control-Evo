@@ -8,7 +8,7 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Current status
 
-**Status: 1.18.1 released; Phase 8 compatibility diagnostics in progress**
+**Status: 1.18.1 released; Phase 8 compatibility diagnostics complete**
 
 Request Control 1.18.0 is released on `master` at `3110baa7`, and the 1.18.0 milestone is complete. The release was produced by Release run `32126387364` from the validated candidate: tag `1.18.0`, GitHub release, ZIP and unsigned XPI were created successfully. The ZIP and XPI are byte-identical at 207884 bytes with SHA-256 `22ee7b029156853d95b0c93197224e64abdc4599448470bf174877ec62d9f4f6`. Mozilla signing was skipped because AMO credentials were not configured, and the workflow recorded that skip as non-fatal.
 
@@ -117,13 +117,13 @@ The 1.18.0 promotion PR passed audit, lint, tests, build, build-lint/checker and
 
 ## Phase 8 — on-demand compatibility diagnostics and Referrer protection
 
-- [ ] Port the Compatibility Guardian onto the current Inspection/Runtime architecture without adding continuous request monitoring.
-- [ ] Keep Guardian request listeners strictly on-demand, bounded to the selected tab/session and automatically removed after stop/timeout/tab close.
-- [ ] Add explicit Referer protection modes: browser default, balanced cross-origin origin-only, same-origin only and no-referrer.
-- [ ] Ensure browser-default Referer mode registers no `onBeforeSendHeaders` listener and does not alter browser behavior.
-- [ ] Preserve HTTPS-to-HTTP privacy downgrade protection in balanced mode.
-- [ ] Add regression coverage for Guardian lifecycle/scoring and Referer header transformations/listener lifecycle.
-- [ ] Run the complete audit/lint/test/build/build-lint/checker suite before marking Phase 8 complete.
+- [x] Port the Compatibility Guardian onto the current Inspection/Runtime architecture without adding continuous request monitoring.
+- [x] Keep Guardian request listeners strictly on-demand, bounded to the selected tab/session and automatically removed after stop/timeout/tab close.
+- [x] Add explicit Referer protection modes: browser default, balanced cross-origin origin-only, same-origin only and no-referrer.
+- [x] Ensure browser-default Referer mode registers no `onBeforeSendHeaders` listener and does not alter browser behavior.
+- [x] Preserve HTTPS-to-HTTP privacy downgrade protection in balanced mode.
+- [x] Add regression coverage for Guardian lifecycle/scoring and Referer header transformations/listener lifecycle.
+- [x] Run the complete audit/lint/test/build/build-lint/checker suite before marking Phase 8 complete; Build run `32128491533` is green across all required jobs.
 
 
 ## Blockers / dependencies
@@ -138,4 +138,4 @@ The 1.18.0 promotion PR passed audit, lint, tests, build, build-lint/checker and
 
 ## Completion status
 
-**Phases 1–7 are complete. Phase 8 is in progress.** The 1.18.0 milestone remains immutable, and 1.18.1 is published and verified. The next active work is the on-demand Compatibility Guardian and configurable Referrer protection, with browser-default behavior remaining listener-free.
+**Phases 1–8 are complete.** The 1.18.0 milestone remains immutable, 1.18.1 is published and verified, and the on-demand Compatibility Guardian plus configurable Referrer protection are implemented and validated on PR #41. Build run `32128491533` is green across audit, lint, tests, build, build-lint and checker. Further development belongs to a new post-Phase-8 roadmap item rather than reopening this completed phase.
