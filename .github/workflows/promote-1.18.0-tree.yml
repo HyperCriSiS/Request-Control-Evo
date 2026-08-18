@@ -1,0 +1,93 @@
+name: Promote validated 1.18.0 tree
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  promote:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: chore/promote-1.18.0-master
+          fetch-depth: 0
+
+      - name: Overlay and verify validated dev tree
+        env:
+          SOURCE_SHA: 5dc72f35b2f5546190b900f4bbf9e568452cd941
+          HELPER_WORKFLOW: .github/workflows/promote-1.18.0-tree.yml
+        run: |
+          set -euo pipefail
+
+          git fetch --no-tags origin dev
+          test "$(git rev-parse origin/dev)" = "$SOURCE_SHA"
+
+          paths=(
+            '.github/actions/setup-pandoc/action.yml'
+            '.github/workflows/main.yml'
+            '.github/workflows/release.yml'
+            'CHANGELOG.md'
+            'README.rst'
+            'ROADMAP.md'
+            '_locales/en/messages.json'
+            '_locales/es/messages.json'
+            '_locales/zh_CN/messages.json'
+            'docs/mv3-supported-subset.md'
+            'manifest.json'
+            'package-lock.json'
+            'package.json'
+            'scripts/audit-dependencies.mjs'
+            'src/background.js'
+            'src/inspector/inspector.css'
+            'src/inspector/inspector.html'
+            'src/inspector/inspector.js'
+            'src/inspector/localize.js'
+            'src/inspector/strings.js'
+            'src/main/analysis/inspection.js'
+            'src/main/api.js'
+            'src/main/backends/dnr/compiler.js'
+            'src/main/inspection/store.js'
+            'src/main/matchers.js'
+            'src/main/rules/base.js'
+            'src/options/alert-popup.css'
+            'src/options/common.css'
+            'src/options/modal-dialog.css'
+            'src/options/options.css'
+            'src/options/rule-import-input.css'
+            'src/options/rule-import-input.js'
+            'src/options/rule-input.css'
+            'src/options/rule-list.js'
+            'src/options/rule-tester.css'
+            'src/options/source-scope-editor.js'
+            'src/popup/browser-action.css'
+            'src/popup/browser-action.html'
+            'src/popup/browser-action.js'
+            'test/dnr-source-scope.test.js'
+            'test/inspection-store.test.js'
+            'test/inspection.test.js'
+            'test/source-matcher.test.js'
+            'test/source-scope-editor.test.js'
+            'test/theme-import-regression.test.js'
+          )
+
+          test "${#paths[@]}" -eq 45
+          git checkout "$SOURCE_SHA" -- "${paths[@]}"
+
+          diff -u \
+            <(printf '%s\n' "${paths[@]}" | sort) \
+            <(git diff --cached --name-only | sort)
+
+          for path in "${paths[@]}"; do
+            source_blob="$(git rev-parse "$SOURCE_SHA:$path")"
+            promoted_blob="$(git hash-object "$path")"
+            test "$promoted_blob" = "$source_blob"
+          done
+
+          git rm "$HELPER_WORKFLOW"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Promote validated Request Control 1.18.0 tree'
+          git push origin HEAD:chore/promote-1.18.0-master
