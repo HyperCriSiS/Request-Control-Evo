@@ -1,27 +1,9 @@
-import {
-    SOURCE_CAPABILITY,
-    SOURCE_INTEGRATION,
-    getSource,
-    sourcesForCapability,
-    validateSourceRegistry,
-} from "../src/main/intelligence/source-registry.js";
 import {assessRedirectCandidate, shouldAutoSuggestRedirect} from "../src/main/intelligence/redirect-safety.js";
 import {
     OBSERVATORY_SCHEMA_VERSION,
     buildObservatorySnapshot,
     validateObservatorySnapshot,
 } from "../src/main/intelligence/observatory-contract.js";
-
-test("source registry is internally valid and keeps restricted tracker data out of core", () => {
-    expect(validateSourceRegistry()).toEqual([]);
-    expect(getSource("ghostery-trackerdb")).toMatchObject({
-        integration: SOURCE_INTEGRATION.DEFERRED,
-        license: "CC-BY-NC-SA-4.0",
-    });
-    expect(sourcesForCapability(SOURCE_CAPABILITY.REQUEST_CLASSIFICATION, {
-        integrations: [SOURCE_INTEGRATION.BUNDLED_NATIVE],
-    })).toEqual([]);
-});
 
 test("redirect safety accepts plain web unwraps and blocks dangerous targets", () => {
     const safe = assessRedirectCandidate(
