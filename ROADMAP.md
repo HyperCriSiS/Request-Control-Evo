@@ -71,13 +71,13 @@ This document is the binding source of truth for the active modernization/releas
 - [x] Keep upstream-source curation diagnostics out of the extension UI.
 - [ ] Surface only runtime-relevant package/channel identity, installed/available version or digest, integrity state, managed-rule conflicts and actual Evo rule effects in compact Inspector/support details.
 - [x] Add an exportable support diagnostic that excludes raw browsing URLs by default and is safe to attach to bug reports.
-- [ ] Keep all behavioral intelligence bounded to explicit Inspection/Guardian sessions and add a regression assertion for that invariant.
+- [x] Keep all behavioral intelligence bounded to explicit Inspection/Guardian sessions and add a regression assertion for that invariant.
 
 ### F. Observatory readiness
 
-- [ ] Define the reviewable response contract for future Observatory classifications/recommendations; recommendations must never be executable remote code.
-- [ ] Add forward/backward schema compatibility and rejection tests before any transport integration exists.
-- [ ] Keep Observatory availability completely independent from local rule execution and Official catalog updates.
+- [x] Define the reviewable response contract for future Observatory classifications/recommendations; recommendations must never be executable remote code.
+- [x] Add forward/backward schema compatibility and rejection tests before any transport integration exists.
+- [x] Keep Observatory availability completely independent from local rule execution and Official catalog updates.
 
 ### G. Phase validation
 
