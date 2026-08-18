@@ -1,0 +1,24 @@
+[
+    {
+        "uuid": "0e96a9c8-0a07-4d28-8a4b-4ea4a6e8db01",
+        "title": "Use YouTube privacy-enhanced embeds",
+        "description": "Redirect embedded YouTube players to youtube-nocookie.com while preserving the video path and query string. Main-site navigation is not affected.",
+        "tag": "special-privacy-enhanced-embeds",
+        "pattern": {
+            "scheme": "*",
+            "host": [
+                "www.youtube.com",
+                "youtube.com"
+            ],
+            "path": [
+                "/embed/*"
+            ]
+        },
+        "types": [
+            "sub_frame"
+        ],
+        "action": "redirect",
+        "active": true,
+        "redirectUrl": "[scheme=https][host=www.youtube-nocookie.com]"
+    }
+]
