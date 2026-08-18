@@ -42,6 +42,11 @@ function summarizePackageState(data) {
                 reason: typeof conflict.reason === "string" ? conflict.reason : "unknown-conflict",
             }))
         : [];
+    const integrityStatus = imported.integrityStatus || (
+        ["official", "community"].includes(channel) && imported.digest
+            ? "verified-at-import"
+            : (channel === "custom" ? "not-required" : "unknown")
+    );
 
     return {
         channel,
@@ -49,7 +54,10 @@ function summarizePackageState(data) {
         version: imported.version || null,
         installedDigest: imported.digest || null,
         availableDigest: imported.availableDigest || null,
+        availableVersion: imported.availableVersion || null,
         updateAvailable: Boolean(imported.digest && imported.availableDigest && imported.digest !== imported.availableDigest),
+        integrityStatus,
+        lastCheckStatus: imported.lastCheckStatus || null,
         conflicts,
     };
 }
@@ -59,6 +67,38 @@ export function summarizeImportState(imports = {}) {
         .map(summarizePackageState)
         .filter(Boolean)
         .sort((left, right) => `${left.channel}:${left.packageId || ""}`.localeCompare(`${right.channel}:${right.packageId || ""}`));
+}
+
+function packageStateForRule(rule, imports = {}) {
+    if (!rule?.managed || !rule?.source) return null;
+
+    if (rule.source.url && imports[rule.source.url]) {
+        return summarizePackageState(imports[rule.source.url]);
+    }
+
+    if (rule.source.catalog && rule.source.entry) {
+        for (const data of Object.values(imports || {})) {
+            if (data?.imported?.catalog === rule.source.catalog && data.imported.entry === rule.source.entry) {
+                return summarizePackageState(data);
+            }
+        }
+    }
+    return null;
+}
+
+export function summarizeRuleRuntimeState(rule, imports = {}) {
+    const source = summarizeRuleSource(rule);
+    const packageState = packageStateForRule(rule, imports);
+    const conflict = packageState?.conflicts?.find((item) => item.uuid === rule?.uuid) || null;
+
+    return {
+        ...source,
+        integrityStatus: packageState?.integrityStatus || null,
+        updateAvailable: Boolean(packageState?.updateAvailable),
+        availableVersion: packageState?.availableVersion || null,
+        conflictReason: conflict?.reason || null,
+        lastCheckStatus: packageState?.lastCheckStatus || null,
+    };
 }
 
 function summarizeAffectedRules(session, rules = []) {
