@@ -1,0 +1,63 @@
+name: Prepare 1.17.0 release files
+
+on:
+  push:
+    branches:
+      - dev
+    paths:
+      - .github/workflows/automation-prepare-1.17.0-release-files.yml
+
+permissions:
+  contents: write
+
+jobs:
+  prepare:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out release branch
+        uses: actions/checkout@v7
+        with:
+          ref: release/1.17.0
+          fetch-depth: 0
+
+      - name: Update manifest and changelog
+        shell: python
+        run: |
+          from pathlib import Path
+
+          manifest = Path("manifest.json")
+          manifest_text = manifest.read_text(encoding="utf-8")
+          old_version = '"version": "1.16.1"'
+          new_version = '"version": "1.17.0"'
+          if old_version not in manifest_text:
+              if new_version not in manifest_text:
+                  raise SystemExit("Expected manifest version 1.16.1 or 1.17.0 not found")
+          else:
+              if manifest_text.count(old_version) != 1:
+                  raise SystemExit("Manifest version marker is not unique")
+              manifest.write_text(manifest_text.replace(old_version, new_version, 1), encoding="utf-8")
+
+          changelog = Path("CHANGELOG.md")
+          changelog_text = changelog.read_text(encoding="utf-8")
+          section = (
+              "## [1.17.0] - Aug. 18, 2026\n"
+              "- Handle SPA/history-state main-frame URL changes so compatible block, secure, redirect, filter, and whitelist rules continue to apply without requiring a full page navigation.\n"
+              "- Extend the lossless MV3/DNR compatibility compiler with the proven `<all_urls>` plus one non-regexp ASCII include-glob subset while keeping unproven include combinations explicitly unsupported.\n\n"
+          )
+          if "## [1.17.0]" not in changelog_text:
+              marker = "## [Unreleased]\n\n"
+              if marker not in changelog_text:
+                  raise SystemExit("Unreleased changelog marker not found")
+              changelog.write_text(changelog_text.replace(marker, marker + section, 1), encoding="utf-8")
+
+      - name: Commit release metadata
+        run: |
+          if git diff --quiet; then
+            echo "Release metadata already up to date"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifest.json CHANGELOG.md
+          git commit -m "chore: prepare 1.17.0 release"
+          git push origin HEAD:release/1.17.0
