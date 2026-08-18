@@ -57,6 +57,20 @@
     line-height: 1.4;
 }
 
+:host([warning]) .import-row {
+    border-left: 3px solid var(--danger-color);
+    padding-left: 0.65rem;
+}
+
+:host([warning]) .import-name,
+:host([warning]) .description {
+    color: var(--danger-color);
+}
+
+:host([warning]) .description {
+    font-weight: 650;
+}
+
 .import-meta {
     color: var(--text-muted);
     font-size: 0.78rem;

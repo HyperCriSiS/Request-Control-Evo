@@ -44,12 +44,12 @@ Normalizes selected mobile hosts to desktop/canonical counterparts while preserv
 
 Blocks images, audio/video and web fonts for a deliberately austere low-bandwidth browsing mode. Importing the preset is opt-in; its rules are active once imported.
 
-## First-Party Firewall
+## Strict First-Party Mode
 
 `rules/special-first-party-firewall.json`
 
-Blocks third-party-domain subresources while leaving top-level navigation alone. It demonstrates Request Control's domain matcher rather than a static host list and can break sites that depend on external CDNs, authentication, embeds or APIs.
+**Warning:** this is an intentionally destructive compatibility mode, not a general-purpose tracker blocker. It blocks every third-party-domain subresource while leaving top-level navigation alone. Sites can lose logins, CDNs, APIs, embeds, payment flows, CAPTCHAs and other required functionality. The rule ships disabled after import and must be enabled deliberately. Disable it again when a site stops working.
 
 ## Activation policy
 
-Importing a preset is always an explicit user action. Within a preset, narrowly scoped rules that preserve the requested content may be active immediately. Rules that change a chosen service, bypass a security/warning wrapper, or materially alter navigation are shipped disabled and require explicit activation after import.
+Importing a preset is always an explicit user action. Within a preset, narrowly scoped rules that preserve the requested content may be active immediately. Rules that change a chosen service, bypass a security/warning wrapper, materially alter navigation, or broadly block third-party dependencies are shipped disabled and require explicit activation after import.

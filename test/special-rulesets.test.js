@@ -165,11 +165,14 @@ describe("bundled showcase redirect rules", () => {
 });
 
 describe("bundled showcase matcher rules", () => {
-    test("First-Party Firewall only matches third-party registrable domains", () => {
+    test("Strict First-Party Mode ships disabled and only matches third-party registrable domains", () => {
         const rule = getRule(
             "special-first-party-firewall.json",
             "64c0f201-4871-48cb-9681-5d64bcaa0701"
         );
+        expect(rule.active).toBe(false);
+        expect(rule.title).toBe("Strict First-Party Mode");
+        expect(rule.description).toMatch(/^WARNING:/);
         const matcher = createRequestMatcher(rule.pattern);
 
         expect(

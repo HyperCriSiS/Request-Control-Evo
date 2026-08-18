@@ -217,82 +217,56 @@ class RuleImportInput extends HTMLElement {
         const link = this.shadowRoot.getElementById("rating-link");
         const issueUrl = `https://github.com/${repository}/issues/${issueNumber}`;
         link.href = issueUrl;
+        rating.hidden = false;
 
         try {
-            const response = await fetch(`https://api.github.com/repos/${repository}/issues/${issueNumber}`, {
-                headers: { Accept: "application/vnd.github+json" },
-                cache: "no-store",
-            });
+            const response = await fetch(`https://api.github.com/repos/${repository}/issues/${issueNumber}`);
             if (!response.ok) {
                 throw new Error(`GitHub rating request failed: ${response.status}`);
             }
             const issue = await response.json();
-            const reactions = issue.reactions || {};
-            this.shadowRoot.getElementById("rating-positive").textContent = reactions["+1"] || 0;
-            this.shadowRoot.getElementById("rating-negative").textContent = reactions["-1"] || 0;
-            rating.hidden = false;
+            this.shadowRoot.getElementById("rating-positive").textContent = issue.reactions?.["+1"] || 0;
+            this.shadowRoot.getElementById("rating-negative").textContent = issue.reactions?.["-1"] || 0;
         } catch {
-            rating.hidden = true;
+            rating.title = message("community_rating_unavailable", "Community rating unavailable");
         }
     }
 
     async fetchRules(src) {
         const loading = this.shadowRoot.getElementById("loading");
-        const error = this.shadowRoot.getElementById("error");
-        const update = this.shadowRoot.getElementById("update");
-        const importList = this.shadowRoot.getElementById("import");
+        const count = this.shadowRoot.getElementById("count");
+        const integrity = this.shadowRoot.getElementById("integrity");
         loading.hidden = false;
-        error.hidden = true;
-        update.hidden = true;
-        importList.hidden = true;
-        this.disabled = true;
+        count.hidden = true;
+        integrity.hidden = true;
+        this.digest = null;
+        this.rules = [];
 
         try {
             const response = await fetch(src);
-
             if (!response.ok) {
-                throw `${response.status} - ${response.statusText}`;
+                throw new Error(`Failed to fetch rule list: ${response.status}`);
             }
-
             const text = await response.text();
-            if (this.expectedSha256) {
-                const actualSha256 = await digest(text, "SHA-256");
-                if (actualSha256 !== this.expectedSha256) {
-                    throw new Error("Rule list integrity check failed (SHA-256 mismatch)");
-                }
+            this.digest = await digest(text);
+            if (this.expectedSha256 && this.digest !== this.expectedSha256) {
+                integrity.hidden = false;
+                integrity.textContent = message("integrity_failed", "Integrity check failed");
+                return;
             }
-
-            const data = JSON.parse(text);
-            const rules = (Array.isArray(data) ? data : [data]).filter((rule) => rule.uuid);
-            this.digest = await digest(JSON.stringify(rules), "SHA-256");
-            this.etag = response.headers.get("etag");
-            this.rules = rules;
-            this.shadowRoot.getElementById("count").textContent = browser.i18n.getMessage(
-                "count_rules",
-                this.rules.length
-            );
-
-            const description = this.shadowRoot.getElementById("description");
-            if (description.hidden) {
-                const actions = [...new Set(this.rules.map((rule) => rule.action).filter(Boolean))].slice(0, 3);
-                this.description = actions.length
-                    ? message(
-                        "import_generated_description",
-                        `${this.rules.length} rules · actions: ${actions.join(", ")}`,
-                        [this.rules.length, actions.join(", ")]
-                    )
-                    : browser.i18n.getMessage("count_rules", this.rules.length);
+            this.rules = JSON.parse(text);
+            count.hidden = false;
+            if (this.rules.length === 1) {
+                count.textContent = browser.i18n.getMessage("count_rule") || "1 rule";
+            } else {
+                count.textContent = browser.i18n.getMessage("count_rules", this.rules.length) || `${this.rules.length} rules`;
             }
-
-            this.disabled = false;
-            update.hidden = !this.data.imported || this.data.imported.digest === this.digest;
-            importList.hidden = this.data.imported && update.hidden;
-        } catch (e) {
-            error.title = e;
-            error.hidden = false;
+        } catch {
+            count.hidden = false;
+            count.textContent = message("import_unavailable", "Unavailable");
+        } finally {
+            loading.hidden = true;
         }
-
-        loading.hidden = true;
     }
 }
 
@@ -307,11 +281,8 @@ async function getCommunityCatalog() {
                 }
                 return response.json();
             })
-            .then((catalog) => {
-                if (!catalog || !Array.isArray(catalog.ruleSets)) {
-                    throw new Error("Invalid community catalog");
-                }
-                return catalog;
+            .finally(() => {
+                communityCatalogPromise = null;
             });
     }
     return communityCatalogPromise;
@@ -320,13 +291,6 @@ async function getCommunityCatalog() {
 function humanReadableSource(src) {
     try {
         const url = new URL(src);
-        if (url.hostname === "raw.githubusercontent.com") {
-            const parts = url.pathname.split("/").filter(Boolean);
-            if (parts.length >= 4) {
-                const [owner, repo, ref, ...path] = parts;
-                return `https://github.com/${owner}/${repo}/blob/${ref}/${path.join("/")}`;
-            }
-        }
         if (url.hostname === "tumpio.github.io" && url.pathname.startsWith("/requestcontrol/rules/")) {
             return "https://github.com/tumpio/requestcontrol/tree/master/rules";
         }
@@ -407,8 +371,9 @@ function setupBundledSpecialRulesets() {
         },
         {
             path: "rules/special-first-party-firewall.json",
-            title: "First-Party Firewall",
-            description: "Block third-party-domain subresources while leaving top-level navigation alone. This can break sites.",
+            title: "Strict First-Party Mode — can break sites",
+            description: "WARNING: Blocks every third-party-domain subresource. Logins, CDNs, APIs, embeds, payments, CAPTCHAs and other site functionality may stop working. The rule is disabled after import and must be enabled deliberately.",
+            warning: true,
         },
     ];
 
@@ -426,6 +391,9 @@ function setupBundledSpecialRulesets() {
         input.src = browser.runtime.getURL(preset.path);
         input.title = preset.description;
         input.description = preset.description;
+        if (preset.warning) {
+            input.setAttribute("warning", "");
+        }
         const label = document.createElement("span");
         label.textContent = preset.title;
         input.append(label);
@@ -447,99 +415,85 @@ function setupGitHubCommunityShare() {
         return;
     }
 
-    const details = document.createElement("details");
-    details.id = "github-community-share";
-    details.className = "community-share";
-    details.open = true;
+    const section = document.createElement("section");
+    section.id = "github-community-share";
+    section.className = "github-community-share";
 
-    const summary = document.createElement("summary");
-    summary.textContent = message("github_community", "GitHub Community");
+    const heading = document.createElement("h3");
+    heading.textContent = message("github_community_title", "GitHub Community");
 
-    const description = document.createElement("p");
-    description.textContent = message(
-        "github_community_description",
-        "Share selected local rules for review in the Request Control community repository."
+    const intro = document.createElement("p");
+    intro.textContent = message(
+        "github_community_intro",
+        "Share selected local rules through a reviewable GitHub submission. Request Control does not store GitHub credentials."
     );
+
+    const controls = document.createElement("div");
+    controls.className = "github-community-controls";
+    const select = document.createElement("select");
+    select.multiple = true;
+    select.size = 7;
+    select.setAttribute("aria-label", message("github_community_select", "Select rules to share"));
 
     const actions = document.createElement("div");
-    actions.className = "community-share-actions";
+    actions.className = "github-community-actions";
+    const exportButton = document.createElement("button");
+    exportButton.type = "button";
+    exportButton.className = "btn btn-primary";
+    exportButton.textContent = message("github_community_export", "Export selected rules");
+    const submit = document.createElement("a");
+    submit.className = "btn";
+    submit.target = "_blank";
+    submit.rel = "noopener noreferrer";
+    submit.href = `https://github.com/${COMMUNITY_REPOSITORY}/issues/new?template=ruleset-submission.yml`;
+    submit.textContent = message("github_community_submit", "Open GitHub submission");
+    actions.append(exportButton, submit);
 
-    const share = document.createElement("button");
-    share.id = "shareRulesGitHub";
-    share.className = "btn primary";
-    share.type = "button";
-    share.textContent = message("share_selected_github", "Share selected rules on GitHub");
-
-    const repository = document.createElement("a");
-    repository.className = "btn";
-    repository.target = "_blank";
-    repository.rel = "noopener noreferrer";
-    repository.href = `https://github.com/${COMMUNITY_REPOSITORY}`;
-    repository.textContent = message("open_community_repository", "Open community repository");
-
-    const status = document.createElement("span");
-    status.className = "community-share-status";
-
-    actions.append(share, repository, status);
-    details.append(summary, description, actions);
-
-    const myLists = Array.from(tab.querySelectorAll("details")).find(
-        (item) => item.querySelector("summary")?.dataset.i18n === "my_lists"
+    const status = document.createElement("p");
+    status.className = "note";
+    status.textContent = message(
+        "github_community_note",
+        "Only the rules you select are exported. Browsing and inspection data are never included automatically."
     );
-    tab.insertBefore(details, myLists || null);
 
-    const getSelectedRules = () =>
-        Array.from(document.querySelectorAll("rule-list")).flatMap((list) => list.selected || []);
+    controls.append(select, actions);
+    section.append(heading, intro, controls, status);
 
-    const update = () => {
-        const count = getSelectedRules().length;
-        share.disabled = count === 0;
-        status.textContent = count
-            ? message("github_share_selected_count", `${count} selected rule(s) ready to share.`, count)
-            : message("github_share_select_rules", "Select one or more rules in the Rules tab first.");
-    };
+    function update() {
+        const rules = Object.values(getSettings().rules || {}).sort((a, b) =>
+            (a.title || "").localeCompare(b.title || "")
+        );
+        select.replaceChildren();
+        for (const rule of rules) {
+            const option = document.createElement("option");
+            option.value = rule.uuid;
+            option.textContent = rule.title || rule.uuid;
+            select.append(option);
+        }
+        exportButton.disabled = !rules.length;
+    }
 
-    share.addEventListener("click", async () => {
-        const selected = getSelectedRules();
-        if (selected.length === 0) {
-            update();
+    exportButton.addEventListener("click", () => {
+        const selected = new Set(Array.from(select.selectedOptions, (option) => option.value));
+        if (!selected.size) {
+            alert(message("github_community_choose_rule", "Select at least one rule to export."));
             return;
         }
-
+        const rules = Object.values(getSettings().rules || {}).filter((rule) => selected.has(rule.uuid));
         const payload = {
-            schemaVersion: 1,
+            format: 1,
             exportedAt: new Date().toISOString(),
-            rules: selected,
+            rules,
         };
-        const json = JSON.stringify(payload, null, 2);
-        const title = message(
-            "github_share_issue_title",
-            `Rule set submission (${selected.length} rules)`,
-            selected.length
-        );
-        const intro = message(
-            "github_share_issue_intro",
-            "Generated by Request Control for community review. I reviewed this payload and removed private or sensitive values."
-        );
-
-        const url = new URL(`https://github.com/${COMMUNITY_REPOSITORY}/issues/new`);
-        url.searchParams.set("template", "rule-set-submission.md");
-        url.searchParams.set("title", title);
-
-        if (json.length <= 24000) {
-            url.searchParams.set("body", `${intro}\n\n\`\`\`json\n${json}\n\`\`\``);
-        } else {
-            exportJsonFile("request-control-community-submission.json", payload);
-            status.textContent = message(
-                "github_share_too_large",
-                "The selection is too large for a prefilled GitHub submission. A JSON file was exported; attach or paste it into the opened form."
-            );
+        const serialized = JSON.stringify(payload);
+        if (serialized.length > 500000) {
+            alert(message("github_community_too_large", "The selected export is too large. Export fewer rules."));
+            return;
         }
-
-        await browser.tabs.create({ url: url.toString() });
+        exportJsonFile("request-control-community-rules.json", payload);
     });
 
-    document.addEventListener("rule-selected", update);
+    document.addEventListener("settings-changed", update);
     update();
 }
 
