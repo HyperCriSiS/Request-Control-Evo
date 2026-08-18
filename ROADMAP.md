@@ -2,7 +2,7 @@
 
 This document is the binding source of truth for the active modernization/release line. Historical design notes remain in `docs/roadmap.md` and related documents, but implementation status must be reflected here.
 
-**Status: 1.19.0 released and verified; Phase 10 complete**
+**Status: 1.19.0 released and verified; Phase 12 active**
 
 ## Release history and current baseline
 
@@ -120,7 +120,6 @@ This document is the binding source of truth for the active modernization/releas
 - [x] Add regression coverage for Guardian lifecycle/scoring and Referer header transformations/listener lifecycle.
 - [x] Run the complete audit/lint/test/build/build-lint/checker suite before marking Phase 8 complete; Build run `32128491533` is green across all required jobs.
 
-
 ## Phase 9 — source-site semantic hardening and Chromium top-level-domain parity
 
 - [x] Re-audit the Firefox source-site matcher against current WebExtension match-pattern semantics before using it as the DNR parity reference.
@@ -140,7 +139,6 @@ This document is the binding source of truth for the active modernization/releas
 - [x] Promote the validated candidate to `master` without rewriting the immutable 1.18.x release history; PR #46 merged as `d2001728b4887d74a244717920de6e4b10827745` from a `master`-based promotion branch whose Git tree matched validated `dev`.
 - [x] Verify the 1.19.0 tag and GitHub release through Release run `32152724142`; `request_control-1.19.0.zip` and `.xpi` are both 225938 bytes with SHA-256 `3da8de30075b2f6e11e3fa265f26d60e89b038c23e5cf0b8fbd19aff9ab56e82`. Mozilla signing was skipped because AMO credentials are not configured.
 
-
 ## Phase 11 — simplified imports and community UX
 
 - [x] Consolidate built-in rule lists and Evo showcase presets into one compact, recommended section instead of multiple simultaneously open import groups.
@@ -150,6 +148,39 @@ This document is the binding source of truth for the active modernization/releas
 - [x] Move GitHub contribution flow out of Imports and into the selected-rules toolbar, with a review dialog, explicit public-data warning, JSON preview/download and a deliberate handoff to GitHub.
 - [x] Reduce import-row visual density by keeping descriptions, source links and community review links behind per-package Details while preserving prominent warnings for risky presets.
 - [x] Restore the missing import integrity-status element expected by the rule-list integrity checker and add regression coverage for the new structure/lazy-loading boundaries.
+
+## Phase 12 — source intelligence and deterministic curation pipeline
+
+### Foundation
+
+- [x] Add a central source registry with explicit provenance, license/integration policy, capabilities and no hidden runtime-network dependency.
+- [x] Add a common redirect-safety assessment that rejects non-web targets, credential URLs, redirect loops and HTTPS-to-HTTP downgrades while flagging possible security wrappers for review.
+- [x] Add a versioned privacy-minimized Wormhole Observatory snapshot contract without implementing network transport or remote execution.
+
+### Candidate curation
+
+- [x] Add a deterministic normalization/fingerprint layer for external URL-cleanup, redirect and classification candidates.
+- [x] Reject unknown/invalid sources and duplicate candidates with stable machine-readable reasons.
+- [x] Add conservative risk classification for global parameters, sensitive token-like parameters, unscoped redirects and sources that are not directly importable.
+- [x] Keep classification candidates annotation-only and separate from request-changing actions.
+- [ ] Add source-specific offline adapters that transform reviewed ClearURLs/FastForward candidate fixtures into the canonical curation format; no runtime fetching.
+- [ ] Add conflict detection against existing bundled Evo rules and produce a review report that distinguishes duplicate, narrower, broader and contradictory candidates.
+- [ ] Add generated positive/negative fixtures for accepted candidates before they can become bundled rules.
+
+### Inspector / diagnostics
+
+- [ ] Surface provenance, confidence, safety level and stable reason codes in Inspector details without increasing default visual density.
+- [ ] Add an exportable support diagnostic that contains rule/source identifiers and reason codes but excludes raw browsing URLs by default.
+- [ ] Keep all behavioral intelligence bounded to explicit Inspection/Guardian sessions.
+
+### Observatory readiness
+
+- [ ] Define the reviewable response contract for future Observatory recommendations; recommendations must never be executable remote code.
+- [ ] Add schema compatibility tests for forward/backward rejection behavior before any transport integration exists.
+
+### Validation
+
+- [ ] Run audit, lint, tests, build, build-lint/checker and security checks before marking Phase 12 complete.
 
 ## Blockers / dependencies
 
@@ -163,4 +194,4 @@ This document is the binding source of truth for the active modernization/releas
 
 ## Completion status
 
-**Phases 1–11 are complete on `dev`.** Request Control 1.19.0 remains the published release; Phase 11 is the next post-release development line and simplifies Imports/Community UX without changing the published 1.19.0 artifact.
+**Phases 1–11 are complete on `dev`. Phase 12 is active.** Request Control 1.19.0 remains the published release. The post-release line now focuses on source intelligence, deterministic candidate curation, diagnosable rule provenance and a privacy-preserving future Wormhole Observatory boundary without adding runtime cloud dependence.
