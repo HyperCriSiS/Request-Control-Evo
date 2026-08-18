@@ -140,6 +140,17 @@ This document is the binding source of truth for the active modernization/releas
 - [x] Promote the validated candidate to `master` without rewriting the immutable 1.18.x release history; PR #46 merged as `d2001728b4887d74a244717920de6e4b10827745` from a `master`-based promotion branch whose Git tree matched validated `dev`.
 - [x] Verify the 1.19.0 tag and GitHub release through Release run `32152724142`; `request_control-1.19.0.zip` and `.xpi` are both 225938 bytes with SHA-256 `3da8de30075b2f6e11e3fa265f26d60e89b038c23e5cf0b8fbd19aff9ab56e82`. Mozilla signing was skipped because AMO credentials are not configured.
 
+
+## Phase 11 — simplified imports and community UX
+
+- [x] Consolidate built-in rule lists and Evo showcase presets into one compact, recommended section instead of multiple simultaneously open import groups.
+- [x] Load bundled rule payloads from packaged local JSON files while preserving stable existing import identities for managed-rule reconciliation.
+- [x] Remove per-row animated loading dots; community content is loaded only after the user opens the Community section, and uninstalled community rule payloads are fetched only when imported.
+- [x] Keep custom URL imports in a separate collapsed advanced section and load those sources only when that section is opened or a list is explicitly used.
+- [x] Move GitHub contribution flow out of Imports and into the selected-rules toolbar, with a review dialog, explicit public-data warning, JSON preview/download and a deliberate handoff to GitHub.
+- [x] Reduce import-row visual density by keeping descriptions, source links and community review links behind per-package Details while preserving prominent warnings for risky presets.
+- [x] Restore the missing import integrity-status element expected by the rule-list integrity checker and add regression coverage for the new structure/lazy-loading boundaries.
+
 ## Blockers / dependencies
 
 - No release blocker remains for 1.18.0, 1.18.1 or 1.19.0; all three milestones are published and verified.
@@ -152,4 +163,4 @@ This document is the binding source of truth for the active modernization/releas
 
 ## Completion status
 
-**Phases 1–10 are complete.** Request Control 1.19.0 is published and verified. The release contains the Compatibility Guardian, Referer protection, source-site/DNR parity hardening, Firefox Android responsive-UI work and hardened rule-import source handling. The next development work belongs to a new Phase 11.
+**Phases 1–11 are complete on `dev`.** Request Control 1.19.0 remains the published release; Phase 11 is the next post-release development line and simplifies Imports/Community UX without changing the published 1.19.0 artifact.
