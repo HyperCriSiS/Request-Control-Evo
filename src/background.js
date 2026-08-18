@@ -6,6 +6,8 @@ import { ALL_URLS, createRequestFilters } from "./main/api.js";
 import { RequestController } from "./main/control.js";
 import { NavigationAdapter } from "./main/navigation.js";
 import * as notifier from "./util/notifier.js";
+import { guardian } from "./main/guardian.js";
+import { configureReferrerProtection } from "./main/referrer-protection.js";
 import * as records from "./util/records.js";
 
 const listeners = [];
@@ -15,12 +17,14 @@ const navigation = new NavigationAdapter({
     navigate: updateTab,
     replaceHistory: replaceHistoryState,
 });
-const storageKeys = ["rules", "disabled"];
+const storageKeys = ["rules", "disabled", "referrerProtectionMode"];
 
 browser.storage.local.get(storageKeys).then(init);
 browser.storage.onChanged.addListener(onOptionsChanged);
+browser.runtime.onMessage.addListener(guardian.handleMessage);
 
 function init(options) {
+    configureReferrerProtection(options.referrerProtectionMode || "browser");
     if (options.disabled) {
         browser.tabs.onRemoved.removeListener(onTabRemoved);
         browser.runtime.onMessage.removeListener(records.getTabRecords);
@@ -43,6 +47,10 @@ function init(options) {
 }
 
 function onOptionsChanged(changes) {
+    if ("referrerProtectionMode" in changes && !("rules" in changes) && !("disabled" in changes)) {
+        configureReferrerProtection(changes.referrerProtectionMode.newValue || "browser");
+        return;
+    }
     if (storageKeys.every((key) => !(key in changes))) {
         return;
     }
