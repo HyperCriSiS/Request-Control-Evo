@@ -63,8 +63,8 @@ function ensureNode(ruleWrap) {
 
     let node = value.querySelector(".rule-source-detail");
     if (!node) {
-        node = document.createElement("small");
-        node.className = "rule-source-detail";
+        node = document.createElement("div");
+        node.className = "rule-source-detail request-meta";
         value.append(node);
     }
     return node;
