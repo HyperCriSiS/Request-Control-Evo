@@ -1,8 +1,8 @@
 import { spawnSync } from 'node:child_process';
 
 const allowedHighAdvisories = new Set([
-  'GHSA-w3rx-r6r6-pgpr',
-  'GHSA-5p2g-fcmc-qvqq',
+  'GHSA-W3RX-R6R6-PGPR',
+  'GHSA-5P2G-FCMC-QVQQ',
 ]);
 
 const severityRank = {
