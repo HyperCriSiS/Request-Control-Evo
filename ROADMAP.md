@@ -8,9 +8,9 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Current status
 
-**Status: in progress**
+**Status: completed for the 1.17.0 milestone**
 
-The repository is now named `HyperCriSiS/Request-Control-Evo`; the active development branch remains `dev`. The released modernization baseline is Request Control 1.16.1 on `master`. The active `dev` branch additionally contains integrated SPA/history-state navigation support and the conservative MV3/DNR compiler foundation. The supported lossless subset and known limitations are documented in `docs/mv3-supported-subset.md` and `docs/mv3-limitations.md`.
+The repository is now named `HyperCriSiS/Request-Control-Evo`; the active development branch remains `dev`. Request Control 1.17.0 is released on `master`. The active `dev` branch contains the released SPA/history-state navigation support, the conservative MV3/DNR compiler foundation, refreshed dependency baselines, the high/critical dependency-audit gate, and the corrected pinned Pandoc CI/release setup. The supported lossless subset and known limitations are documented in `docs/mv3-supported-subset.md` and `docs/mv3-limitations.md`.
 
 The Firefox↔DNR parity suite exercises the actual `createRequestFilters()` browser-prefilter contract plus supplemental matcher semantics for exact/wildcard hosts, paths, TLD expansion, supported resource types, schemes, explicit ports, methods, `<all_urls>` and representative composed rules. Coverage includes `secure`/scheme upgrade, static absolute redirect, `<all_urls>` combined with WebSocket resource type, and the bounded compiler case `<all_urls>` plus exactly one non-regexp ASCII include glob with case-insensitive substring/glob semantics.
 
@@ -18,9 +18,9 @@ The bounded single-include compiler support is implemented in `9876a3cd`, with d
 
 A fresh release-blocker audit on the same candidate found no open issues and no open pull requests. No genuinely new real-world/catalog semantic is currently identified that would justify another parity fixture before release; existing representative, CDN, and managed-catalog coverage already exercises the currently supported subset.
 
-Release preparation has started using the repository's established branch convention: `release/1.17.0` was created from validated `dev` commit `0bf7e883`. A minor-version bump is appropriate because the candidate adds user-visible SPA/history-state behavior and new exact compatibility semantics beyond the 1.16.1 baseline. The remaining release work is to align `manifest.json` and `CHANGELOG.md` on that release branch, promote the validated release candidate to `master`, and verify the self-contained release workflow/tag/artifact result.
+Release 1.17.0 is complete. `release/1.17.0` was created from validated `dev` commit `0bf7e883`, release metadata was aligned in `6e331d5c`, and PR #18 promoted the candidate to `master` as `959e6f6e` after resolving only the expected `CHANGELOG.md`/`manifest.json` overlap with 1.16.1.
 
-The release metadata is now aligned at 1.17.0 (`6e331d5c`). PR #18 promoted `release/1.17.0` to `master`. Its only merge conflicts were the expected `CHANGELOG.md` and `manifest.json` version-history overlap with 1.16.1; those were resolved by retaining the validated 1.17.0 release metadata while merging current `master` in `c1d69b91`. PR #18 merged successfully to `master` as `959e6f6e`; the release workflow is running and release artifact verification remains open.
+The first 1.17.0 release run exposed a GitHub-hosted runner stall in the apt-based Pandoc installation and was cancelled before verification/publishing. PR #20 replaced that step on `master` with a repository-local setup that downloads the official pinned Pandoc 3.10.2 binary, verifies its upstream SHA-256, and applies explicit download timeouts/retries. Release run #4 then completed successfully: verification/build passed, tag `1.17.0` was created, the GitHub release and `request_control-1.17.0.zip` were published, and Mozilla signing was explicitly skipped because `WEB_EXT_API_KEY`/`WEB_EXT_API_SECRET` are not configured. PR #21 synchronized the same validated Pandoc setup back to `dev`; its full combined CI (`audit`, `lint`, `test`, `build`, `lint-build`, `checker`) is green.
 
 Dependency maintenance has also been refreshed on `chore/dependency-refresh-2026-08`: direct maintained tooling baselines were advanced where newer compatible releases are available, the lockfile was regenerated, legacy vulnerable `js-yaml` and `brace-expansion` instances were moved to patched versions, and CI now includes an explicit high/critical npm-audit gate. The only currently accepted high-severity audit roots are the two known `image-size` advisories inherited through the current Mozilla `addons-linter`/`web-ext` toolchain; the gate is keyed to those exact GHSA IDs so any additional high/critical advisory remains a hard failure.
 
@@ -68,13 +68,13 @@ Dependency maintenance has also been refreshed on `chore/dependency-refresh-2026
 - [x] Create `release/1.17.0` from the validated `dev` candidate using the established release-branch convention (`0bf7e883`).
 - [x] Set `manifest.json` to version 1.17.0 and add a matching `CHANGELOG.md` section on `release/1.17.0` (`6e331d5c`); merge-only conflicts with the 1.16.1 `master` metadata were resolved without changing release semantics in `c1d69b91`.
 - [x] Promote the validated 1.17.0 release candidate to `master` through the established release workflow.
-- [ ] Verify the self-contained release workflow creates the 1.17.0 tag, GitHub release and release ZIP successfully; record Mozilla signing status without treating absent signing credentials as a code failure.
+- [x] Verify the self-contained release workflow creates the 1.17.0 tag, GitHub release and release ZIP successfully; Release run #4 completed successfully and Mozilla signing was explicitly skipped because AMO credentials are not configured.
 
 ## Blockers / dependencies
 
-- No current normal CI blocker is known on `dev`; Build #183 is fully green on candidate commit `451dcfe9`.
-- No open issue or open pull request currently identifies a release blocker in this fork.
-- The release workflow is self-contained and idempotent: a stable SemVer version on `master` triggers verification/build, tag creation, GitHub release creation, and optional Mozilla signing when credentials are configured.
+- No current normal CI blocker is known on `dev`; the post-release dependency/Pandoc combined validation in PR #21 is green across `audit`, `lint`, `test`, `build`, `lint-build`, and `checker`.
+- No open issue currently identifies a release blocker in this fork; the 1.17.0 milestone itself is released and verified.
+- The release workflow is self-contained and idempotent: a stable SemVer version on `master` triggers verification/build, tag creation, GitHub release creation, and optional Mozilla signing when credentials are configured. Pandoc setup no longer depends on apt and instead uses a pinned, checksum-verified official release binary with bounded network timeouts.
 - The dependency audit gate blocks new high/critical npm advisories. Two exact `image-size` GHSA roots inherited through the current Mozilla linter/signing toolchain are temporarily accepted because the installed dependency chain exposes no patched replacement; their exception is advisory-specific rather than package-wide.
 - The parity harness intentionally covers only semantics already representable exactly or narrowly scoped candidates before activation. Browser-specific or custom matcher semantics require dedicated positive and negative evidence before compiler support is broadened.
 - MV3 feature growth is constrained by `declarativeNetRequest` expressiveness. Unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
@@ -82,4 +82,4 @@ Dependency maintenance has also been refreshed on `chore/dependency-refresh-2026
 
 ## Completion status
 
-**Not fully completed.** The modernization baseline is released, the bounded `<all_urls>` + one non-regexp ASCII include compiler support is implemented, boundary-tested, documented, and fully green through Build #183. The current final candidate has no open issue/PR release blocker and no missing genuinely new real-world/catalog semantic requiring another fixture. Release metadata for 1.17.0 is aligned and PR #18 has merged to `master` as `959e6f6e`; the remaining release task is verification of the resulting release workflow, tag, GitHub release, release ZIP, and Mozilla signing status. Dependency maintenance has been refreshed in parallel with patched legacy transitive versions and a permanent high/critical audit gate. After release verification is complete, this roadmap can be marked **fully completed**.
+**Fully completed for the 1.17.0 milestone.** The bounded `<all_urls>` + one non-regexp ASCII include compiler support is implemented, boundary-tested, documented, and released. Request Control 1.17.0 is published with its tag and release ZIP after a successful self-contained release run. Mozilla signing status is recorded as skipped because AMO credentials are not configured, which is intentionally non-fatal. Dependency maintenance is refreshed with patched legacy transitive versions and a permanent high/critical audit gate, and the pinned/checksum-verified Pandoc setup is synchronized to both `master` and `dev`. Further work belongs to a new post-1.17.0 roadmap phase rather than this completed milestone.
