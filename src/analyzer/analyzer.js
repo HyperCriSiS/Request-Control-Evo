@@ -18,7 +18,25 @@ const noSuggestions = document.getElementById("no-suggestions");
 const createButton = document.getElementById("create-rule");
 
 const patterns = await loadKnownParameterPatterns();
-const requestedUrl = new URLSearchParams(location.search).get("url");
+const params = new URLSearchParams(location.search);
+const requestedTabId = Number.parseInt(params.get("tabId"), 10);
+const guardianButton = document.getElementById("guardian-run");
+const guardianStatus = document.getElementById("guardian-status");
+const guardianResult = document.getElementById("guardian-result");
+const referrerMode = document.getElementById("referrer-mode");
+
+const { referrerProtectionMode = "browser" } = await browser.storage.local.get("referrerProtectionMode");
+referrerMode.value = referrerProtectionMode;
+referrerMode.addEventListener("change", () => browser.storage.local.set({ referrerProtectionMode: referrerMode.value }));
+
+if (!Number.isInteger(requestedTabId)) {
+    guardianButton.disabled = true;
+    guardianStatus.textContent = browser.i18n.getMessage("guardian_no_tab");
+} else {
+    guardianButton.addEventListener("click", runGuardian);
+}
+
+const requestedUrl = params.get("url");
 if (requestedUrl) {
     input.value = requestedUrl;
     analyzeInput();
@@ -118,4 +136,39 @@ async function createRule() {
     const optionsUrl = browser.runtime.getURL(`src/options/options.html?edit=${encodeURIComponent(rule.uuid)}`);
     await browser.tabs.create({ url: optionsUrl });
     window.close();
+}
+
+async function runGuardian() {
+    guardianButton.disabled = true;
+    guardianResult.classList.add("hidden");
+    guardianStatus.textContent = browser.i18n.getMessage("guardian_running");
+    try {
+        await browser.runtime.sendMessage({ type: "GUARDIAN_START", tabId: requestedTabId });
+        await browser.tabs.reload(requestedTabId);
+        await new Promise((resolve) => setTimeout(resolve, 8000));
+        const report = await browser.runtime.sendMessage({ type: "GUARDIAN_STOP", tabId: requestedTabId });
+        renderGuardianReport(report);
+    } catch {
+        guardianStatus.textContent = browser.i18n.getMessage("guardian_failed");
+    } finally {
+        guardianButton.disabled = false;
+    }
+}
+
+function renderGuardianReport(report) {
+    if (!report) {
+        guardianStatus.textContent = browser.i18n.getMessage("guardian_failed");
+        return;
+    }
+    guardianStatus.textContent = browser.i18n.getMessage(
+        report.score >= 60 ? "guardian_result_warning" : "guardian_result_ok"
+    );
+    document.getElementById("guardian-score").textContent = `${report.score}/100`;
+    document.getElementById("guardian-errors").textContent = String(
+        report.counts.mainFrameErrors + report.counts.subresourceErrors
+    );
+    document.getElementById("guardian-http").textContent = String(
+        report.counts.serverFailures + report.counts.clientFailures
+    );
+    guardianResult.classList.remove("hidden");
 }
