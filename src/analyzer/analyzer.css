@@ -9,6 +9,7 @@
   --border: #d8dde5;
   --primary: #315f9b;
   --primary-hover: #274f84;
+  --on-primary: #fff;
   --danger: #b52f2f;
 }
 @media (prefers-color-scheme: dark) {
@@ -21,6 +22,7 @@
     --border: #343a43;
     --primary: #79a9e6;
     --primary-hover: #94baf0;
+    --on-primary: #15181d;
     --danger: #e16b6b;
   }
 }
@@ -37,7 +39,7 @@ label { display: block; font-weight: 650; margin-bottom: .4rem; }
 input[type="url"] { flex: 1; min-width: 0; padding: .65rem .75rem; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: .45rem; }
 button { min-height: 2.4rem; padding: .5rem .8rem; border: 1px solid var(--border); border-radius: .45rem; background: var(--surface-2); color: var(--text); cursor: pointer; font: inherit; font-weight: 650; }
 button:hover:not(:disabled) { filter: brightness(1.05); }
-button.primary { background: var(--primary); border-color: var(--primary); color: white; }
+button.primary { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
 button.primary:hover:not(:disabled) { background: var(--primary-hover); }
 button:disabled { opacity: .5; cursor: default; }
 dl { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin: 0; }
@@ -50,7 +52,17 @@ dd { margin: .15rem 0 0; overflow-wrap: anywhere; }
 .suggestion strong { display: block; }
 .suggestion small { color: var(--muted); }
 .actions { margin-top: 1rem; }
+.row-actions { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+select { width: 100%; max-width: 28rem; padding: .65rem .75rem; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: .45rem; font: inherit; }
+#guardian-result { margin-top: 1rem; }
 .muted { color: var(--muted); }
 .error { color: var(--danger); font-weight: 650; margin-top: .6rem; }
 .hidden { display: none !important; }
-@media (max-width: 42rem) { .input-row, header { align-items: stretch; flex-direction: column; } dl { grid-template-columns: 1fr; } }
+@media (max-width: 42rem) {
+  main { width: calc(100% - 1rem); margin: .5rem auto 1rem; }
+  .input-row, header { align-items: stretch; flex-direction: column; }
+  dl { grid-template-columns: 1fr; }
+  button, input[type="url"], select { min-height: 2.75rem; font-size: 1rem; }
+  button, .suggestion { touch-action: manipulation; }
+  .row-actions > button { flex: 1 1 10rem; }
+}

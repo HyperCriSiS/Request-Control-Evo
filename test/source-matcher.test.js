@@ -41,3 +41,56 @@ test("source matcher falls back to document/origin URL when top-level context is
         })
     ).toBe(true);
 });
+
+test("source wildcard host matches the bare domain and true subdomains", () => {
+    const [filter] = createRequestFilters({
+        uuid: "source-wildcard-rule",
+        action: "block",
+        pattern: {
+            allUrls: true,
+            source: ["*://*.example.com/*"],
+        },
+    });
+
+    expect(filter.matcher.test({
+        topLevelUrl: "https://example.com/article",
+        url: "https://tracker.test/pixel",
+    })).toBe(true);
+    expect(filter.matcher.test({
+        topLevelUrl: "https://a.b.example.com/article",
+        url: "https://tracker.test/pixel",
+    })).toBe(true);
+    expect(filter.matcher.test({
+        topLevelUrl: "https://a.example.com:8443/article",
+        url: "https://tracker.test/pixel",
+    })).toBe(true);
+});
+
+test("source wildcard host does not match a hostname that only shares the suffix", () => {
+    const [filter] = createRequestFilters({
+        uuid: "source-wildcard-boundary-rule",
+        action: "block",
+        pattern: {
+            allUrls: true,
+            source: ["*://*.example.com/*"],
+        },
+    });
+
+    expect(filter.matcher.test({
+        topLevelUrl: "https://badexample.com/article",
+        url: "https://tracker.test/pixel",
+    })).toBe(false);
+    expect(filter.matcher.test({
+        topLevelUrl: "https://really-badexample.com/article",
+        url: "https://tracker.test/pixel",
+    })).toBe(false);
+});
+
+test("source exact host without an explicit port matches every port", () => {
+    expect(
+        matcher().test({
+            topLevelUrl: "https://news.example.com:8443/article",
+            url: "https://tracker.test/pixel",
+        })
+    ).toBe(true);
+});

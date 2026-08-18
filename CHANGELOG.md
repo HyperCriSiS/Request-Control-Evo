@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.19.0] - Aug. 18, 2026
+- Add the on-demand Compatibility Guardian for bounded per-tab diagnostics, including lifecycle cleanup and local scoring without continuous browsing surveillance.
+- Add configurable Referer protection modes for browser-default, balanced cross-origin origin-only, same-origin only and no-referrer behavior; browser-default remains listener-free and balanced mode preserves HTTPS-to-HTTP downgrade protection.
+- Harden source-site semantics and add capability-gated Chromium 145+ session `topDomains` compilation for the proven `*://*.domain/*` subset while preserving explicit unsupported diagnostics for neighboring forms.
+- Improve Firefox Android responsiveness across options, rule selection, imports, popup, inspector, analyzer and dialogs with dynamic viewport sizing, larger touch targets and regression coverage for mobile-only breakage.
+
 ## [1.18.1] - Aug. 18, 2026
 - Add eight bundled opt-in showcase rulesets for original media, privacy-enhanced embeds, direct/raw developer URLs, search-provider handoff, redirect-wrapper bypass, canonical desktop URLs, low-bandwidth browsing and strict first-party isolation.
 - Rename the broad third-party blocker to `Strict First-Party Mode`, keep it disabled after import, and show a prominent warning that it can break logins, CDNs, APIs, embeds, payments, CAPTCHAs and other site functionality.

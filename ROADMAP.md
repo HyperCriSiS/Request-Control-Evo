@@ -1,44 +1,38 @@
-# Request Control Roadmap
+# Request Control Evo Roadmap
 
-This root `ROADMAP.md` is the authoritative source of truth for active Request Control development on `dev`. The older `docs/roadmap.md` is retained as historical/background documentation and must not override this file.
+This document is the binding source of truth for the active modernization/release line. Historical design notes remain in `docs/roadmap.md` and related documents, but implementation status must be reflected here.
 
-## Project goal
+**Status: 1.18.1 released; Phase 10 / 1.19.0 release finalization in progress**
 
-Modernize Request Control while preserving the Firefox `webRequest` engine as the canonical behavior, keeping compatibility changes conservative, and providing a lossless, explicitly bounded Manifest V3 / `declarativeNetRequest` path where exact parity is proven.
+## Release history and current baseline
 
-## Current status
+- Request Control 1.17.0 is released from `master`.
+- Request Control 1.18.0 is released from `master`; its tag and release assets remain immutable.
+- Request Control 1.18.1 is released from `master` with the bundled showcase rulesets.
+- `dev` is the active development branch and contains the released 1.18.1 baseline plus later validated work.
+- Dependency and CI policy: current direct dependency baselines, lockfile refreshes, advisory-specific audit gate and checksum-verified Pandoc setup remain mandatory.
 
-**Status: 1.18.0 milestone completed; post-1.18 development active**
+## Phase 1 — reliability and modernization baseline
 
-Request Control 1.18.0 is released on `master` at `3110baa7`, and the 1.18.0 milestone is complete. The release was produced by Release run `32126387364` from the validated candidate: tag `1.18.0`, GitHub release, ZIP and unsigned XPI were created successfully. The ZIP and XPI are byte-identical at 207884 bytes with SHA-256 `22ee7b029156853d95b0c93197224e64abdc4599448470bf174877ec62d9f4f6`. Mozilla signing was skipped because AMO credentials were not configured, and the workflow recorded that skip as non-fatal.
+- [x] Establish `dev` as active integration branch and keep `master` release-focused.
+- [x] Modernize project dependencies and CI without blindly taking unsafe major updates.
+- [x] Add a permanent dependency audit gate; patched legacy `js-yaml` / `brace-expansion` advisories are removed from the lockfile.
+- [x] Pin and checksum-verify Pandoc in CI instead of relying on runner `apt` state.
+- [x] Keep exact upstream-only audit exceptions narrow and fail on any new high/critical advisory.
 
-The active `dev` branch has already moved beyond the released candidate and includes bundled opt-in showcase rulesets at `bffc4653`. That work belongs to post-1.18 development and must not be conflated with the frozen 1.18.0 release contents. Existing guardrails remain in force: Firefox `webRequest` behavior is canonical, unsupported DNR semantics stay explicit, Inspection Mode remains bounded/local/opt-in, and guided workflows do not replace the expert editor.
+## Phase 2 — rule engine and navigation hardening
 
-The 1.18.0 promotion PR passed audit, lint, tests, build, build-lint/checker and both real CodeQL analysis jobs. GitHub's separate agentic Advanced Security check repeatedly failed before analysis because its service requested unsupported model `claude-opus-4.6`; the standard protected merge nevertheless completed normally without an admin bypass.
+- [x] Preserve Firefox `webRequest` as semantic reference implementation.
+- [x] Cover direct requests, redirects and SPA/history navigation behavior.
+- [x] Keep unsupported matcher/action combinations explicit rather than approximating silently.
+- [x] Build an initial DNR compiler foundation with direct parity/boundary fixtures.
 
-## Phase 1 — modernization baseline
+## Phase 3 — release 1.17.0
 
-- [x] Modernize the extension architecture/tooling and integrate the modernization work into `dev`.
-- [x] Publish the corrected validated modernization baseline as release 1.16.1 on `master`.
-- [x] Integrate SPA/history-state navigation support into `dev`.
-- [x] Add the conservative MV3/DNR compiler foundation to `dev`.
-- [x] Keep Firefox `webRequest` behavior as the reference semantics rather than silently replacing it with approximate DNR behavior.
-- [x] Refresh maintained npm dependency baselines and the lockfile, remove the known patched legacy `js-yaml`/`brace-expansion` vulnerabilities, and add a CI audit gate that rejects unapproved high/critical findings.
-
-## Phase 2 — prove and expand exact MV3/DNR parity
-
-- [x] Define and validate the exact lossless DNR subset documented in `docs/mv3-supported-subset.md`.
-- [x] Keep unsupported or merely approximate semantics explicit instead of silently activating them.
-- [x] Validate the representative parity matrix, including URL/method/resource/action composition and the bounded single-include semantic.
-- [x] Obtain green full CI for the bounded single-include compiler implementation and boundary tests.
-
-## Phase 3 — 1.17.0 stabilization and release
-
-- [x] Complete final regression/build validation.
-- [x] Synchronize supported-subset/limitations documentation.
-- [x] Promote the validated 1.17.0 candidate to `master`.
-- [x] Publish and verify the 1.17.0 GitHub release artifact.
-- [x] Add an unsigned `.xpi` release asset for personal testing while keeping Mozilla signing optional.
+- [x] Validate the complete candidate through lint, tests, build, build-lint/checker and security checks.
+- [x] Promote the validated candidate to `master`.
+- [x] Release 1.17.0 through the reproducible release workflow.
+- [x] Verify tag, release asset and signing status after publication.
 
 ## Phase 4 — post-1.17 UI and GitHub community workflow
 
@@ -115,6 +109,36 @@ The 1.18.0 promotion PR passed audit, lint, tests, build, build-lint/checker and
 - [x] Promote the validated 1.18.1 candidate to `master` via PR #38; master release commit `49fa1814940f2347bd345b898574a96f093b6c5d`.
 - [x] Verify Release run `32127317095` creates tag `1.18.1`, GitHub release `372266035`, ZIP and byte-identical unsigned XPI. Both assets are 216149 bytes with SHA-256 `94d9438fa6753fbb55c697140323fcf32482edeec2570b8fc9c14d01b04a9124`; Mozilla signing was skipped because AMO credentials were not configured.
 
+## Phase 8 — on-demand compatibility diagnostics and Referrer protection
+
+- [x] Port the Compatibility Guardian onto the current Inspection/Runtime architecture without adding continuous request monitoring.
+- [x] Keep Guardian request listeners strictly on-demand, bounded to the selected tab/session and automatically removed after stop/timeout/tab close.
+- [x] Add explicit Referer protection modes: browser default, balanced cross-origin origin-only, same-origin only and no-referrer.
+- [x] Ensure browser-default Referer mode registers no `onBeforeSendHeaders` listener and does not alter browser behavior.
+- [x] Preserve HTTPS-to-HTTP privacy downgrade protection in balanced mode.
+- [x] Add regression coverage for Guardian lifecycle/scoring and Referer header transformations/listener lifecycle.
+- [x] Run the complete audit/lint/test/build/build-lint/checker suite before marking Phase 8 complete; Build run `32128491533` is green across all required jobs.
+
+
+## Phase 9 — source-site semantic hardening and Chromium top-level-domain parity
+
+- [x] Re-audit the Firefox source-site matcher against current WebExtension match-pattern semantics before using it as the DNR parity reference.
+- [x] Fix wildcard source hosts so `*.example.com` matches the bare domain and real subdomains, but not unrelated suffix hosts such as `badexample.com`.
+- [x] Re-evaluate Chromium 145+ `topDomains` / `excludedTopDomains` and document the session-only, domain-only and no-top-frame fallback constraints.
+- [x] Add capability-gated DNR source-scope compilation only for the proven session-only `*://*.domain/*` subset; default/static/dynamic and neighboring source forms preserve `source-matcher-unsupported`.
+- [x] Add direct positive/negative boundary fixtures for the activated session `topDomains` form plus explicit rejection fixtures for exact-host, fixed-scheme, explicit-port, constrained-path and non-session forms.
+- [x] Run audit, lint, tests, build, build-lint/checker and security checks before marking Phase 9 complete; PR #42 Build run `32145208740` is green across all required project jobs, with no open code-scanning, secret-scanning or Dependabot alerts on validation.
+
+## Phase 10 — Firefox Android hardening and 1.19.0 release finalization
+
+- [x] Carry the fully validated Phase 8 Compatibility Guardian and Referer-protection work forward from `dev`.
+- [x] Carry the fully validated Phase 9 source-site semantic hardening and capability-gated Chromium session `topDomains` subset forward from `dev`.
+- [x] Harden Firefox Android options, rule-selection, popup, inspector, analyzer and dialog layouts; retain mobile rule selection and add dedicated regression coverage.
+- [x] Align `manifest.json` and `CHANGELOG.md` at 1.19.0 because the post-1.18.1 development line contains new user-facing capabilities, not only patch fixes.
+- [ ] Validate the complete 1.19.0 candidate through audit, lint, tests, build, build-lint/checker and security checks.
+- [ ] Promote the validated candidate to `master` without rewriting the immutable 1.18.x release history.
+- [ ] Verify the 1.19.0 tag, GitHub release, ZIP/XPI digests and Mozilla-signing status after publication.
+
 ## Blockers / dependencies
 
 - No release blocker remains for 1.18.0 or 1.18.1; both milestones are published and verified.
@@ -122,9 +146,9 @@ The 1.18.0 promotion PR passed audit, lint, tests, build, build-lint/checker and
 - No code blocker is currently known for the theme/import-presentation work.
 - Fully credential-less direct writes to GitHub are intentionally not assumed. The preferred community publication design keeps authentication on GitHub (submission/review UI) rather than storing a personal access token or secret inside the extension.
 - GitHub community metadata and ratings are optional network features; the existing local/built-in rule functionality must remain usable when GitHub is unavailable.
-- Source-site matching is Firefox `webRequest` functionality for now. The DNR compiler must keep returning an explicit unsupported diagnostic until an exact top-level-site translation is proven.
+- Source-site matching remains Firefox `webRequest` functionality by default. Chromium 145+ session `topDomains` is now available only through the explicit `rulesetScope: "session"` + `capabilities: { topDomains: true }` compiler gate for the proven `*://*.domain/*` form; default/static/dynamic, exact-host, fixed-scheme, explicit-port and constrained-path source scopes remain explicit unsupported diagnostics.
 - Inspection must remain bounded and opt-in; it must not become a persistent browsing-history collector.
 
 ## Completion status
 
-**Phases 1–7 are complete.** The 1.18.0 milestone remains immutable, and the separate 1.18.1 patch release publishes the bundled showcase rulesets with the strict first-party safety warning, byte-identical ZIP/XPI artifacts and explicit Mozilla-signing status. Further development belongs to the next roadmap phase.
+**Phases 1–9 are complete. Phase 10 is active.** The 1.19.0 candidate packages the already-validated Compatibility Guardian, Referer protection, source-site/DNR parity hardening and Firefox Android responsive-UI work into the next minor release. Promotion and post-release verification remain pending until the complete candidate is green.
