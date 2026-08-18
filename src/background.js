@@ -5,7 +5,9 @@
 import { ALL_URLS, createRequestFilters } from "./main/api.js";
 import { RequestController } from "./main/control.js";
 import { InspectionStore } from "./main/inspection/store.js";
+import { guardian } from "./main/guardian.js";
 import { NavigationAdapter } from "./main/navigation.js";
+import { configureReferrerProtection } from "./main/referrer-protection.js";
 import * as notifier from "./util/notifier.js";
 import * as records from "./util/records.js";
 
@@ -19,7 +21,7 @@ const navigation = new NavigationAdapter({
     navigate: updateTab,
     replaceHistory: replaceHistoryState,
 });
-const storageKeys = ["rules", "disabled"];
+const storageKeys = ["rules", "disabled", "referrerProtectionMode"];
 
 browser.storage.local.get(storageKeys).then(init);
 browser.storage.onChanged.addListener(onOptionsChanged);
@@ -27,6 +29,7 @@ browser.runtime.onMessage.addListener(onRuntimeMessage);
 browser.tabs.onRemoved.addListener(onInspectionTabRemoved);
 
 function init(options) {
+    configureReferrerProtection(options.referrerProtectionMode || "browser");
     if (options.disabled) {
         browser.tabs.onRemoved.removeListener(onTabRemoved);
         browser.webNavigation.onCommitted.removeListener(onNavigation);
@@ -55,7 +58,10 @@ function init(options) {
 }
 
 function onOptionsChanged(changes) {
-    if (storageKeys.every((key) => !(key in changes))) {
+    if ("referrerProtectionMode" in changes) {
+        configureReferrerProtection(changes.referrerProtectionMode.newValue || "browser");
+    }
+    if (!("rules" in changes) && !("disabled" in changes)) {
         return;
     }
     while (listeners.length > 0) {
@@ -192,6 +198,7 @@ function onTabRemoved(tabId) {
 }
 
 function onInspectionTabRemoved(tabId) {
+    guardian.stop(tabId);
     inspections.remove(tabId);
     topLevelUrls.delete(tabId);
     maybeRemoveInspectionListeners();
@@ -201,6 +208,12 @@ function onRuntimeMessage(message) {
     if (message === null || typeof message === "undefined") {
         return records.getTabRecords();
     }
+
+    const guardianResult = guardian.handleMessage(message);
+    if (guardianResult !== undefined) {
+        return guardianResult;
+    }
+
     if (!message || message.namespace !== "inspection") {
         return undefined;
     }

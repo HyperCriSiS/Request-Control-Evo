@@ -89,9 +89,11 @@ async function openInspector() {
 
 async function openAnalyzer() {
     const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-    const currentUrl = tabs.length > 0 && tabs[0].url ? tabs[0].url : "";
+    const tab = tabs[0];
+    const currentUrl = tab?.url || "";
+    const tabId = typeof tab?.id === "number" ? tab.id : "";
     const analyzerUrl = browser.runtime.getURL(
-        `src/analyzer/analyzer.html?url=${encodeURIComponent(currentUrl)}`
+        `src/analyzer/analyzer.html?url=${encodeURIComponent(currentUrl)}&tabId=${encodeURIComponent(tabId)}`
     );
     await browser.tabs.create({ url: analyzerUrl });
     window.close();
