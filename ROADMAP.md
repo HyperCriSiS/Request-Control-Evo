@@ -81,7 +81,7 @@ The Inspection Mode is intentionally local and user-triggered: start an inspecti
 
 - [x] Create disabled rule drafts directly from an inspected request for exact-request, host, resource-type, third-party and current-site scopes.
 - [x] Add an explicit top-level source-site matcher to the Firefox `webRequest` engine so `only on this site` is exact rather than an approximate UI promise.
-- [ ] Expose source-site scope as a dedicated editable field in the expert editor.
+- [x] Expose source-site scope as a dedicated editable field in the expert editor, using the same exact `pattern.source` match-pattern semantics as Inspection Mode.
 - [x] Reject source-site scope explicitly in DNR compilation until exact MV3 parity is proven.
 - [x] Show which existing Request Control rule affected a captured request and allow opening that rule in the expert editor.
 
@@ -106,4 +106,4 @@ The Inspection Mode is intentionally local and user-triggered: start an inspecti
 
 ## Completion status
 
-**Not fully completed.** The 1.17.0 milestone remains complete. Phase 4 and Phase 5 are active post-1.17 workstreams; the first Inspection Mode implementation is validated, while dedicated expert-editor source-scope editing remains open.
+**Not fully completed.** The 1.17.0 milestone remains complete. Phase 4 and Phase 5 are active post-1.17 workstreams. The first Inspection Mode implementation and dedicated expert-editor source-scope editing are validated; remaining post-1.17 work is primarily the Phase 4 theme/import/community/release track.
