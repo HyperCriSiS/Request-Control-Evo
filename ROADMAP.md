@@ -42,25 +42,25 @@ The Inspection Mode is intentionally local and user-triggered: start an inspecti
 
 ### Theme/accessibility
 
-- [ ] Replace remaining fixed light-theme text/background colors in options/rule editor components with shared theme variables.
-- [ ] Verify import rows, rule editor states, badges, form controls, links, disabled states and editable text remain readable in dark theme.
-- [ ] Add regression coverage where practical for theme-sensitive structural classes and avoid introducing new fixed foreground colors.
+- [x] Replace remaining fixed light-theme text/background colors in options/rule editor components with shared theme variables.
+- [x] Verify import rows, rule editor states, badges, form controls, links, disabled states and editable text remain readable in dark theme.
+- [x] Add regression coverage where practical for theme-sensitive structural classes and avoid introducing new fixed foreground colors.
 
 ### Import/catalog presentation
 
-- [ ] Replace raw-JSON-oriented import presentation with a structured import card/row showing name, concise description, rule count/status and a human-readable source link.
-- [ ] Show a concise description directly below each import and expose the same description as a tooltip for compact layouts.
-- [ ] Consume optional `description`, `homepage`, `ratingIssue` and related metadata from the community catalog without breaking older catalog entries.
-- [ ] Keep integrity verification (`sha256`) and managed-rule reconciliation unchanged.
+- [x] Replace raw-JSON-oriented import presentation with a structured import card/row showing name, concise description, rule count/status and a human-readable source link.
+- [x] Show a concise description directly below each import and expose the same description as a tooltip for compact layouts.
+- [x] Consume optional `description`, `homepage`, `ratingIssue` and related metadata from the community catalog without breaking older catalog entries.
+- [x] Keep integrity verification (`sha256`) and managed-rule reconciliation unchanged.
 
 ### GitHub-backed sharing and ratings
 
-- [ ] Add a GitHub Community section to the import view for publishing/share flow without embedding GitHub credentials in the extension.
-- [ ] Generate a reviewable GitHub submission from local rules, with explicit size/error handling and no automatic upload of browsing data.
-- [ ] Add a requestcontrol-rules issue template/workflow for rule-set submissions so GitHub authentication and moderation remain on GitHub.
-- [ ] Add catalog rating metadata backed by GitHub issue reactions; display positive/negative counts in the import UI and link users to GitHub to rate/review.
-- [ ] Document that ratings are discovery/community signals only and never override review/integrity/safety status.
-- [ ] Validate offline/failure behavior: built-in imports must continue to work when GitHub catalog/rating endpoints are unavailable.
+- [x] Add a GitHub Community section to the import view for publishing/share flow without embedding GitHub credentials in the extension.
+- [x] Generate a reviewable GitHub submission from local rules, with explicit size/error handling and no automatic upload of browsing data.
+- [x] Add a requestcontrol-rules issue template/workflow for rule-set submissions so GitHub authentication and moderation remain on GitHub.
+- [x] Add catalog rating metadata backed by GitHub issue reactions; display positive/negative counts in the import UI and link users to GitHub to rate/review.
+- [x] Document that ratings are discovery/community signals only and never override review/integrity/safety status.
+- [x] Validate offline/failure behavior: built-in imports must continue to work when GitHub catalog/rating endpoints are unavailable.
 
 ### Validation/release
 
@@ -106,4 +106,4 @@ The Inspection Mode is intentionally local and user-triggered: start an inspecti
 
 ## Completion status
 
-**Not fully completed.** The 1.17.0 milestone remains complete. Phase 4 and Phase 5 are active post-1.17 workstreams. The first Inspection Mode implementation and dedicated expert-editor source-scope editing are validated; remaining post-1.17 work is primarily the Phase 4 theme/import/community/release track.
+**Not fully completed.** The 1.17.0 milestone remains complete and Phase 5 is fully implemented/validated. Phase 4 implementation is complete; the remaining work is final full-CI validation, documentation confirmation and preparation of the next release.
