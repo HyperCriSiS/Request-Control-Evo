@@ -16,7 +16,9 @@ The Firefox↔DNR parity suite exercises the actual `createRequestFilters()` bro
 
 The bounded single-include compiler support is implemented in `9876a3cd`, with direct compiler/boundary coverage in `dac14e79`. The stale supported-subset guard exposed by Builds #178/#180 was corrected in `280fd54f`; Builds #181 and #182 closed that validation milestone. The synchronized supported-subset/limitations documentation is in `451dcfe9`. Build #183 is the final candidate validation for that state and is fully green across `test`, `lint`, `build`, `lint-build`, and `checker`.
 
-A fresh release-blocker audit on the same candidate found no open issues and no open pull requests. No genuinely new real-world/catalog semantic is currently identified that would justify another parity fixture before release; existing representative, CDN, and managed-catalog coverage already exercises the currently supported subset. The only remaining planned work for this roadmap is preparing the next release through the repository's established release workflow.
+A fresh release-blocker audit on the same candidate found no open issues and no open pull requests. No genuinely new real-world/catalog semantic is currently identified that would justify another parity fixture before release; existing representative, CDN, and managed-catalog coverage already exercises the currently supported subset.
+
+Release preparation has started using the repository's established branch convention: `release/1.17.0` was created from validated `dev` commit `0bf7e883`. A minor-version bump is appropriate because the candidate adds user-visible SPA/history-state behavior and new exact compatibility semantics beyond the 1.16.1 baseline. The remaining release work is to align `manifest.json` and `CHANGELOG.md` on that release branch, promote the validated release candidate to `master`, and verify the self-contained release workflow/tag/artifact result.
 
 ## Phase 1 — modernization baseline
 
@@ -58,16 +60,20 @@ A fresh release-blocker audit on the same candidate found no open issues and no 
 - [x] Re-evaluate representative real-world/catalog coverage for the current candidate and avoid adding redundant fixtures when no genuinely new semantic is present; existing real-world, CDN and managed-catalog coverage already exercises the supported subset.
 - [x] Check for release-blocking compatibility regressions without broadening scope unnecessarily; no open issues or pull requests identify a blocker, and the final candidate CI is green.
 - [x] Re-run the full regression/build suite on the final candidate state; Build #183 is green across `test`, `lint`, `build`, `lint-build`, and `checker`.
-- [ ] Prepare the next release only after `dev` remains green and all release-blocking regressions are resolved.
+- [x] Create `release/1.17.0` from the validated `dev` candidate using the established release-branch convention (`0bf7e883`).
+- [ ] Set `manifest.json` to version 1.17.0 and add a matching `CHANGELOG.md` section on `release/1.17.0`.
+- [ ] Promote the validated 1.17.0 release candidate to `master` through the established release workflow.
+- [ ] Verify the self-contained release workflow creates the 1.17.0 tag, GitHub release and release ZIP successfully; record Mozilla signing status without treating absent signing credentials as a code failure.
 
 ## Blockers / dependencies
 
 - No current normal CI blocker is known on `dev`; Build #183 is fully green on candidate commit `451dcfe9`.
 - No open issue or open pull request currently identifies a release blocker in this fork.
+- The release workflow is self-contained and idempotent: a stable SemVer version on `master` triggers verification/build, tag creation, GitHub release creation, and optional Mozilla signing when credentials are configured.
 - The parity harness intentionally covers only semantics already representable exactly or narrowly scoped candidates before activation. Browser-specific or custom matcher semantics require dedicated positive and negative evidence before compiler support is broadened.
 - MV3 feature growth is constrained by `declarativeNetRequest` expressiveness. Unsupported semantics must remain explicitly unsupported rather than approximated incorrectly.
 - Multiple includes, regexp includes, non-ASCII includes and scoped match-pattern + include combinations remain outside the activated compiler subset until exact parity is separately proven.
 
 ## Completion status
 
-**Not fully completed.** The modernization baseline is released, the bounded `<all_urls>` + one non-regexp ASCII include compiler support is implemented, boundary-tested, documented, and fully green through Build #183. The current final candidate has no open issue/PR release blocker and no missing genuinely new real-world/catalog semantic requiring another fixture. The only remaining roadmap item is to prepare the next release through the established repository release workflow. After that release is created and its resulting repository/CI state is verified, this roadmap can be marked **fully completed**.
+**Not fully completed.** The modernization baseline is released, the bounded `<all_urls>` + one non-regexp ASCII include compiler support is implemented, boundary-tested, documented, and fully green through Build #183. The current final candidate has no open issue/PR release blocker and no missing genuinely new real-world/catalog semantic requiring another fixture. Release preparation for 1.17.0 has started on `release/1.17.0`; the remaining work is version/changelog alignment, promotion to `master`, and verification of the resulting release workflow/tag/artifact state. After those steps are complete, this roadmap can be marked **fully completed**.
