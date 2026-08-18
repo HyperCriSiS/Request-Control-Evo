@@ -13,6 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     document.getElementById("showRules").addEventListener("click", openOptionsPage);
+    document.getElementById("inspectCurrent").addEventListener("click", openInspector);
     document.getElementById("analyzeCurrent").addEventListener("click", openAnalyzer);
     document.getElementById("toggleActive").addEventListener("click", toggleActive);
     document.getElementById("editLink").addEventListener("click", editRule);
@@ -73,6 +74,17 @@ function showDetails(details) {
     }
     const optionsUrl = browser.runtime.getURL("src/options/options.html");
     document.getElementById("editLink").href = `${optionsUrl}?edit=${details.rule.uuid}`;
+}
+
+async function openInspector() {
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    const tab = tabs[0];
+    if (!tab || typeof tab.id !== "number") {
+        return;
+    }
+    const inspectorUrl = browser.runtime.getURL(`src/inspector/inspector.html?tabId=${encodeURIComponent(tab.id)}`);
+    await browser.tabs.create({ url: inspectorUrl });
+    window.close();
 }
 
 async function openAnalyzer() {

@@ -10,9 +10,9 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 **Status: active post-1.17 development**
 
-Request Control 1.17.0 is released and the 1.17.0 milestone remains complete. A new post-1.17 phase is now open for user-facing polish and the GitHub-backed community rule workflow requested after release. The work must not weaken the existing rule-engine parity guarantees or silently broaden permissions.
+Request Control 1.17.0 is released and the 1.17.0 milestone remains complete. Post-1.17 work now covers both the UI/community workflow and an opt-in Inspection Mode that makes the request/rule model understandable from the currently loaded page. The work must not weaken the existing rule-engine parity guarantees, silently broaden permissions, or turn the guided UI into a replacement for the expert editor.
 
-The immediate UI audit identified two concrete issues: `src/options/rule-input.css` still contains several fixed light-theme foreground/background colors, and import-list rows expose raw rule-list URLs without useful descriptions or community metadata. The current client can consume `requestcontrol-rules/catalog.json`, but it does not yet provide a complete GitHub publication/rating experience.
+The Inspection Mode is intentionally local and user-triggered: start an inspection, reload the target page, record a bounded request snapshot, explain first-/third-party and existing rule effects, and create disabled rule drafts from real requests. The optional guided assistant sits on top of the same captured data; the normal expert rule editor remains available at all times.
 
 ## Phase 1 — modernization baseline
 
@@ -68,12 +68,42 @@ The immediate UI audit identified two concrete issues: `src/options/rule-input.c
 - [ ] Update user-facing documentation and changelog only after the implemented behavior is stable.
 - [ ] Prepare the next release only after the above work is fully validated.
 
+## Phase 5 — Inspection Mode and guided rule creation
+
+### Inspection session
+
+- [x] Add an explicit `Reload & inspect` mode for the current tab; do not record normal browsing continuously.
+- [x] Record a bounded in-memory request snapshot with request URL, method/type, first-/third-party classification, completion/error state and Request Control rule effects.
+- [x] Keep inspection local-only and stop/remove webRequest observation when no inspection session is active.
+- [x] Provide domain grouping, request filtering/search and direct request details in a dedicated interactive GUI.
+
+### Rule from request
+
+- [x] Create disabled rule drafts directly from an inspected request for exact-request, host, resource-type, third-party and current-site scopes.
+- [x] Add an explicit top-level source-site matcher to the Firefox `webRequest` engine so `only on this site` is exact rather than an approximate UI promise.
+- [ ] Expose source-site scope as a dedicated editable field in the expert editor.
+- [x] Reject source-site scope explicitly in DNR compilation until exact MV3 parity is proven.
+- [x] Show which existing Request Control rule affected a captured request and allow opening that rule in the expert editor.
+
+### Optional guided assistant
+
+- [x] Keep the assistant opt-in behind `Guided rule…`; it must not replace or hide the expert editor.
+- [x] Explain the selected request and proposed scope in human-readable language before creating a draft.
+- [x] Reuse the same deterministic rule builder as the direct Rule-from-Request actions; do not require a cloud/LLM service.
+
+### Validation
+
+- [x] Add unit coverage for inspection classification/grouping, bounded session storage, source-site matching, rule-draft generation and DNR rejection boundaries.
+- [x] Run full CI and only mark Phase 5 implementation items complete after the branch is green.
+
 ## Blockers / dependencies
 
 - No code blocker is currently known for the theme/import-presentation work.
 - Fully credential-less direct writes to GitHub are intentionally not assumed. The preferred community publication design keeps authentication on GitHub (submission/review UI) rather than storing a personal access token or secret inside the extension.
 - GitHub community metadata and ratings are optional network features; the existing local/built-in rule functionality must remain usable when GitHub is unavailable.
+- Source-site matching is Firefox `webRequest` functionality for now. The DNR compiler must keep returning an explicit unsupported diagnostic until an exact top-level-site translation is proven.
+- Inspection must remain bounded and opt-in; it must not become a persistent browsing-history collector.
 
 ## Completion status
 
-**Not fully completed.** The 1.17.0 milestone remains complete, but Phase 4 is active and is now the authoritative next-work sequence.
+**Not fully completed.** The 1.17.0 milestone remains complete. Phase 4 and Phase 5 are active post-1.17 workstreams; the first Inspection Mode implementation is validated, while dedicated expert-editor source-scope editing remains open.
