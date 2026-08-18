@@ -401,9 +401,9 @@ function setupBundledSpecialRulesets() {
     }
 
     details.append(summary, list);
-    const commonLists = tab.querySelector("details");
-    if (commonLists?.nextSibling) {
-        tab.insertBefore(details, commonLists.nextSibling);
+    const communityLists = tab.querySelector("#community-rule-lists");
+    if (communityLists) {
+        tab.insertBefore(details, communityLists);
     } else {
         tab.append(details);
     }
@@ -459,8 +459,13 @@ function setupGitHubCommunityShare() {
     controls.append(select, actions);
     section.append(heading, intro, controls, status);
 
-    function update() {
-        const rules = Object.values(getSettings().rules || {}).sort((a, b) =>
+    async function getLocalRules() {
+        const { rules = [] } = await browser.storage.local.get("rules");
+        return Array.isArray(rules) ? rules : Object.values(rules || {});
+    }
+
+    async function update() {
+        const rules = (await getLocalRules()).sort((a, b) =>
             (a.title || "").localeCompare(b.title || "")
         );
         select.replaceChildren();
@@ -473,13 +478,13 @@ function setupGitHubCommunityShare() {
         exportButton.disabled = !rules.length;
     }
 
-    exportButton.addEventListener("click", () => {
+    exportButton.addEventListener("click", async () => {
         const selected = new Set(Array.from(select.selectedOptions, (option) => option.value));
         if (!selected.size) {
             alert(message("github_community_choose_rule", "Select at least one rule to export."));
             return;
         }
-        const rules = Object.values(getSettings().rules || {}).filter((rule) => selected.has(rule.uuid));
+        const rules = (await getLocalRules()).filter((rule) => selected.has(rule.uuid));
         const payload = {
             format: 1,
             exportedAt: new Date().toISOString(),
@@ -493,7 +498,11 @@ function setupGitHubCommunityShare() {
         exportJsonFile("request-control-community-rules.json", payload);
     });
 
-    document.addEventListener("settings-changed", update);
+    browser.storage.onChanged.addListener((changes, areaName) => {
+        if (areaName === "local" && changes.rules) {
+            update();
+        }
+    });
     update();
 }
 
