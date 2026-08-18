@@ -1,0 +1,46 @@
+[
+    {
+        "uuid": "5e638b8f-b217-4753-84a7-e124c4e5b201",
+        "title": "Wikimedia thumbnails to originals",
+        "description": "Replace upload.wikimedia.org thumbnail URLs with their original media URL. This removes the /thumb/ segment and generated thumbnail filename.",
+        "tag": "special-media-original-quality",
+        "pattern": {
+            "scheme": "*",
+            "host": [
+                "upload.wikimedia.org"
+            ],
+            "path": [
+                "/wikipedia/*/thumb/*"
+            ]
+        },
+        "types": [
+            "image",
+            "main_frame"
+        ],
+        "action": "redirect",
+        "active": true,
+        "redirectUrl": "[pathname={pathname/^(\\/wikipedia\\/[^/]+)\\/thumb\\/(.+\\/[^/]+)\\/[^/]+$/$1\\/$2}]"
+    },
+    {
+        "uuid": "5e638b8f-b217-4753-84a7-e124c4e5b202",
+        "title": "Reddit preview images to source images",
+        "description": "Unwrap preview.redd.it image URLs that carry the source image in the URL query parameter.",
+        "tag": "special-media-original-quality",
+        "pattern": {
+            "scheme": "*",
+            "host": [
+                "preview.redd.it"
+            ],
+            "path": [
+                "*url=*"
+            ]
+        },
+        "types": [
+            "image",
+            "main_frame"
+        ],
+        "action": "redirect",
+        "active": true,
+        "redirectUrl": "[href={search/.*[?&]url=([^&]+).*/$1|decodeURIComponent}]"
+    }
+]
