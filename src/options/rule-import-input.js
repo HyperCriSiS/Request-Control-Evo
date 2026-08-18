@@ -346,43 +346,43 @@ function setupBundledSpecialRulesets() {
     const presets = [
         {
             path: "rules/media-original-quality.json",
-            title: "Original Media / Maximum Quality",
-            description: "Request original or highest-quality media from selected thumbnail and media endpoints.",
+            title: browser.i18n.getMessage("special_media_original_title"),
+            description: browser.i18n.getMessage("special_media_original_description"),
         },
         {
             path: "rules/privacy-enhanced-embeds.json",
-            title: "Privacy Enhanced Embeds",
-            description: "Use privacy-oriented embed variants and supported privacy parameters without blocking the content.",
+            title: browser.i18n.getMessage("special_privacy_embeds_title"),
+            description: browser.i18n.getMessage("special_privacy_embeds_description"),
         },
         {
             path: "rules/developer-direct-raw.json",
-            title: "Developer Direct / Raw",
-            description: "Turn selected GitHub and GitLab file-view URLs into raw file responses.",
+            title: browser.i18n.getMessage("special_developer_raw_title"),
+            description: browser.i18n.getMessage("special_developer_raw_description"),
         },
         {
             path: "rules/search-engine-escape.json",
-            title: "Search Engine Escape",
-            description: "Redirect Google or Bing result-page searches to DuckDuckGo. Rules are disabled until explicitly enabled.",
+            title: browser.i18n.getMessage("special_search_escape_title"),
+            description: browser.i18n.getMessage("special_search_escape_description"),
         },
         {
             path: "rules/privacy-aggressive-direct-links.json",
-            title: "Aggressive Direct Links",
-            description: "Skip selected redirect and warning wrappers. Security-sensitive rules are disabled until explicitly enabled.",
+            title: browser.i18n.getMessage("special_aggressive_links_title"),
+            description: browser.i18n.getMessage("special_aggressive_links_description"),
         },
         {
             path: "rules/web-canonical-desktop.json",
-            title: "Canonical Desktop Web",
-            description: "Normalize selected mobile hosts to their desktop counterparts. Rules are disabled until explicitly enabled.",
+            title: browser.i18n.getMessage("special_canonical_desktop_title"),
+            description: browser.i18n.getMessage("special_canonical_desktop_description"),
         },
         {
             path: "rules/special-text-first-low-bandwidth.json",
-            title: "Text-First / Low Bandwidth",
-            description: "Block images, media and web fonts for a deliberately austere low-bandwidth mode.",
+            title: browser.i18n.getMessage("special_text_first_title"),
+            description: browser.i18n.getMessage("special_text_first_description"),
         },
         {
             path: "rules/special-first-party-firewall.json",
-            title: "Strict First-Party Mode — can break sites",
-            description: "WARNING: Blocks every third-party-domain subresource. Logins, CDNs, APIs, embeds, payments, CAPTCHAs and other site functionality may stop working. The rule is disabled after import and must be enabled deliberately.",
+            title: browser.i18n.getMessage("special_first_party_title"),
+            description: browser.i18n.getMessage("special_first_party_description"),
             warning: true,
         },
     ];
@@ -393,7 +393,7 @@ function setupBundledSpecialRulesets() {
 
     const summary = document.createElement("summary");
     summary.textContent = "Request Control Evo";
-    summary.title = "Bundled showcase rulesets";
+    summary.title = browser.i18n.getMessage("special_rulesets_tooltip");
 
     const list = document.createElement("ul");
     for (const preset of presets) {
