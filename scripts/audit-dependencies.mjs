@@ -28,7 +28,7 @@ try {
 } catch (error) {
   console.error(audit.stdout);
   console.error(audit.stderr);
-  throw new Error(`Unable to parse npm audit JSON: ${error.message}`);
+  throw new Error(`Unable to parse npm audit JSON: ${error.message}`, { cause: error });
 }
 
 if (report.error) {
