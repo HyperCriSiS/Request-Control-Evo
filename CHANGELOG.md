@@ -5,10 +5,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [Unreleased]
+
+## [1.18.0] - Aug. 18, 2026
 - Add an opt-in Inspection Mode with bounded local request capture, first-/third-party analysis, existing-rule effect reporting, direct Rule-from-Request drafts, and an optional deterministic guided rule assistant.
 - Add exact Firefox source-site scoping through `pattern.source`, including a dedicated expert-editor field; keep DNR compilation explicitly unsupported until exact parity is proven.
 - Finish dark-theme accessibility cleanup for options, rule controls, alerts, and the rule tester using shared semantic foreground/background tokens.
 - Improve import/community presentation with descriptions, human-readable source links, optional GitHub reaction ratings, SHA-256 integrity preservation, offline-safe metadata fallbacks, and credential-less GitHub submission of explicitly selected rules.
+- Publish the validated WebExtension ZIP and a byte-identical unsigned XPI test artifact from the same release build; Mozilla signing remains optional when AMO credentials are not configured.
 
 ## [1.17.0] - Aug. 18, 2026
 - Add SPA/history-state navigation handling so Request Control keeps page context aligned when sites navigate without full document loads.
