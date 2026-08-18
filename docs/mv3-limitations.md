@@ -19,6 +19,7 @@ The following Request Control semantics are intentionally not represented as los
 - multiple `includes`, regexp `includes`, non-ASCII `includes`, and `includes` combined with scoped match-patterns. The only proven include subset is `allUrls` plus exactly one non-empty, non-regexp ASCII include glob;
 - `anyTLD` registrable-domain matching;
 - per-rule incognito conditions;
+- top-level source-site (`pattern.source`) matching in the normal/static/dynamic DNR compiler. Chromium 145+ provides session-only `topDomains`; Request Control exposes only the proven `*://*.domain/*` form behind an explicit session/topDomains capability gate, while all neighboring source forms remain unsupported;
 - `same-domain` and `third-party-domain` context matching;
 - `same-origin` and `third-party-origin` matching;
 - logged whitelist behavior, because DNR cannot reproduce the notification/logging semantics exactly;

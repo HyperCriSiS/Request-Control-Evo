@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { normalizeImportSource } from "./import-source.js";
+
 const COMMUNITY_CATALOG_URL =
     "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/catalog.json";
 const COMMUNITY_REPOSITORY = "HyperCriSiS/requestcontrol-rules";
@@ -13,6 +15,7 @@ class RuleImportInput extends HTMLElement {
         super();
         this.rules = [];
         this._data = {};
+        this._source = "";
         const template = document.getElementById("rule-import-input");
         this.attachShadow({ mode: "open" }).appendChild(template.content.cloneNode(true));
         this.enhancePresentation();
@@ -56,7 +59,7 @@ class RuleImportInput extends HTMLElement {
     attributeChangedCallback(name, _oldValue, newValue) {
         switch (name) {
             case "src":
-                this.onSourceChanged(newValue);
+                this.source = newValue;
                 break;
             case "deletable":
                 this.onDeletableChanged(newValue);
@@ -128,17 +131,24 @@ class RuleImportInput extends HTMLElement {
 
     onSourceChanged(src) {
         const text = this.shadowRoot.getElementById("name");
-        if (!this.textContent.trim()) {
-            try {
-                text.textContent = new URL(src).hostname;
-            } catch {
-                text.textContent = src;
+        const url = this.shadowRoot.getElementById("url");
+        url.title = message("view_list", "View source");
+
+        if (!src) {
+            if (!this.textContent.trim()) {
+                text.textContent = "";
             }
+            url.removeAttribute("href");
+            this.rules = [];
+            this.digest = null;
+            return;
         }
 
-        const url = this.shadowRoot.getElementById("url");
+        if (!this.textContent.trim()) {
+            text.textContent = new URL(src).hostname || src;
+        }
+
         url.href = humanReadableSource(src);
-        url.title = message("view_list", "View source");
         this.fetchRules(src);
     }
 
@@ -153,6 +163,16 @@ class RuleImportInput extends HTMLElement {
                 })
             );
         });
+    }
+
+    get source() {
+        return this._source;
+    }
+
+    set source(value) {
+        const source = normalizeImportSource(value);
+        this._source = source || "";
+        this.onSourceChanged(this._source);
     }
 
     get data() {
@@ -189,7 +209,7 @@ class RuleImportInput extends HTMLElement {
         try {
             const catalog = await getCommunityCatalog();
             const entry = catalog.ruleSets.find(
-                (item) => item && (item.id === this.dataset.entry || item.url === this.getAttribute("src"))
+                (item) => item && (item.id === this.dataset.entry || normalizeImportSource(item.url) === this.source)
             );
             if (!entry) {
                 return;
@@ -243,7 +263,11 @@ class RuleImportInput extends HTMLElement {
         this.rules = [];
 
         try {
-            const response = await fetch(src);
+            const source = normalizeImportSource(src);
+            if (!source) {
+                throw new TypeError("Unsupported rule source URL");
+            }
+            const response = await fetch(source);
             if (!response.ok) {
                 throw new Error(`Failed to fetch rule list: ${response.status}`);
             }
@@ -292,8 +316,13 @@ async function getCommunityCatalog() {
 }
 
 function humanReadableSource(src) {
+    const source = normalizeImportSource(src);
+    if (!source) {
+        return "about:blank";
+    }
+
     try {
-        const url = new URL(src);
+        const url = new URL(source);
         if (url.hostname === "raw.githubusercontent.com") {
             const parts = url.pathname.split("/").filter(Boolean);
             if (parts.length >= 4) {
@@ -307,9 +336,9 @@ function humanReadableSource(src) {
         if (url.protocol === "moz-extension:" || url.protocol === "chrome-extension:") {
             return "https://github.com/HyperCriSiS/Request-Control-Evo/tree/dev/rules";
         }
-        return src;
+        return source;
     } catch {
-        return src;
+        return "about:blank";
     }
 }
 
@@ -398,7 +427,7 @@ function setupBundledSpecialRulesets() {
     const list = document.createElement("ul");
     for (const preset of presets) {
         const input = document.createElement("rule-import-input");
-        input.src = browser.runtime.getURL(preset.path);
+        input.source = browser.runtime.getURL(preset.path);
         input.title = preset.description;
         input.description = preset.description;
         if (preset.warning) {

@@ -69,6 +69,7 @@ html {
 
 body {
     min-height: 100vh;
+    min-height: 100dvh;
     margin: 0;
     font-family: var(--font);
     font-size: 0.92rem;
@@ -364,18 +365,26 @@ a {
 
     #tabs {
         display: flex;
-        justify-content: space-between;
+        justify-content: flex-start;
         align-items: center;
+        gap: 0.25rem;
         margin: 0 -0.65rem 0.9rem;
         padding: 0.45rem 0.65rem;
+        overflow-x: auto;
+        overscroll-behavior-inline: contain;
+        scrollbar-width: none;
     }
 
     #tabs > .col {
+        flex: 0 0 auto;
         margin: 0;
     }
 
     .tab-selector {
+        min-width: 2.75rem;
+        min-height: 2.75rem;
         padding: 0.55rem;
+        touch-action: manipulation;
     }
 
     .tab-selector:hover {
@@ -390,6 +399,32 @@ a {
         max-width: 100%;
         white-space: normal;
     }
+
+    .no-rules {
+        padding: 2rem 1rem;
+    }
+
+    #tab-imports summary {
+        display: flex;
+        align-items: center;
+        min-height: 2.75rem;
+    }
+
+    #import-source-form {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr);
+        gap: 0.5rem;
+    }
+
+    #import-source-form .btn {
+        width: 100%;
+    }
+
+    .manual-content table {
+        display: block;
+        max-width: 100%;
+        overflow-x: auto;
+    }
 }
 
 @media (min-width: 42em) {
@@ -400,7 +435,8 @@ a {
 
 @media (max-width: 42em) {
     #selectedRules {
-        z-index: -1;
+        min-height: 2.75rem;
+        touch-action: manipulation;
     }
 
     .mobile-toolbar {
@@ -411,8 +447,9 @@ a {
         opacity: 1;
         font-size: 1rem;
         justify-content: space-evenly;
-        height: 20%;
-        max-height: 5rem;
+        min-height: 3rem;
+        height: auto;
+        max-height: none;
         border: none;
         margin-bottom: 0.2rem !important;
     }
@@ -425,13 +462,18 @@ a {
         display: flex;
         flex-direction: column-reverse;
         position: fixed;
+        z-index: 20;
         top: 0;
         bottom: 0;
         left: 0;
         right: 0;
         margin: auto;
-        height: 100%;
+        min-height: 100vh;
+        min-height: 100dvh;
+        height: 100dvh;
         width: 100%;
+        padding: max(0.75rem, env(safe-area-inset-top)) max(0.75rem, env(safe-area-inset-right)) max(0.75rem, env(safe-area-inset-bottom)) max(0.75rem, env(safe-area-inset-left));
+        box-sizing: border-box;
         justify-content: center;
         background: rgba(15, 18, 23, 0.88);
         backdrop-filter: blur(8px);
