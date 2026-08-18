@@ -122,3 +122,5 @@ License
 
 .. |BuildStatus| image:: https://github.com/HyperCriSiS/Request-Control-Evo/actions/workflows/main.yml/badge.svg?branch=master
    :target: https://github.com/HyperCriSiS/Request-Control-Evo/actions
+
+.. promotion-recheck: temporary
