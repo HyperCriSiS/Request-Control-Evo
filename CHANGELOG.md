@@ -6,6 +6,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.17.0] - Aug. 18, 2026
+- Handle SPA/history-state main-frame URL changes so compatible block, secure, redirect, filter, and whitelist rules continue to apply without requiring a full page navigation.
+- Extend the lossless MV3/DNR compatibility compiler with the proven `<all_urls>` plus one non-regexp ASCII include-glob subset while keeping unproven include combinations explicitly unsupported.
+
 ## [1.16.1] - Aug. 15, 2026
 - Publish the final validated modernization state that was not contained in the prematurely published 1.16.0 tag.
 - Include the transitive `async` 3.2.6 ReDoS security fix already present on the validated master state.

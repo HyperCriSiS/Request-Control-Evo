@@ -59,6 +59,83 @@ function isAscii(value) {
     return true;
 }
 
+function globRegex(value) {
+    return value
+        .replace(/[.+^${}()|[\]\\]/g, "\\$&")
+        .replace(/\*/g, ".*")
+        .replace(/\?/g, ".");
+}
+
+function compileIncludeCondition(pattern) {
+    if (!pattern.includes || pattern.includes.length === 0) {
+        return { includeRegex: null, diagnostics: [] };
+    }
+    if (!Array.isArray(pattern.includes)) {
+        return {
+            diagnostics: [
+                diagnostic(
+                    "includes-matcher-unsupported",
+                    "Request Control include matchers must be an array before they can be compiled to DNR."
+                ),
+            ],
+        };
+    }
+    if (!pattern.allUrls) {
+        return {
+            diagnostics: [
+                diagnostic(
+                    "includes-matcher-unsupported",
+                    "Include matchers are proven exact only with <all_urls>; scoped match-pattern plus include combinations remain unsupported."
+                ),
+            ],
+        };
+    }
+    if (pattern.includes.length !== 1) {
+        return {
+            diagnostics: [
+                diagnostic(
+                    "includes-matcher-unsupported",
+                    "Multiple Request Control includes are conjunctive and do not yet have a proven exact DNR translation."
+                ),
+            ],
+        };
+    }
+
+    const [include] = pattern.includes;
+    if (typeof include !== "string" || include.length === 0) {
+        return {
+            diagnostics: [
+                diagnostic(
+                    "includes-matcher-unsupported",
+                    "The proven DNR include subset requires exactly one non-empty string glob."
+                ),
+            ],
+        };
+    }
+    if (/^\/.*\/$/.test(include)) {
+        return {
+            diagnostics: [
+                diagnostic(
+                    "includes-matcher-unsupported",
+                    "Request Control regular-expression includes remain outside the proven exact DNR subset."
+                ),
+            ],
+        };
+    }
+    if (!isAscii(include)) {
+        return {
+            diagnostics: [
+                diagnostic(
+                    "includes-matcher-unsupported",
+                    "DNR regex filters are ASCII-only; non-ASCII include globs remain unsupported."
+                ),
+            ],
+        };
+    }
+
+    return { includeRegex: globRegex(include), diagnostics: [] };
+}
+
 function expandHosts(pattern) {
     const hosts = Array.isArray(pattern.host) ? pattern.host : [pattern.host];
     const expanded = [];
@@ -138,15 +215,10 @@ function compileUrlConditions(pattern) {
     if (!pattern || typeof pattern !== "object") {
         return { diagnostics: [diagnostic("missing-pattern", "A Request Control pattern is required.")] };
     }
-    if (pattern.includes && pattern.includes.length > 0) {
-        return {
-            diagnostics: [
-                diagnostic(
-                    "includes-matcher-unsupported",
-                    "Request Control include globs/regular expressions do not have a proven exact DNR translation yet."
-                ),
-            ],
-        };
+
+    const includeResult = compileIncludeCondition(pattern);
+    if (includeResult.diagnostics.length > 0) {
+        return includeResult;
     }
     if (pattern.excludes && pattern.excludes.length > 0) {
         return {
@@ -231,8 +303,10 @@ function compileUrlConditions(pattern) {
             conditions: [
                 {
                     ...conditionBase,
-                    regexFilter: "^(?:http|https|ws|wss|ftp|file|data):",
-                    isUrlFilterCaseSensitive: true,
+                    regexFilter: includeResult.includeRegex
+                        ? `^(?:http|https|ws|wss|ftp|file|data):.*${includeResult.includeRegex}.*$`
+                        : "^(?:http|https|ws|wss|ftp|file|data):",
+                    isUrlFilterCaseSensitive: includeResult.includeRegex ? false : true,
                 },
             ],
         };
