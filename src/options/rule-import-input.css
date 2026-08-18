@@ -99,3 +99,22 @@
         filter: invert(0.88);
     }
 }
+
+@media (max-width: 35em) {
+    .import-name {
+        min-width: 0;
+        flex-basis: 100%;
+    }
+
+    .import-heading,
+    .import-actions {
+        width: 100%;
+        justify-content: flex-start;
+    }
+
+    .source-link,
+    .rating-link {
+        min-height: 2.75rem;
+        align-items: center;
+    }
+}

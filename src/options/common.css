@@ -215,3 +215,30 @@ small,
 .text-muted {
     color: var(--text-muted);
 }
+
+@media (max-width: 42em) {
+    .btn {
+        min-height: 2.75rem;
+        padding: 0.55rem 0.8rem;
+        touch-action: manipulation;
+    }
+
+    .btn.text {
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+        padding: 0.5rem;
+    }
+
+    input[type="text"],
+    input[type="url"],
+    select,
+    textarea {
+        min-height: 2.75rem;
+        font-size: 1rem;
+    }
+
+    summary,
+    .collapse-button {
+        min-height: 2.75rem;
+    }
+}

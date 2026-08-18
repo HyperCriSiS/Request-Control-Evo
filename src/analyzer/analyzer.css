@@ -58,4 +58,11 @@ select { width: 100%; max-width: 28rem; padding: .65rem .75rem; background: var(
 .muted { color: var(--muted); }
 .error { color: var(--danger); font-weight: 650; margin-top: .6rem; }
 .hidden { display: none !important; }
-@media (max-width: 42rem) { .input-row, header { align-items: stretch; flex-direction: column; } dl { grid-template-columns: 1fr; } }
+@media (max-width: 42rem) {
+  main { width: calc(100% - 1rem); margin: .5rem auto 1rem; }
+  .input-row, header { align-items: stretch; flex-direction: column; }
+  dl { grid-template-columns: 1fr; }
+  button, input[type="url"], select { min-height: 2.75rem; font-size: 1rem; }
+  button, .suggestion { touch-action: manipulation; }
+  .row-actions > button { flex: 1 1 10rem; }
+}
