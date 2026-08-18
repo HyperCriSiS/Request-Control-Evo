@@ -19,6 +19,6 @@
         ],
         "action": "redirect",
         "active": true,
-        "redirectUrl": "[scheme=https][host=www.youtube-nocookie.com]"
+        "redirectUrl": "[protocol=https][host=www.youtube-nocookie.com]"
     }
 ]
