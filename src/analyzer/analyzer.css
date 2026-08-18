@@ -53,4 +53,7 @@ dd { margin: .15rem 0 0; overflow-wrap: anywhere; }
 .muted { color: var(--muted); }
 .error { color: var(--danger); font-weight: 650; margin-top: .6rem; }
 .hidden { display: none !important; }
+select { width: 100%; max-width: 28rem; padding: .65rem .75rem; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: .45rem; font: inherit; }
+.row-actions { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
+#guardian-result { margin-top: 1rem; }
 @media (max-width: 42rem) { .input-row, header { align-items: stretch; flex-direction: column; } dl { grid-template-columns: 1fr; } }
