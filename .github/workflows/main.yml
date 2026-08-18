@@ -1,91 +1,86 @@
-name: Build
+name: Promote validated 1.18.0 tree
 
 on:
-  push:
-    branches:
-      - master
-      - dev
-  pull_request:
+  workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
-  lint:
+  promote:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
         with:
-          node-version-file: .node-version
-          cache: npm
-      - run: npm ci
-      - run: npm run lint
+          ref: chore/promote-1.18.0-master
+          fetch-depth: 0
 
-  test:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-          cache: npm
-      - run: npm ci
-      - run: npm test -- --ci --coverage
-      - uses: codecov/codecov-action@v7
-        with:
-          fail_ci_if_error: false
-
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-          cache: npm
-      - uses: ./.github/actions/setup-pandoc
-      - run: npm ci
-      - run: npm run build
-      - uses: actions/upload-artifact@v7
-        with:
-          name: web-ext-artifacts
-          path: web-ext-artifacts/*.zip
-          if-no-files-found: error
-
-  lint-build:
-    needs: build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v7
-      - uses: actions/setup-node@v7
-        with:
-          node-version-file: .node-version
-          cache: npm
-      - uses: actions/download-artifact@v8
-        with:
-          name: web-ext-artifacts
-          path: web-ext-artifacts
-      - run: npm ci
-      - run: npm run lint-build
-
-  checker:
-    if: always()
-    needs:
-      - lint
-      - test
-      - build
-      - lint-build
-    runs-on: ubuntu-latest
-    steps:
-      - name: Verify required jobs
+      - name: Overlay and verify validated dev tree
         env:
-          LINT: ${{ needs.lint.result }}
-          TEST: ${{ needs.test.result }}
-          BUILD: ${{ needs.build.result }}
-          LINT_BUILD: ${{ needs.lint-build.result }}
+          SOURCE_SHA: 5dc72f35b2f5546190b900f4bbf9e568452cd941
+          HELPER_WORKFLOW: .github/workflows/promote-1.18.0-tree.yml
         run: |
-          test "$LINT" = "success"
-          test "$TEST" = "success"
-          test "$BUILD" = "success"
-          test "$LINT_BUILD" = "success"
+          set -euo pipefail
+          git fetch --no-tags origin dev
+          test "$(git rev-parse origin/dev)" = "$SOURCE_SHA"
+
+          paths=(
+            '.github/actions/setup-pandoc/action.yml'
+            '.github/workflows/main.yml'
+            '.github/workflows/release.yml'
+            'CHANGELOG.md'
+            'README.rst'
+            'ROADMAP.md'
+            '_locales/en/messages.json'
+            '_locales/es/messages.json'
+            '_locales/zh_CN/messages.json'
+            'docs/mv3-supported-subset.md'
+            'manifest.json'
+            'package-lock.json'
+            'package.json'
+            'scripts/audit-dependencies.mjs'
+            'src/background.js'
+            'src/inspector/inspector.css'
+            'src/inspector/inspector.html'
+            'src/inspector/inspector.js'
+            'src/inspector/localize.js'
+            'src/inspector/strings.js'
+            'src/main/analysis/inspection.js'
+            'src/main/api.js'
+            'src/main/backends/dnr/compiler.js'
+            'src/main/inspection/store.js'
+            'src/main/matchers.js'
+            'src/main/rules/base.js'
+            'src/options/alert-popup.css'
+            'src/options/common.css'
+            'src/options/modal-dialog.css'
+            'src/options/options.css'
+            'src/options/rule-import-input.css'
+            'src/options/rule-import-input.js'
+            'src/options/rule-input.css'
+            'src/options/rule-list.js'
+            'src/options/rule-tester.css'
+            'src/options/source-scope-editor.js'
+            'src/popup/browser-action.css'
+            'src/popup/browser-action.html'
+            'src/popup/browser-action.js'
+            'test/dnr-source-scope.test.js'
+            'test/inspection-store.test.js'
+            'test/inspection.test.js'
+            'test/source-matcher.test.js'
+            'test/source-scope-editor.test.js'
+            'test/theme-import-regression.test.js'
+          )
+
+          test "${#paths[@]}" -eq 45
+          git checkout "$SOURCE_SHA" -- "${paths[@]}"
+
+          for path in "${paths[@]}"; do
+            test "$(git hash-object "$path")" = "$(git rev-parse "$SOURCE_SHA:$path")"
+          done
+
+          git rm "$HELPER_WORKFLOW"
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git commit -m 'Promote validated Request Control 1.18.0 tree'
+          git push origin HEAD:chore/promote-1.18.0-master
