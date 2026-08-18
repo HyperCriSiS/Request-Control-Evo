@@ -1,0 +1,32 @@
+[
+    {
+        "uuid": "5e638b8f-b217-4753-84a7-e124c4e5b201",
+        "title": "Wikimedia thumbnails to originals",
+        "description": "Replace upload.wikimedia.org thumbnail URLs with their original media URL. This removes the /thumb/ segment and generated thumbnail filename.",
+        "tag": "special-media-original-quality",
+        "pattern": {
+            "scheme": "*",
+            "host": ["upload.wikimedia.org"],
+            "path": ["/wikipedia/*/thumb/*"]
+        },
+        "types": ["image", "main_frame"],
+        "action": "redirect",
+        "active": true,
+        "redirectUrl": "[pathname={pathname/^(\/wikipedia\/[^\/]+)\/thumb\/(.+\/[^\/]+)\/[^\/]+$/$1/$2}]"
+    },
+    {
+        "uuid": "5e638b8f-b217-4753-84a7-e124c4e5b203",
+        "title": "X/Twitter media links to original size",
+        "description": "When an X/Twitter image is opened directly, request the orig size from pbs.twimg.com instead of a smaller named rendition.",
+        "tag": "special-media-original-quality",
+        "pattern": {
+            "scheme": "*",
+            "host": ["pbs.twimg.com"],
+            "path": ["/media/*?*name=*"]
+        },
+        "types": ["main_frame"],
+        "action": "redirect",
+        "active": true,
+        "redirectUrl": "[search.name=orig]"
+    }
+]

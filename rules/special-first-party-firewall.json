@@ -1,0 +1,12 @@
+[
+    {
+        "uuid": "64c0f201-4871-48cb-9681-5d64bcaa0701",
+        "title": "First-Party Firewall",
+        "description": "Block subresource requests whose registrable domain differs from the page that initiated them. Top-level navigation remains allowed. This is intentionally aggressive and can break sites that depend on third-party CDNs, authentication, embeds or APIs.",
+        "tag": "special-first-party-firewall",
+        "pattern": {"allUrls": true, "origin": "third-party-domain"},
+        "types": ["sub_frame", "script", "stylesheet", "image", "font", "media", "object", "object_subrequest", "imageset", "beacon", "ping", "speculative", "websocket", "xmlhttprequest", "web_manifest", "csp_report", "xml_dtd", "xslt", "other"],
+        "action": "block",
+        "active": true
+    }
+]

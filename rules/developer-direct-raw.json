@@ -1,0 +1,32 @@
+[
+    {
+        "uuid": "aa3c7f92-b55f-4ca8-bf95-0a566667a101",
+        "title": "GitHub blob to raw content",
+        "description": "Open GitHub file/blob URLs directly through raw.githubusercontent.com. Useful for JSON, source files, configs and downloadable assets.",
+        "tag": "special-developer-direct-raw",
+        "pattern": {
+            "scheme": "*",
+            "host": ["github.com"],
+            "path": ["/*/*/blob/*"]
+        },
+        "types": ["main_frame"],
+        "action": "redirect",
+        "active": false,
+        "redirectUrl": "[protocol=https][host=raw.githubusercontent.com][pathname={pathname/^(\/[^\/]+\/[^\/]+)\/blob\/(.*)$/$1/$2}]"
+    },
+    {
+        "uuid": "aa3c7f92-b55f-4ca8-bf95-0a566667a102",
+        "title": "GitLab blob to raw content",
+        "description": "Open GitLab repository blob URLs as raw files while preserving the repository, ref and file path.",
+        "tag": "special-developer-direct-raw",
+        "pattern": {
+            "scheme": "*",
+            "host": ["gitlab.com"],
+            "path": ["/*/-/blob/*"]
+        },
+        "types": ["main_frame"],
+        "action": "redirect",
+        "active": false,
+        "redirectUrl": "[pathname={pathname/\/-\/blob\///-/raw/}]"
+    }
+]
