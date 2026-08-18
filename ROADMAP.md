@@ -105,6 +105,16 @@ The 1.18.0 promotion PR passed audit, lint, tests, build, build-lint/checker and
 - [x] Promote the validated 1.18.0 candidate to `master` via PR #33; master release commit `3110baa79f186be1c28e36e529554f72695571f3`.
 - [x] Verify Release run `32126387364` creates tag `1.18.0`, GitHub release `372260245`, ZIP and byte-identical unsigned XPI. Both assets are 207884 bytes with SHA-256 `22ee7b029156853d95b0c93197224e64abdc4599448470bf174877ec62d9f4f6`; Mozilla signing was skipped because AMO credentials were not configured.
 
+## Phase 7 — bundled showcase rulesets and 1.18.1 patch release
+
+- [x] Add eight curated bundled showcase rulesets to `dev`, covering media quality, privacy embeds, developer/raw URLs, search handoff, redirect-wrapper bypass, canonical desktop URLs, low-bandwidth browsing and strict first-party isolation.
+- [x] Rename the broad third-party blocker to `Strict First-Party Mode`, mark it prominently as site-breaking, and keep it disabled after import until the user deliberately enables it.
+- [x] Localize bundled preset titles/descriptions, add visible warning styling, document activation policy and add concrete regression coverage for the showcase transformations and matcher behavior.
+- [x] Synchronize the final showcase-ruleset tree to `master` via PR #35 / commit `09202d592f6e863ef2ec16911460a6dfcc22547e`; the already-published 1.18.0 tag/release remains immutable.
+- [x] Align release metadata at 1.18.1 and validate the patch candidate.
+- [ ] Promote the validated 1.18.1 candidate to `master`.
+- [ ] Verify the 1.18.1 tag, GitHub release, ZIP/XPI artifacts and Mozilla signing status.
+
 ## Blockers / dependencies
 
 - No release blocker remains for 1.18.0; the milestone is published and verified.
@@ -117,4 +127,4 @@ The 1.18.0 promotion PR passed audit, lint, tests, build, build-lint/checker and
 
 ## Completion status
 
-**Fully completed for the 1.18.0 milestone.** Phases 1–6 are implemented, validated, promoted and released. Release 1.18.0 is verified on `master`, including the byte-identical ZIP/XPI assets and explicit Mozilla-signing status. Further work on `dev`, including the bundled showcase rulesets already present at `bffc4653`, belongs to the next post-1.18 roadmap phase rather than reopening the completed 1.18.0 milestone.
+**The 1.18.0 milestone remains fully completed and immutable.** Phase 7 tracks the post-1.18 bundled showcase-ruleset work and its 1.18.1 patch release separately. The showcase implementation and final master synchronization are complete; release metadata is aligned and only promotion plus artifact verification remain open.
