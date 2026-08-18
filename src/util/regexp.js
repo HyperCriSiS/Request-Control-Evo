@@ -72,11 +72,15 @@ export function matchPatternToRegExp(pattern) {
     if (host && host === "*") {
         regex += "[^/]+?";
     } else if (host) {
+        const hasExplicitPort = /:\d+$/.test(host);
         if (/^\*\./.test(host)) {
             regex += "(?:[^./]+\\.)*";
             host = host.substring(2);
         }
         regex += host.replace(regexpChars, "\\$&");
+        if (!hasExplicitPort) {
+            regex += "(?::\\d+)?";
+        }
     }
 
     if (path) {

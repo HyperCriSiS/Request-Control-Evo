@@ -60,6 +60,10 @@ test("source wildcard host matches the bare domain and true subdomains", () => {
         topLevelUrl: "https://a.b.example.com/article",
         url: "https://tracker.test/pixel",
     })).toBe(true);
+    expect(filter.matcher.test({
+        topLevelUrl: "https://a.example.com:8443/article",
+        url: "https://tracker.test/pixel",
+    })).toBe(true);
 });
 
 test("source wildcard host does not match a hostname that only shares the suffix", () => {
@@ -80,4 +84,13 @@ test("source wildcard host does not match a hostname that only shares the suffix
         topLevelUrl: "https://really-badexample.com/article",
         url: "https://tracker.test/pixel",
     })).toBe(false);
+});
+
+test("source exact host without an explicit port matches every port", () => {
+    expect(
+        matcher().test({
+            topLevelUrl: "https://news.example.com:8443/article",
+            url: "https://tracker.test/pixel",
+        })
+    ).toBe(true);
 });
