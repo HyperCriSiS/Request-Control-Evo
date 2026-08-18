@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.18.1] - Aug. 18, 2026
+- Add eight bundled opt-in showcase rulesets for original media, privacy-enhanced embeds, direct/raw developer URLs, search-provider handoff, redirect-wrapper bypass, canonical desktop URLs, low-bandwidth browsing and strict first-party isolation.
+- Rename the broad third-party blocker to `Strict First-Party Mode`, keep it disabled after import, and show a prominent warning that it can break logins, CDNs, APIs, embeds, payments, CAPTCHAs and other site functionality.
+- Localize bundled preset titles/descriptions for English, Spanish and Simplified Chinese, add warning styling in the import UI, and cover the showcase transformations and strict matcher behavior with regression tests.
+
 ## [1.18.0] - Aug. 18, 2026
 - Add an opt-in Inspection Mode with bounded local request capture, first-/third-party analysis, existing-rule effect reporting, direct Rule-from-Request drafts, and an optional deterministic guided rule assistant.
 - Add exact Firefox source-site scoping through `pattern.source`, including a dedicated expert-editor field; keep DNR compilation explicitly unsupported until exact parity is proven.

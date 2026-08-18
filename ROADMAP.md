@@ -8,11 +8,13 @@ Modernize Request Control while preserving the Firefox `webRequest` engine as th
 
 ## Current status
 
-**Status: active post-1.17 development**
+**Status: 1.18.0 milestone completed; post-1.18 development active**
 
-Request Control 1.17.0 is released and the 1.17.0 milestone remains complete. Post-1.17 work now covers both the UI/community workflow and an opt-in Inspection Mode that makes the request/rule model understandable from the currently loaded page. The work must not weaken the existing rule-engine parity guarantees, silently broaden permissions, or turn the guided UI into a replacement for the expert editor.
+Request Control 1.18.0 is released on `master` at `3110baa7`, and the 1.18.0 milestone is complete. The release was produced by Release run `32126387364` from the validated candidate: tag `1.18.0`, GitHub release, ZIP and unsigned XPI were created successfully. The ZIP and XPI are byte-identical at 207884 bytes with SHA-256 `22ee7b029156853d95b0c93197224e64abdc4599448470bf174877ec62d9f4f6`. Mozilla signing was skipped because AMO credentials were not configured, and the workflow recorded that skip as non-fatal.
 
-The Inspection Mode is intentionally local and user-triggered: start an inspection, reload the target page, record a bounded request snapshot, explain first-/third-party and existing rule effects, and create disabled rule drafts from real requests. The optional guided assistant sits on top of the same captured data; the normal expert rule editor remains available at all times.
+The active `dev` branch has already moved beyond the released candidate and includes bundled opt-in showcase rulesets at `bffc4653`. That work belongs to post-1.18 development and must not be conflated with the frozen 1.18.0 release contents. Existing guardrails remain in force: Firefox `webRequest` behavior is canonical, unsupported DNR semantics stay explicit, Inspection Mode remains bounded/local/opt-in, and guided workflows do not replace the expert editor.
+
+The 1.18.0 promotion PR passed audit, lint, tests, build, build-lint/checker and both real CodeQL analysis jobs. GitHub's separate agentic Advanced Security check repeatedly failed before analysis because its service requested unsupported model `claude-opus-4.6`; the standard protected merge nevertheless completed normally without an admin bypass.
 
 ## Phase 1 — modernization baseline
 
@@ -100,11 +102,23 @@ The Inspection Mode is intentionally local and user-triggered: start an inspecti
 
 - [x] Align `manifest.json` and `CHANGELOG.md` at 1.18.0 after the released 1.17.0 baseline.
 - [x] Make unsigned XPI generation reproducible from the same validated ZIP and remove the obsolete temporary 1.17 roadmap automation.
-- [ ] Promote the validated 1.18.0 candidate to `master`.
-- [ ] Verify the 1.18.0 release workflow creates the tag, GitHub release, ZIP and byte-identical unsigned XPI; record Mozilla signing status separately.
+- [x] Promote the validated 1.18.0 candidate to `master` via PR #33; master release commit `3110baa79f186be1c28e36e529554f72695571f3`.
+- [x] Verify Release run `32126387364` creates tag `1.18.0`, GitHub release `372260245`, ZIP and byte-identical unsigned XPI. Both assets are 207884 bytes with SHA-256 `22ee7b029156853d95b0c93197224e64abdc4599448470bf174877ec62d9f4f6`; Mozilla signing was skipped because AMO credentials were not configured.
+
+## Phase 7 — bundled showcase rulesets and 1.18.1 patch release
+
+- [x] Add eight curated bundled showcase rulesets to `dev`, covering media quality, privacy embeds, developer/raw URLs, search handoff, redirect-wrapper bypass, canonical desktop URLs, low-bandwidth browsing and strict first-party isolation.
+- [x] Rename the broad third-party blocker to `Strict First-Party Mode`, mark it prominently as site-breaking, and keep it disabled after import until the user deliberately enables it.
+- [x] Localize bundled preset titles/descriptions, add visible warning styling, document activation policy and add concrete regression coverage for the showcase transformations and matcher behavior.
+- [x] Synchronize the final showcase-ruleset tree to `master` via PR #35 / commit `09202d592f6e863ef2ec16911460a6dfcc22547e`; the already-published 1.18.0 tag/release remains immutable.
+- [x] Align release metadata at 1.18.1 and validate the patch candidate.
+- [ ] Promote the validated 1.18.1 candidate to `master`.
+- [ ] Verify the 1.18.1 tag, GitHub release, ZIP/XPI artifacts and Mozilla signing status.
 
 ## Blockers / dependencies
 
+- No release blocker remains for 1.18.0; the milestone is published and verified.
+- GitHub's agentic `github-advanced-security` PR check currently fails at service startup with `400 The requested model is not supported` for `claude-opus-4.6`. The repository's actual `Analyze (actions)` and `Analyze (javascript-typescript)` CodeQL jobs pass; treat the agentic service failure as an external GitHub platform issue unless its behavior changes.
 - No code blocker is currently known for the theme/import-presentation work.
 - Fully credential-less direct writes to GitHub are intentionally not assumed. The preferred community publication design keeps authentication on GitHub (submission/review UI) rather than storing a personal access token or secret inside the extension.
 - GitHub community metadata and ratings are optional network features; the existing local/built-in rule functionality must remain usable when GitHub is unavailable.
@@ -113,4 +127,4 @@ The Inspection Mode is intentionally local and user-triggered: start an inspecti
 
 ## Completion status
 
-**Not fully completed.** The 1.17.0 milestone remains complete. Phase 4 and Phase 5 are complete, and the 1.18.0 candidate is prepared and fully validated. Remaining work is promotion to `master` and verification of the resulting 1.18.0 release artifacts/signing status.
+**The 1.18.0 milestone remains fully completed and immutable.** Phase 7 tracks the post-1.18 bundled showcase-ruleset work and its 1.18.1 patch release separately. The showcase implementation and final master synchronization are complete; release metadata is aligned and only promotion plus artifact verification remain open.
