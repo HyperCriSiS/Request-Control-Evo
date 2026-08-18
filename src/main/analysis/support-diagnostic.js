@@ -42,6 +42,11 @@ function summarizePackageState(data) {
                 reason: typeof conflict.reason === "string" ? conflict.reason : "unknown-conflict",
             }))
         : [];
+    const integrityStatus = imported.integrityStatus || (
+        ["official", "community"].includes(channel) && imported.digest
+            ? "verified-at-import"
+            : (channel === "custom" ? "not-required" : "unknown")
+    );
 
     return {
         channel,
@@ -51,7 +56,7 @@ function summarizePackageState(data) {
         availableDigest: imported.availableDigest || null,
         availableVersion: imported.availableVersion || null,
         updateAvailable: Boolean(imported.digest && imported.availableDigest && imported.digest !== imported.availableDigest),
-        integrityStatus: imported.integrityStatus || (channel === "custom" ? "not-required" : "unknown"),
+        integrityStatus,
         lastCheckStatus: imported.lastCheckStatus || null,
         conflicts,
     };
