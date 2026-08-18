@@ -3,6 +3,7 @@ import fs from "node:fs";
 const optionsCss = fs.readFileSync(new URL("../src/options/options.css", import.meta.url), "utf8");
 const commonCss = fs.readFileSync(new URL("../src/options/common.css", import.meta.url), "utf8");
 const ruleInputCss = fs.readFileSync(new URL("../src/options/rule-input.css", import.meta.url), "utf8");
+const modalCss = fs.readFileSync(new URL("../src/options/modal-dialog.css", import.meta.url), "utf8");
 const importCss = fs.readFileSync(new URL("../src/options/rule-import-input.css", import.meta.url), "utf8");
 const importJs = fs.readFileSync(new URL("../src/options/rule-import-input.js", import.meta.url), "utf8");
 
@@ -10,6 +11,7 @@ const legacyLightOnlyPatterns = [
     /color:\s*black\b/i,
     /color:\s*grey\b/i,
     /background(?:-color)?:\s*white\b/i,
+    /background(?:-color)?:\s*#fefefe\b/i,
     /#f7f7f7\b/i,
     /#e0e9f7\b/i,
     /#4b4b4b\b/i,
@@ -24,12 +26,15 @@ test("dark theme exposes explicit readable foreground and state variables", () =
     expect(commonCss).toContain("color: var(--text-muted)");
 });
 
-test("rule editor no longer carries the known light-only foreground/background colors", () => {
+test("rule editor and modal no longer carry known light-only foreground/background colors", () => {
     for (const pattern of legacyLightOnlyPatterns) {
         expect(ruleInputCss).not.toMatch(pattern);
+        expect(modalCss).not.toMatch(pattern);
     }
     expect(ruleInputCss).toContain("background: var(--surface-color)");
     expect(ruleInputCss).toContain("background: var(--selected-background)");
+    expect(modalCss).toContain("background-color: var(--surface-color)");
+    expect(modalCss).toContain("color: var(--text-color)");
 });
 
 test("import presentation has descriptions, human source links and rating affordances", () => {
