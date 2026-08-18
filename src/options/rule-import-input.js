@@ -97,12 +97,31 @@ class RuleImportInput extends HTMLElement {
         rating.id = "rating";
         rating.className = "rating";
         rating.hidden = true;
-        rating.innerHTML = `<span>${escapeHtml(message("community_rating", "Community"))}</span>
-            <a id="rating-link" class="rating-link" target="_blank" rel="noopener noreferrer">
-                <span>👍 <span id="rating-positive">0</span></span>
-                <span>👎 <span id="rating-negative">0</span></span>
-            </a>`;
-        rating.querySelector("#rating-link").title = message("rate_on_github", "Rate or review on GitHub");
+        const ratingLabel = document.createElement("span");
+        ratingLabel.textContent = message("community_rating", "Community");
+        const ratingLink = document.createElement("a");
+        ratingLink.id = "rating-link";
+        ratingLink.className = "rating-link";
+        ratingLink.target = "_blank";
+        ratingLink.rel = "noopener noreferrer";
+        ratingLink.title = message("rate_on_github", "Rate or review on GitHub");
+
+        const positive = document.createElement("span");
+        positive.append("👍 ");
+        const positiveCount = document.createElement("span");
+        positiveCount.id = "rating-positive";
+        positiveCount.textContent = "0";
+        positive.append(positiveCount);
+
+        const negative = document.createElement("span");
+        negative.append("👎 ");
+        const negativeCount = document.createElement("span");
+        negativeCount.id = "rating-negative";
+        negativeCount.textContent = "0";
+        negative.append(negativeCount);
+
+        ratingLink.append(positive, negative);
+        rating.append(ratingLabel, ratingLink);
         meta.append(rating);
         row.append(meta);
     }
@@ -321,13 +340,16 @@ function message(key, fallback, substitutions) {
     return browser.i18n.getMessage(key, substitutions) || fallback;
 }
 
-function escapeHtml(value) {
-    return String(value)
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;")
-        .replaceAll('"', "&quot;")
-        .replaceAll("'", "&#039;");
+function exportJsonFile(name, object) {
+    const blob = new Blob([JSON.stringify(object, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = name;
+    document.body.append(link);
+    link.click();
+    link.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 0);
 }
 
 async function digest(text, algorithm = "SHA-256") {
@@ -426,9 +448,10 @@ function setupGitHubCommunityShare() {
         if (json.length <= 24000) {
             url.searchParams.set("body", `${intro}\n\n\`\`\`json\n${json}\n\`\`\``);
         } else {
+            exportJsonFile("request-control-community-submission.json", payload);
             status.textContent = message(
                 "github_share_too_large",
-                "The selection is too large for a prefilled GitHub submission. Export it and attach or paste the JSON in the opened form."
+                "The selection is too large for a prefilled GitHub submission. A JSON file was exported; attach or paste it into the opened form."
             );
         }
 
