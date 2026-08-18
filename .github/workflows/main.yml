@@ -19,8 +19,8 @@ jobs:
           SOURCE_SHA: 5dc72f35b2f5546190b900f4bbf9e568452cd941
         run: |
           set -euo pipefail
-          git fetch --no-tags origin dev
-          test "$(git rev-parse origin/dev)" = "$SOURCE_SHA"
+          git fetch --no-tags origin dev:refs/remotes/origin/dev
+          git cat-file -e "$SOURCE_SHA^{commit}"
           git checkout "$SOURCE_SHA" -- .github/workflows/main.yml
           git rm .github/promotion-recheck.txt
 
