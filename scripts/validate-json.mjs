@@ -1,5 +1,6 @@
 import { readFile, readdir } from "node:fs/promises";
 import { join } from "node:path";
+import { INSPECTION_FALLBACK_MESSAGES } from "../src/inspector/strings.js";
 
 async function collectJsonFiles(path) {
     const entries = await readdir(path, { withFileTypes: true });
@@ -41,6 +42,18 @@ function collectStaticMessageKeys(source) {
     return keys;
 }
 
+function collectExplicitFallbackKeys(source) {
+    const keys = new Set();
+    const patterns = [
+        /\b(?:message|msg)\(\s*["']([^"']+)["']\s*,\s*(?:["'`])/g,
+        /\bbrowser\.i18n\.getMessage\(\s*["']([^"']+)["'][\s\S]{0,240}?\)\s*\|\|\s*(?:["'`])/g,
+    ];
+    for (const pattern of patterns) {
+        for (const match of source.matchAll(pattern)) keys.add(match[1]);
+    }
+    return keys;
+}
+
 const files = [
     "manifest.json",
     ...await collectJsonFiles("_locales"),
@@ -52,14 +65,19 @@ for (const file of files) {
 
 const defaultMessages = JSON.parse(await readFile("_locales/en/messages.json", "utf8"));
 const referencedKeys = new Set();
+const fallbackKeys = new Set(Object.keys(INSPECTION_FALLBACK_MESSAGES));
 for (const file of await collectSourceFiles("src")) {
     const source = await readFile(file, "utf8");
     for (const key of collectStaticMessageKeys(source)) referencedKeys.add(key);
+    for (const key of collectExplicitFallbackKeys(source)) fallbackKeys.add(key);
 }
 
-const missingKeys = [...referencedKeys].filter((key) => !defaultMessages[key]).sort();
+const missingKeys = [...referencedKeys]
+    .filter((key) => !defaultMessages[key] && !fallbackKeys.has(key))
+    .sort();
 if (missingKeys.length > 0) {
-    throw new Error(`Default locale is missing referenced message keys: ${missingKeys.join(", ")}`);
+    throw new Error(`Default locale is missing referenced message keys without an explicit fallback: ${missingKeys.join(", ")}`);
 }
 
-console.log(`Validated ${files.length} JSON files and ${referencedKeys.size} static localization references.`);
+const fallbackReferenceCount = [...referencedKeys].filter((key) => !defaultMessages[key] && fallbackKeys.has(key)).length;
+console.log(`Validated ${files.length} JSON files and ${referencedKeys.size} static localization references (${fallbackReferenceCount} covered by explicit fallbacks).`);

@@ -79,12 +79,20 @@ This document is the binding source of truth for the active modernization/releas
 - [x] Add forward/backward schema compatibility and rejection tests before any transport integration exists.
 - [x] Keep Observatory availability completely independent from local rule execution and Official catalog updates.
 
-### G. Phase validation
+### G. Selective package imports
+
+- [x] Make every remote rule package expandable before import so individual rules can be reviewed and selected.
+- [x] Provide **Select all**, **Select none**, **Invert selection** and **Reset selection** controls plus an explicit selected/total counter.
+- [x] Persist package selection through stable managed-rule UUIDs so **Update all** never silently expands an installed package; newly published rules remain unchecked until the user selects them.
+- [x] Allow an installed package selection to be edited later, including applying an empty selection to remove all unchanged managed rules.
+- [x] Keep the selector compact, scrollable and touch-friendly for Firefox Android.
+
+### H. Phase validation
 
 - [ ] Run extension audit, lint, tests, build, build-lint/checker and security scans after the Phase 12 runtime changes.
 - [ ] Run rule-catalog validator, curation self-test/review smoke test and security scans after the Phase 12 catalog changes.
-- [ ] Re-check Firefox Android Imports/Official update presentation after the final Phase 12 UI changes.
-- [ ] Mark Phase 12 complete only after both repositories are green and the remaining D/E/F items are resolved or deliberately moved to a later phase.
+- [ ] Re-check Firefox Android Imports/Official update presentation and selective package controls after the final Phase 12 UI changes.
+- [ ] Mark Phase 12 complete only after both repositories are green and remaining deferred source-adapter work is explicitly moved to later maintenance.
 
 ## Release policy
 

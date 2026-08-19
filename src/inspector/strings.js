@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-const FALLBACK_MESSAGES = Object.freeze({
+export const INSPECTION_FALLBACK_MESSAGES = Object.freeze({
     inspection_mode: "Inspection Mode",
     inspection_title: "Inspect current page",
     inspection_reload_start: "Reload & inspect",
@@ -84,6 +84,9 @@ const FALLBACK_MESSAGES = Object.freeze({
     inspection_status_error: "Request error",
     inspection_status_pending: "Pending",
     inspection_unknown_type: "Unknown",
+    inspection_export_diagnostic: "Export support diagnostic",
+    inspection_diagnostic_saved: "Support diagnostic exported",
+    inspection_diagnostic_failed: "Could not export diagnostic",
 });
 
 export function getInspectionMessage(key, substitutions = []) {
@@ -92,7 +95,7 @@ export function getInspectionMessage(key, substitutions = []) {
         return localized;
     }
 
-    let text = FALLBACK_MESSAGES[key] || key;
+    let text = INSPECTION_FALLBACK_MESSAGES[key] || key;
     const values = Array.isArray(substitutions) ? substitutions : [substitutions];
     values.forEach((value, index) => {
         text = text.replaceAll(`$${index + 1}`, String(value));

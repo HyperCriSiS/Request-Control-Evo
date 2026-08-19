@@ -3,10 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { buildSupportDiagnostic } from "../main/analysis/support-diagnostic.js";
-
-const LABEL = "Export support diagnostic";
-const SUCCESS = "Support diagnostic exported";
-const FAILURE = "Could not export diagnostic";
+import { getInspectionMessage } from "./strings.js";
 
 export function initializeSupportExport() {
     const container = document.querySelector(".privacy-note");
@@ -18,7 +15,7 @@ export function initializeSupportExport() {
     button.id = "export-support-diagnostic";
     button.type = "button";
     button.className = "link-button";
-    button.textContent = browser.i18n.getMessage("inspection_export_diagnostic") || LABEL;
+    button.textContent = getInspectionMessage("inspection_export_diagnostic");
     button.title = "Exports aggregate support data without full URLs, hostnames or custom source URLs.";
     button.addEventListener("click", () => exportDiagnostic(button));
     container.append(button);
@@ -41,9 +38,9 @@ async function exportDiagnostic(button) {
             extensionVersion: browser.runtime.getManifest().version,
         });
         downloadJson(diagnostic);
-        button.textContent = browser.i18n.getMessage("inspection_diagnostic_saved") || SUCCESS;
+        button.textContent = getInspectionMessage("inspection_diagnostic_saved");
     } catch {
-        button.textContent = browser.i18n.getMessage("inspection_diagnostic_failed") || FAILURE;
+        button.textContent = getInspectionMessage("inspection_diagnostic_failed");
     } finally {
         window.setTimeout(() => {
             button.textContent = original;
