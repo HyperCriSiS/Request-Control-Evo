@@ -21,6 +21,7 @@ class RuleImportInput extends HTMLElement {
         this._selectedUuids = new Set();
         this._baselineSelectedUuids = new Set();
         this._selectableRuleCount = 0;
+        this._selectionListDirty = true;
         this.loadStatus = "idle";
         this.integrityStatus = "unknown";
         const template = document.getElementById("rule-import-input");
@@ -188,7 +189,11 @@ class RuleImportInput extends HTMLElement {
         selection.append(selectionSummary, selectionToolbar, selectionList);
         selection.addEventListener("toggle", () => {
             if (selection.open && this.source) {
-                this.load();
+                this.load().then(() => {
+                    if (this._selectionListDirty) {
+                        this.renderRuleSelection();
+                    }
+                });
             }
         });
         row.append(selection);
@@ -377,11 +382,18 @@ class RuleImportInput extends HTMLElement {
         if (!details || !list) {
             return;
         }
-        list.replaceChildren();
         const selectable = this._rules.filter((rule) => rule?.uuid);
         this._selectableRuleCount = selectable.length;
         details.hidden = !this.source;
 
+        if (!details.open) {
+            list.replaceChildren();
+            this._selectionListDirty = true;
+            this.updateSelectionPresentation({ syncCheckboxes: false });
+            return;
+        }
+
+        list.replaceChildren();
         for (const rule of selectable) {
             const item = document.createElement("li");
             item.className = "selection-rule";
@@ -413,6 +425,7 @@ class RuleImportInput extends HTMLElement {
             item.append(label);
             list.append(item);
         }
+        this._selectionListDirty = false;
         this.updateSelectionPresentation();
     }
 

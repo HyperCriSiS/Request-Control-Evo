@@ -66,3 +66,12 @@ test("large package toggles avoid full checkbox resynchronization on every tap",
     expect(ruleImportJs).toContain("const selectedCount = this._selectedUuids.size");
     expect(ruleImportJs).toContain("this._selectedUuids.size === 0");
 });
+
+test("collapsed large packages defer checkbox DOM until the selector is opened", () => {
+    expect(ruleImportJs).toContain("this._selectionListDirty = true");
+    expect(ruleImportJs).toContain("if (!details.open)");
+    expect(ruleImportJs).toContain("list.replaceChildren()");
+    expect(ruleImportJs).toContain("this.updateSelectionPresentation({ syncCheckboxes: false })");
+    expect(ruleImportJs).toContain("if (this._selectionListDirty)");
+    expect(ruleImportJs).toContain("this._selectionListDirty = false");
+});
