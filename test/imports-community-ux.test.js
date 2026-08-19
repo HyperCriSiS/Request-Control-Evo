@@ -50,3 +50,22 @@ test("import integrity status has a real template target", () => {
     expect(optionsHtml).toContain('id="integrity"');
     expect(importJs).toContain('getElementById("integrity")');
 });
+
+test("rule packages can be expanded and selectively imported before installation", () => {
+    expect(importJs).toContain('selection.id = "rule-selection"');
+    expect(importJs).toContain('"select-all-rules"');
+    expect(importJs).toContain('"select-no-rules"');
+    expect(importJs).toContain('"invert-rule-selection"');
+    expect(importJs).toContain('"reset-rule-selection"');
+    expect(importJs).toContain('get selectedRules()');
+    expect(importJs).toContain('import_selected_count');
+    expect(importJs).toContain('get rules()');
+    expect(importJs).toContain('return this.selectedRules;');
+});
+
+test("managed imports preserve their selected UUIDs during package updates", () => {
+    expect(importJs).toContain('initialSelectedRuleUuids(this._rules, this._data?.imported || null)');
+    expect(importJs).toContain('sameRuleSelection(this._selectedUuids, this._baselineSelectedUuids)');
+    expect(optionsJs).toContain('const rulesToImport = input.rules.filter((rule) => rule.uuid)');
+    expect(optionsJs).toContain('await applyManagedImport(input)');
+});
