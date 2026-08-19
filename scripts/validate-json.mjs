@@ -46,7 +46,7 @@ function collectExplicitFallbackKeys(source) {
     const keys = new Set();
     const patterns = [
         /\b(?:message|msg)\(\s*["']([^"']+)["']\s*,\s*(?:["'`])/g,
-        /\bbrowser\.i18n\.getMessage\(\s*["']([^"']+)["'][^)]*\)\s*\|\|\s*(?:["'`])/g,
+        /\bbrowser\.i18n\.getMessage\(\s*["']([^"']+)["'][\s\S]{0,240}?\)\s*\|\|\s*(?:["'`])/g,
     ];
     for (const pattern of patterns) {
         for (const match of source.matchAll(pattern)) keys.add(match[1]);
