@@ -1,6 +1,7 @@
 import {
     analyzeUrl,
     analyzeUrlSamples,
+    CONSERVATIVE_PARAMETER_PATTERNS,
     matchParameterPattern,
     suggestParameterActions,
     suggestSafeRedirectActions,
@@ -79,6 +80,20 @@ test("suggestParameterActions combines catalog matches and nested URL detection"
             matchedPattern: "utm_*",
             confidence: "catalog",
         },
+    ]);
+});
+
+test("local analyzer heuristics suggest only unambiguous tracking parameters", () => {
+    const result = analyzeUrl(
+        "https://example.com/article?utm_source=news&fbclid=facebook&gclid=google&yclid=yandex" +
+        "&ref_id=needed&referrer=needed&id=42"
+    );
+
+    expect(suggestParameterActions(result, CONSERVATIVE_PARAMETER_PATTERNS).map(({ parameter }) => parameter)).toEqual([
+        "utm_source",
+        "fbclid",
+        "gclid",
+        "yclid",
     ]);
 });
 

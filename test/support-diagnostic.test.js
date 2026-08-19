@@ -10,6 +10,8 @@ const secretRequestUrl = "https://tracker.secret.example/pixel?token=private-val
 const secretPageUrl = "https://private.example/account?session=secret";
 const secretCustomSource = "https://rules.private.example/user/rules.json?token=source-secret";
 const officialSource = "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/official/rules/privacy-common-params.json";
+const installedDigest = "a".repeat(64);
+const availableDigest = "b".repeat(64);
 
 test("rule source summaries expose channel identity without remote URLs", () => {
     expect(summarizeRuleSource({uuid: "local"})).toEqual({channel: "local"});
@@ -37,8 +39,8 @@ test("import summary omits source keys and keeps update, integrity and conflict 
         [secretCustomSource]: {
             deletable: true,
             imported: {
-                digest: "old",
-                availableDigest: "new",
+                digest: installedDigest,
+                availableDigest,
                 conflicts: [{uuid: "custom-rule", reason: "local-modified"}],
             },
         },
@@ -47,8 +49,8 @@ test("import summary omits source keys and keeps update, integrity and conflict 
                 catalog: "requestcontrol-official",
                 entry: "privacy-common-params",
                 version: "1.0.0",
-                digest: "same",
-                availableDigest: "same",
+                digest: installedDigest,
+                availableDigest: installedDigest,
                 conflicts: [],
             },
         },
@@ -84,8 +86,8 @@ test("matched rule runtime state combines source, update and rule-specific confl
                 catalog: "requestcontrol-official",
                 entry: "privacy-common-params",
                 version: "1.0.0",
-                digest: "installed",
-                availableDigest: "available",
+                digest: installedDigest,
+                availableDigest,
                 availableVersion: "1.1.0",
                 conflicts: [
                     {uuid: "other-rule", reason: "local-modified"},
@@ -169,4 +171,59 @@ test("support diagnostic is privacy-minimized by construction", () => {
     expect(serialized).not.toContain("tracker.secret.example");
     expect(serialized).not.toContain("private-value");
     expect(serialized).not.toContain("request-secret-id");
+});
+
+test("support diagnostic rejects URL-like and unbounded free identifiers", () => {
+    const secretIdentifier = "https://private.example/?token=secret";
+    const diagnostic = buildSupportDiagnostic({
+        active: false,
+        requests: [{
+            type: "script",
+            classification: { thirdParty: true, trackingHint: false },
+            effect: {
+                action: secretIdentifier,
+                rule: { uuid: secretIdentifier },
+            },
+        }],
+    }, {
+        extensionVersion: secretIdentifier,
+        generatedAt: secretIdentifier,
+        rules: [{
+            uuid: secretIdentifier,
+            managed: true,
+            source: {
+                catalog: "requestcontrol-official",
+                entry: secretIdentifier,
+                version: secretIdentifier,
+            },
+        }],
+        imports: {
+            [secretCustomSource]: {
+                imported: {
+                    catalog: "requestcontrol-official",
+                    entry: secretIdentifier,
+                    version: secretIdentifier,
+                    digest: secretIdentifier,
+                    availableDigest: secretIdentifier,
+                    conflicts: [{ uuid: secretIdentifier, reason: secretIdentifier }],
+                    lastCheckStatus: secretIdentifier,
+                },
+            },
+        },
+    });
+
+    const serialized = JSON.stringify(diagnostic);
+    expect(serialized).not.toContain("private.example");
+    expect(serialized).not.toContain("token=secret");
+    expect(diagnostic.generatedAt).toBeNull();
+    expect(diagnostic.extensionVersion).toBeNull();
+    expect(diagnostic.inspection.affectedRules).toEqual([]);
+    expect(diagnostic.packages[0]).toMatchObject({
+        packageId: null,
+        version: null,
+        installedDigest: null,
+        availableDigest: null,
+        lastCheckStatus: null,
+        conflicts: [],
+    });
 });

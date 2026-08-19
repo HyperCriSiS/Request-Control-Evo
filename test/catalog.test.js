@@ -112,6 +112,11 @@ test("reconcileManagedRules adopts an identical local rule but protects a differ
     ]);
 });
 
+test("reconcileManagedRules rejects duplicate incoming UUIDs", async () => {
+    await expect(reconcileManagedRules([], [rule("duplicate"), rule("duplicate")], SOURCE))
+        .rejects.toThrow("Managed rule package contains duplicate UUID: duplicate");
+});
+
 test("managed-source migration demotes unknown remote rules without changing rule behavior", async () => {
     const oldSource = {
         id: "retired-remote-source",

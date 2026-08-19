@@ -15,6 +15,32 @@ async function collectJsonFiles(path) {
     return files;
 }
 
+async function collectSourceFiles(path) {
+    const entries = await readdir(path, { withFileTypes: true });
+    const files = [];
+    for (const entry of entries) {
+        const fullPath = join(path, entry.name);
+        if (entry.isDirectory()) {
+            files.push(...await collectSourceFiles(fullPath));
+        } else if (entry.isFile() && [".html", ".js"].some((extension) => entry.name.endsWith(extension))) {
+            files.push(fullPath);
+        }
+    }
+    return files;
+}
+
+function collectStaticMessageKeys(source) {
+    const keys = new Set();
+    const patterns = [
+        /data-i18n(?:-title|-placeholder|-aria-label)?=["']([^"']+)["']/g,
+        /\b(?:browser\.i18n\.getMessage|getInspectionMessage|message|msg)\(\s*["']([^"']+)["']/g,
+    ];
+    for (const pattern of patterns) {
+        for (const match of source.matchAll(pattern)) keys.add(match[1]);
+    }
+    return keys;
+}
+
 const files = [
     "manifest.json",
     ...await collectJsonFiles("_locales"),
@@ -24,4 +50,16 @@ for (const file of files) {
     JSON.parse(await readFile(file, "utf8"));
 }
 
-console.log(`Validated ${files.length} JSON files.`);
+const defaultMessages = JSON.parse(await readFile("_locales/en/messages.json", "utf8"));
+const referencedKeys = new Set();
+for (const file of await collectSourceFiles("src")) {
+    const source = await readFile(file, "utf8");
+    for (const key of collectStaticMessageKeys(source)) referencedKeys.add(key);
+}
+
+const missingKeys = [...referencedKeys].filter((key) => !defaultMessages[key]).sort();
+if (missingKeys.length > 0) {
+    throw new Error(`Default locale is missing referenced message keys: ${missingKeys.join(", ")}`);
+}
+
+console.log(`Validated ${files.length} JSON files and ${referencedKeys.size} static localization references.`);

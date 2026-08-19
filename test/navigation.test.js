@@ -38,6 +38,14 @@ test("matches WebExtension patterns used by navigation rules", () => {
     expect(matchPattern("*://*.youtube.com/*", "https://example.com/watch?v=1")).toBeFalsy();
 });
 
+test("matches explicit ports without changing no-port pattern semantics", () => {
+    expect(matchPattern("https://example.com:8443/*", "https://example.com:8443/page")).toBe(true);
+    expect(matchPattern("https://example.com:8443/*", "https://example.com:9443/page")).toBe(false);
+    expect(matchPattern("https://*.example.com:8443/*", "https://sub.example.com:8443/page")).toBe(true);
+    expect(matchPattern("https://example.com:443/*", "https://example.com/page")).toBe(true);
+    expect(matchPattern("https://example.com/*", "https://example.com:8443/page")).toBe(true);
+});
+
 test("method and origin constrained rules are not used for SPA navigation", () => {
     expect(
         isNavigationCompatible({
@@ -69,6 +77,94 @@ test("query cleanup on YouTube-style pushState uses replaceState without reload"
     });
     expect(calls.replaceHistory).toEqual([[1, "https://www.youtube.com/watch?v=abc"]]);
     expect(calls.navigate).toHaveLength(0);
+});
+
+test("only the first effective filter changes a SPA navigation", async () => {
+    const baseFilter = {
+        active: true,
+        action: "filter",
+        pattern: { allUrls: true },
+        types: ["main_frame"],
+        skipRedirectionFilter: true,
+    };
+    const { adapter, calls } = createAdapter([
+        { ...baseFilter, uuid: "remove-a", paramsFilter: { values: ["a"] } },
+        { ...baseFilter, uuid: "remove-b", paramsFilter: { values: ["b"] } },
+    ]);
+
+    const result = await adapter.handle({
+        frameId: 0,
+        tabId: 1,
+        timeStamp: 1,
+        url: "https://example.com/?a=1&b=2&c=3",
+    });
+
+    expect(result).toEqual({
+        action: "replace",
+        target: "https://example.com/?b=2&c=3",
+    });
+    expect(calls.notify).toHaveLength(1);
+    expect(calls.notify[0][0].uuid).toBe("remove-a");
+});
+
+test("an ineffective filter does not prevent the next effective filter", async () => {
+    const baseFilter = {
+        active: true,
+        action: "filter",
+        pattern: { allUrls: true },
+        types: ["main_frame"],
+        skipRedirectionFilter: true,
+    };
+    const { adapter, calls } = createAdapter([
+        { ...baseFilter, uuid: "remove-missing", paramsFilter: { values: ["missing"] } },
+        { ...baseFilter, uuid: "remove-b", paramsFilter: { values: ["b"] } },
+    ]);
+
+    const result = await adapter.handle({
+        frameId: 0,
+        tabId: 1,
+        timeStamp: 1,
+        url: "https://example.com/?a=1&b=2",
+    });
+
+    expect(result.target).toBe("https://example.com/?a=1");
+    expect(calls.notify).toHaveLength(1);
+    expect(calls.notify[0][0].uuid).toBe("remove-b");
+});
+
+test("an effective redirect wins before filters without chaining their effects", async () => {
+    const redirect = {
+        uuid: "redirect-first",
+        active: true,
+        action: "redirect",
+        redirectUrl: "https://destination.example/?a=1&b=2",
+        pattern: { allUrls: true },
+        types: ["main_frame"],
+    };
+    const filter = {
+        uuid: "filter-second",
+        active: true,
+        action: "filter",
+        pattern: { allUrls: true },
+        types: ["main_frame"],
+        paramsFilter: { values: ["b"] },
+        skipRedirectionFilter: true,
+    };
+    const { adapter, calls } = createAdapter([filter, redirect]);
+
+    const result = await adapter.handle({
+        frameId: 0,
+        tabId: 1,
+        timeStamp: 1,
+        url: "https://example.com/?a=1&b=2",
+    });
+
+    expect(result).toEqual({
+        action: "redirect",
+        target: "https://destination.example/?a=1&b=2",
+    });
+    expect(calls.notify).toHaveLength(1);
+    expect(calls.notify[0][0].uuid).toBe("redirect-first");
 });
 
 test("whitelist wins over filter", async () => {
@@ -162,4 +258,26 @@ test("non-main-frame rules are excluded from navigation compilation", () => {
             },
         ])
     ).toHaveLength(0);
+});
+
+test("one malformed navigation rule does not disable valid neighboring rules", () => {
+    const invalid = {
+        uuid: "invalid",
+        active: true,
+        action: "filter",
+        pattern: {
+            allUrls: true,
+            includes: 42,
+        },
+        paramsFilter: { values: ["tracking"] },
+    };
+    const errors = [];
+
+    const compiled = compileNavigationRules([invalid, youtubeFilter], (...args) => errors.push(args));
+
+    expect(compiled).toHaveLength(1);
+    expect(compiled[0].rule.uuid).toBe("youtube-filter");
+    expect(errors).toHaveLength(1);
+    expect(errors[0][0]).toBe(invalid);
+    expect(errors[0][1]).toBeInstanceOf(Error);
 });

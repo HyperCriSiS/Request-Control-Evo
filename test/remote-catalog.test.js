@@ -24,6 +24,40 @@ const CATALOG = {
 test("official catalog schema is channel-bound and complete", () => {
     expect(validateRemoteCatalog(CATALOG, CATALOG_CHANNEL.OFFICIAL)).toEqual([]);
     expect(validateRemoteCatalog(CATALOG, CATALOG_CHANNEL.COMMUNITY)).toContain("unexpected-channel");
+    expect(validateRemoteCatalog(CATALOG, CATALOG_CHANNEL.COMMUNITY)).toContain("unexpected-catalog-id");
+});
+
+test("catalog entries cannot cross channel, host, transport or integrity boundaries", () => {
+    const invalid = {
+        ...CATALOG,
+        ruleSets: [
+            { ...ENTRY, id: "wrong-host", url: "https://example.test/wrong-host.json" },
+            { ...ENTRY, id: "wrong-channel", url: ENTRY.url.replace("/official/", "/community/") },
+            { ...ENTRY, id: "weak-integrity", url: ENTRY.url.replace("privacy-common-params", "weak-integrity"), sha256: "abc" },
+        ],
+    };
+    const errors = validateRemoteCatalog(invalid, CATALOG_CHANNEL.OFFICIAL);
+
+    expect(errors).toContain("unexpected-entry-url:wrong-host");
+    expect(errors).toContain("unexpected-entry-url:wrong-channel");
+    expect(errors).toContain("invalid-sha256:weak-integrity");
+});
+
+test("catalog entry ids and source URLs are unique", () => {
+    const duplicateUrl = {
+        ...CATALOG,
+        ruleSets: [
+            ENTRY,
+            { ...ENTRY, id: "other-package" },
+        ],
+    };
+
+    expect(validateRemoteCatalog(duplicateUrl, CATALOG_CHANNEL.OFFICIAL)).toContain(
+        "unexpected-entry-url:other-package"
+    );
+    expect(validateRemoteCatalog(duplicateUrl, CATALOG_CHANNEL.OFFICIAL)).toContain(
+        "duplicate-entry-url:other-package"
+    );
 });
 
 test("catalog import state uses only the current exact source", () => {

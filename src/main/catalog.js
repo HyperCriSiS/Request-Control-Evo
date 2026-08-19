@@ -136,7 +136,14 @@ function sourceMatches(rule, source) {
 }
 
 export async function reconcileManagedRules(localRules, incomingRules, source) {
-    const incomingById = new Map(incomingRules.filter(({uuid}) => uuid).map((rule) => [rule.uuid, rule]));
+    const incomingById = new Map();
+    for (const rule of incomingRules) {
+        if (!rule.uuid) continue;
+        if (incomingById.has(rule.uuid)) {
+            throw new TypeError(`Managed rule package contains duplicate UUID: ${rule.uuid}`);
+        }
+        incomingById.set(rule.uuid, rule);
+    }
     const result = [];
     const changes = {
         added: [],

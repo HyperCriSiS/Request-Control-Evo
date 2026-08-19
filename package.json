@@ -14,18 +14,17 @@
     "ignore": "test/ coverage/ docs/ scripts/ .github/ .node-version eslint.config.js README* **/manual.wiki package*.json"
   },
   "scripts": {
-    "start": "web-ext run -i=$npm_package_config_ignore --bc --url about:debugging#addons",
-    "test": "node --experimental-vm-modules node_modules/.bin/jest",
-    "lint-build": "node scripts/lint-build.mjs web-ext-artifacts/request_control-$(node -p \"require('./manifest.json').version\").zip",
-    "copy-tldts": "cp -v node_modules/tldts-experimental/dist/index.esm.min.js lib/tldts/",
-    "copy-lit": "cp -v node_modules/@ajusa/lit/src/lit.css lib/lit/",
-    "build-manual": "find ./_locales/ -iname \"manual.wiki\" -type f -exec sh -c 'pandoc \"$0\" --from=mediawiki --to=html --output \"${0%.wiki}.html\"' {} \\;",
-    "postinstall": "npm run copy-tldts && npm run copy-lit",
+    "start": "node scripts/web-ext.mjs run --bc --url about:debugging#addons",
+    "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
+    "lint-build": "node scripts/lint-build.mjs",
+    "copy-vendor": "node scripts/copy-vendor-assets.mjs",
+    "build-manual": "node scripts/build-manual.mjs",
+    "postinstall": "npm run copy-vendor",
     "prebuild": "npm run build-manual",
-    "build": "web-ext build -i=$npm_package_config_ignore --overwrite-dest --verbose",
-    "deploy": "web-ext sign --verbose",
+    "build": "node scripts/web-ext.mjs build --overwrite-dest --verbose",
+    "deploy": "node scripts/web-ext.mjs sign --verbose",
     "audit": "node scripts/audit-dependencies.mjs",
-    "lint": "eslint src test scripts && npm run lint:json && web-ext lint -i=$npm_package_config_ignore",
+    "lint": "eslint src test scripts && npm run lint:json && node scripts/web-ext.mjs lint",
     "lint:json": "node scripts/validate-json.mjs"
   },
   "dependencies": {

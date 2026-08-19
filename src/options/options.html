@@ -134,10 +134,26 @@
                     <h3 data-i18n="imports_rule_packages"></h3>
                     <p data-i18n="imports_rule_packages_description"></p>
                 </div>
-                <details id="recommended-rule-lists" class="imports-section" open>
-                    <summary data-i18n="imports_recommended"></summary>
-                    <p class="imports-section-description" data-i18n="imports_recommended_description"></p>
-                    <ul id="recommended-rule-list"></ul>
+                <details id="official-rule-lists" class="imports-section" open>
+                    <summary>
+                        <span data-i18n="imports_official"></span>
+                        <span id="official-update-count" class="badge badge-notify" hidden></span>
+                    </summary>
+                    <p class="imports-section-description" data-i18n="imports_official_description"></p>
+                    <p
+                        id="official-rule-status"
+                        class="imports-section-status"
+                        data-i18n="imports_official_loading"
+                    ></p>
+                    <button
+                        id="official-update-all"
+                        type="button"
+                        class="btn"
+                        data-i18n="imports_update_all"
+                        hidden
+                        disabled
+                    ></button>
+                    <ul id="official-rule-list"></ul>
                 </details>
                 <details id="community-rule-lists" class="imports-section">
                     <summary data-i18n="imports_community"></summary>

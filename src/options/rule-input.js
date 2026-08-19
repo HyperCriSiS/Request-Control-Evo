@@ -5,6 +5,7 @@
 import { createRequestFilters, createRule, isTLDHostPattern } from "../main/api.js";
 import { onToggleButtonChange, setButtonChecked, setButtonDisabled, toggleHidden } from "../util/ui-helpers.js";
 import { uuid } from "../util/uuid.js";
+import { decodeLegacyMetadata } from "./legacy-metadata.js";
 
 const isMobile = window.matchMedia("(max-width: 35em)").matches;
 
@@ -147,11 +148,11 @@ class RuleInput extends HTMLElement {
 
     get title() {
         if (this.rule.title) {
-            return decodeURIComponent(this.rule.title);
+            return decodeLegacyMetadata(this.rule.title);
         } else if (this.rule.name) {
-            return decodeURIComponent(this.rule.name);
+            return decodeLegacyMetadata(this.rule.name);
         }
-        return decodeURIComponent(this.defaultTitle);
+        return decodeLegacyMetadata(this.defaultTitle);
     }
 
     get defaultTitle() {
@@ -185,8 +186,8 @@ class RuleInput extends HTMLElement {
 
     get description() {
         return this.rule.description
-            ? decodeURIComponent(this.rule.description)
-            : decodeURIComponent(this.defaultDescription);
+            ? decodeLegacyMetadata(this.rule.description)
+            : decodeLegacyMetadata(this.defaultDescription);
     }
 
     get defaultDescription() {
@@ -217,7 +218,7 @@ class RuleInput extends HTMLElement {
     }
 
     get tag() {
-        return this.rule.tag ? decodeURIComponent(this.rule.tag) : "";
+        return this.rule.tag ? decodeLegacyMetadata(this.rule.tag) : "";
     }
 
     set tag(str) {

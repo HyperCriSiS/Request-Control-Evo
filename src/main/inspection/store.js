@@ -36,6 +36,7 @@ export class InspectionStore {
         }
         session.active = false;
         session.stoppedAt = Date.now();
+        session.pendingEffects.clear();
         return this.snapshot(tabId);
     }
 
@@ -66,6 +67,7 @@ export class InspectionStore {
             return existing;
         }
         if (session.requests.length >= this.maxRequests) {
+            session.pendingEffects.delete(request.requestId);
             session.dropped += 1;
             return null;
         }
@@ -98,15 +100,21 @@ export class InspectionStore {
 
     markEffect(tabId, requestId, effect) {
         const session = this.sessions.get(tabId);
-        if (!session || !requestId) {
+        if (!session?.active || !requestId) {
             return;
         }
         const record = session.requestIndex.get(requestId);
         if (record) {
             record.effect = effect;
-        } else {
-            session.pendingEffects.set(requestId, effect);
+            return;
         }
+        if (session.requests.length >= this.maxRequests) {
+            return;
+        }
+        if (!session.pendingEffects.has(requestId) && session.pendingEffects.size >= this.maxRequests) {
+            return;
+        }
+        session.pendingEffects.set(requestId, effect);
     }
 
     markFinished(tabId, requestId, { status = "completed", statusCode = null, error = null } = {}) {

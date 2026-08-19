@@ -56,3 +56,34 @@ test("stopping a session prevents new requests while preserving the snapshot", (
         requests: [{ requestId: "1" }],
     });
 });
+
+test("stopping a session clears and rejects pending rule effects", () => {
+    const store = new InspectionStore(2);
+    store.start(5, { pageUrl: "https://example.com/" });
+    store.markEffect(5, "pending-before-stop", { action: "block" });
+    expect(store.sessions.get(5).pendingEffects.size).toBe(1);
+
+    store.stop(5);
+    store.markEffect(5, "pending-after-stop", { action: "redirect" });
+
+    expect(store.sessions.get(5).pendingEffects.size).toBe(0);
+});
+
+test("pending effects cannot exceed or outlive the request cap", () => {
+    const store = new InspectionStore(1);
+    store.start(8, { pageUrl: "https://example.com/" });
+    store.markEffect(8, "request-1", { action: "block" });
+    store.markEffect(8, "request-2", { action: "redirect" });
+
+    expect([...store.sessions.get(8).pendingEffects.keys()]).toEqual(["request-1"]);
+
+    store.capture({ tabId: 8, requestId: "request-1", url: "https://example.com/a", type: "script" });
+    store.markEffect(8, "request-2", { action: "redirect" });
+    store.capture({ tabId: 8, requestId: "request-2", url: "https://example.com/b", type: "script" });
+
+    expect(store.sessions.get(8).pendingEffects.size).toBe(0);
+    expect(store.snapshot(8)).toMatchObject({
+        dropped: 1,
+        requests: [{ requestId: "request-1", effect: { action: "block" } }],
+    });
+});

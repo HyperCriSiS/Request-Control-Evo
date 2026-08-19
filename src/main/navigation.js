@@ -14,17 +14,18 @@ const PRIORITY = {
 };
 
 export class NavigationAdapter {
-    constructor({ notify, navigate, replaceHistory }) {
+    constructor({ notify, navigate, replaceHistory, onInvalidRule = () => {} }) {
         this.notify = notify;
         this.navigate = navigate;
         this.replaceHistory = replaceHistory;
+        this.onInvalidRule = onInvalidRule;
         this.rules = [];
         this.lastAllowedUrl = new Map();
         this.pendingTargets = new Map();
     }
 
     setRules(rules = []) {
-        this.rules = compileNavigationRules(rules);
+        this.rules = compileNavigationRules(rules, this.onInvalidRule);
     }
 
     clear() {
@@ -111,29 +112,28 @@ export class NavigationAdapter {
 
         const ordered = [...selected].sort((a, b) => actionOrder(a.action) - actionOrder(b.action));
         let target = details.url;
-        const applied = [];
+        let applied = null;
 
         for (const entry of ordered) {
-            const next = entry.rule.apply(target);
-            if (next === target) {
+            const next = entry.rule.apply(details.url);
+            if (next === details.url) {
                 continue;
             }
             target = next;
-            applied.push(entry);
+            applied = entry;
+            break;
         }
 
-        if (target === details.url) {
+        if (!applied) {
             this.lastAllowedUrl.set(details.tabId, details.url);
             return null;
         }
 
-        for (const entry of applied) {
-            this.notify(entry.rule, request, target);
-        }
+        this.notify(applied.rule, request, target);
 
         this.pendingTargets.set(details.tabId, target);
 
-        if (applied.every((entry) => entry.action === "filter") && sameOrigin(details.url, target)) {
+        if (applied.action === "filter" && sameOrigin(details.url, target)) {
             await this.replaceHistory(details.tabId, target);
             this.lastAllowedUrl.set(details.tabId, target);
             return { action: "replace", target };
@@ -144,33 +144,41 @@ export class NavigationAdapter {
     }
 }
 
-export function compileNavigationRules(rules = []) {
+export function compileNavigationRules(rules = [], onInvalidRule = () => {}) {
     const compiled = [];
 
     for (const data of rules) {
-        if (!data || !data.active || !isNavigationCompatible(data)) {
-            continue;
-        }
+        try {
+            if (!data || !data.active || !isNavigationCompatible(data)) {
+                continue;
+            }
 
-        for (const filter of createRequestFilters(data)) {
-            compiled.push({
-                action: data.action,
-                log: Boolean(data.log),
-                priority: getPriority(data),
-                rule: filter.rule,
-                matches(request, incognito) {
-                    if (!matchesIncognito(data.pattern, incognito)) {
-                        return false;
-                    }
-                    if (!matchesTypes(data.types)) {
-                        return false;
-                    }
-                    if (!filter.urls.some((pattern) => matchPattern(pattern, request.url))) {
-                        return false;
-                    }
-                    return filter.matcher.test(request);
-                },
-            });
+            for (const filter of createRequestFilters(data)) {
+                compiled.push({
+                    action: data.action,
+                    log: Boolean(data.log),
+                    priority: getPriority(data),
+                    rule: filter.rule,
+                    matches(request, incognito) {
+                        if (!matchesIncognito(data.pattern, incognito)) {
+                            return false;
+                        }
+                        if (!matchesTypes(data.types)) {
+                            return false;
+                        }
+                        if (!filter.urls.some((pattern) => matchPattern(pattern, request.url))) {
+                            return false;
+                        }
+                        return filter.matcher.test(request);
+                    },
+                });
+            }
+        } catch (error) {
+            try {
+                onInvalidRule(data, error);
+            } catch {
+                // Reporting must not let one invalid rule disable valid neighbors.
+            }
         }
     }
 
@@ -218,7 +226,11 @@ export function matchPattern(pattern, url) {
     if (!matchScheme(schemePattern, parsed.protocol.slice(0, -1))) {
         return false;
     }
-    if (!matchHost(hostPattern, parsed.hostname)) {
+    const { hostnamePattern, portPattern } = splitHostPattern(hostPattern);
+    if (!matchHost(hostnamePattern, parsed.hostname)) {
+        return false;
+    }
+    if (portPattern !== null && portPattern !== effectivePort(parsed)) {
         return false;
     }
 
@@ -261,6 +273,43 @@ function matchHost(pattern, hostname) {
         return hostname === suffix || hostname.endsWith(`.${suffix}`);
     }
     return pattern === hostname;
+}
+
+function splitHostPattern(pattern) {
+    if (pattern.startsWith("[")) {
+        const bracketEnd = pattern.indexOf("]");
+        if (bracketEnd !== -1 && pattern.charAt(bracketEnd + 1) === ":") {
+            return {
+                hostnamePattern: pattern.slice(0, bracketEnd + 1),
+                portPattern: pattern.slice(bracketEnd + 2),
+            };
+        }
+        return { hostnamePattern: pattern, portPattern: null };
+    }
+    const separator = pattern.lastIndexOf(":");
+    if (separator !== -1 && /^\d+$/.test(pattern.slice(separator + 1))) {
+        return {
+            hostnamePattern: pattern.slice(0, separator),
+            portPattern: pattern.slice(separator + 1),
+        };
+    }
+    return { hostnamePattern: pattern, portPattern: null };
+}
+
+function effectivePort(url) {
+    if (url.port) {
+        return url.port;
+    }
+    switch (url.protocol) {
+        case "http:":
+            return "80";
+        case "https:":
+            return "443";
+        case "ftp:":
+            return "21";
+        default:
+            return "";
+    }
 }
 
 function escapeRegexp(value) {

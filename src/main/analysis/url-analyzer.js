@@ -6,6 +6,13 @@ import {assessRedirectCandidate, shouldAutoSuggestRedirect} from "../intelligenc
 
 const HTTP_PROTOCOLS = new Set(["http:", "https:"]);
 
+export const CONSERVATIVE_PARAMETER_PATTERNS = Object.freeze([
+    "utm_*",
+    "fbclid",
+    "gclid",
+    "yclid",
+]);
+
 function decodeRepeatedly(value, maxRounds = 2) {
     let decoded = value;
     for (let round = 0; round < maxRounds; round++) {

@@ -84,10 +84,16 @@ body {
     display: flex;
     align-items: center;
     gap: 0.35rem;
+    width: 100%;
     max-width: 100%;
     overflow-x: hidden;
     padding: 0.45rem 0.35rem;
+    border: 0;
     border-radius: 0.4rem;
+    color: var(--text);
+    background: transparent;
+    text-align: left;
+    font: inherit;
 }
 
 .entry-header:hover {
@@ -107,6 +113,19 @@ body {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+}
+
+.entry-badges {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.2rem;
+}
+
+.header > .btn:focus,
+.entry-header:focus,
+.copyButton:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
 }
 
 pre {
@@ -270,7 +289,14 @@ pre {
     #analyzeCurrent,
     #toggleActive {
         flex: 1 1 0;
+        min-width: 0;
         max-width: none;
+    }
+
+    #inspectCurrent span {
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
     }
 
     #records {

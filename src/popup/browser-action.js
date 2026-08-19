@@ -25,17 +25,24 @@ document.addEventListener("DOMContentLoaded", async () => {
 
 async function getRecords() {
     const records = await browser.runtime.sendMessage(null);
+    renderRecords(records);
+}
 
-    if (!records) {
+export function renderRecords(records) {
+    const list = document.getElementById("records");
+    if (!list) {
         return;
     }
 
-    const list = document.getElementById("records");
+    if (!Array.isArray(records) || records.length === 0) {
+        list.classList.add("hidden");
+        return;
+    }
 
     records.forEach((record) => list.prepend(newListItem(record)));
 
-    list.querySelector(".entry:first-child .entry-header").click();
-    document.getElementById("records").classList.remove("hidden");
+    list.querySelector(".entry:first-child .entry-header")?.click();
+    list.classList.remove("hidden");
 }
 
 function newListItem(record) {

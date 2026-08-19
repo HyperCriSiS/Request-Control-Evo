@@ -3,6 +3,7 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { normalizeImportSource } from "./import-source.js";
+import { fetchWithTimeout } from "../main/remote-fetch.js";
 
 class RuleImportInput extends HTMLElement {
     constructor() {
@@ -12,6 +13,8 @@ class RuleImportInput extends HTMLElement {
         this._source = "";
         this._fetchSource = "";
         this._loadPromise = null;
+        this.loadStatus = "idle";
+        this.integrityStatus = "unknown";
         const template = document.getElementById("rule-import-input");
         this.attachShadow({ mode: "open" }).appendChild(template.content.cloneNode(true));
         this.enhancePresentation();
@@ -157,6 +160,8 @@ class RuleImportInput extends HTMLElement {
             url.removeAttribute("href");
             this.rules = [];
             this.digest = null;
+            this.loadStatus = "idle";
+            this.integrityStatus = "unknown";
             return;
         }
 
@@ -274,13 +279,15 @@ class RuleImportInput extends HTMLElement {
         integrity.hidden = true;
         this.digest = null;
         this.rules = [];
+        this.loadStatus = "loading";
+        this.integrityStatus = this.expectedSha256 ? "pending" : "not-required";
 
         try {
             const source = normalizeImportSource(src);
             if (!source) {
                 throw new TypeError("Unsupported rule source URL");
             }
-            const response = await fetch(source);
+            const response = await fetchWithTimeout(source, { cache: "no-store" });
             if (!response.ok) {
                 throw new Error(`Failed to fetch rule list: ${response.status}`);
             }
@@ -290,13 +297,19 @@ class RuleImportInput extends HTMLElement {
                 integrity.hidden = false;
                 integrity.textContent = message("integrity_failed", "Integrity check failed");
                 this.digest = null;
+                this.loadStatus = "integrity-failed";
+                this.integrityStatus = "failed";
                 return;
+            }
+            if (this.expectedSha256) {
+                this.integrityStatus = "verified";
             }
             const parsed = JSON.parse(text);
             this.rules = Array.isArray(parsed) ? parsed : [parsed];
             if (this.rules.some((rule) => !rule || typeof rule !== "object")) {
                 throw new TypeError("Invalid rule payload");
             }
+            this.loadStatus = "available";
             count.hidden = false;
             if (this.rules.length === 1) {
                 count.textContent = browser.i18n.getMessage("count_rule") || "1 rule";
@@ -306,6 +319,10 @@ class RuleImportInput extends HTMLElement {
         } catch {
             this.digest = null;
             this.rules = [];
+            this.loadStatus = "unavailable";
+            if (this.integrityStatus === "pending") {
+                this.integrityStatus = "unknown";
+            }
             count.hidden = false;
             count.textContent = message("import_unavailable", "Unavailable");
         } finally {

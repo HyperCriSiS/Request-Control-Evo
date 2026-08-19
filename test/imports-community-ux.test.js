@@ -5,18 +5,20 @@ const optionsJs = fs.readFileSync(new URL("../src/options/options.js", import.me
 const importJs = fs.readFileSync(new URL("../src/options/rule-import-input.js", import.meta.url), "utf8");
 
 test("imports are split into official, community and advanced custom channels", () => {
-    expect(optionsJs).toContain('details.id = "official-rule-lists"');
+    expect(optionsHtml).toContain('id="official-rule-lists"');
     expect(optionsHtml).toContain('id="community-rule-lists"');
     expect(optionsHtml).toContain('id="custom-rule-lists"');
-    expect(optionsJs).toContain('document.getElementById("recommended-rule-lists")');
-    expect(optionsJs).toContain('recommended.replaceWith(details)');
+    expect(optionsHtml).not.toContain("recommended-rule-lists");
+    expect(optionsJs).not.toContain("recommended-rule-lists");
 });
 
 test("official packages expose individual and bulk update states", () => {
-    expect(optionsJs).toContain('badge.id = "official-update-count"');
-    expect(optionsJs).toContain('updateAll.id = "official-update-all"');
+    expect(optionsHtml).toContain('id="official-update-count"');
+    expect(optionsHtml).toContain('id="official-update-all"');
     expect(optionsJs).toContain("refreshOfficialUpdateState");
     expect(optionsJs).toContain("updateAllOfficial");
+    expect(optionsJs).toContain("persistRemoteCheckResults");
+    expect(optionsJs).toContain("imports_official_checks_failed");
     expect(importJs).toContain("get updateAvailable()");
 });
 
@@ -24,6 +26,8 @@ test("official and community catalogs are remote while bundled presets are no lo
     expect(optionsJs).toContain("/official/catalog.json");
     expect(optionsJs).toContain("/community/catalog.json");
     expect(optionsJs).toContain('communityDetails.addEventListener("toggle"');
+    expect(optionsJs.indexOf('communityDetails.addEventListener("toggle"'))
+        .toBeLessThan(optionsJs.indexOf("setupOfficialCatalog(importState)"));
     expect(importJs).not.toContain("setupRecommendedRulesets");
     expect(importJs).not.toContain("browser.runtime.getURL(preset.path)");
 });

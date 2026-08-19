@@ -2,7 +2,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { analyzeUrl, suggestParameterActions } from "../main/analysis/url-analyzer.js";
+import {
+    analyzeUrl,
+    CONSERVATIVE_PARAMETER_PATTERNS,
+    suggestParameterActions,
+} from "../main/analysis/url-analyzer.js";
 import { buildSuggestedFilterRule } from "../main/analysis/rule-suggestions.js";
 import { uuid } from "../util/uuid.js";
 
@@ -17,7 +21,7 @@ const suggestionsNode = document.getElementById("suggestions");
 const noSuggestions = document.getElementById("no-suggestions");
 const createButton = document.getElementById("create-rule");
 
-const patterns = await loadKnownParameterPatterns();
+const patterns = CONSERVATIVE_PARAMETER_PATTERNS;
 const params = new URLSearchParams(location.search);
 const requestedTabId = Number.parseInt(params.get("tabId"), 10);
 const guardianButton = document.getElementById("guardian-run");
@@ -25,10 +29,7 @@ const guardianStatus = document.getElementById("guardian-status");
 const guardianResult = document.getElementById("guardian-result");
 const referrerMode = document.getElementById("referrer-mode");
 
-const { referrerProtectionMode = "browser" } = await browser.storage.local.get("referrerProtectionMode");
-referrerMode.value = ["browser", "balanced", "same-origin", "no-referrer"].includes(referrerProtectionMode)
-    ? referrerProtectionMode
-    : "browser";
+initializeReferrerMode();
 referrerMode.addEventListener("change", () =>
     browser.storage.local.set({ referrerProtectionMode: referrerMode.value })
 );
@@ -54,15 +55,14 @@ form.addEventListener("submit", (event) => {
 document.getElementById("open-options").addEventListener("click", () => browser.runtime.openOptionsPage());
 createButton.addEventListener("click", createRule);
 
-async function loadKnownParameterPatterns() {
+async function initializeReferrerMode() {
     try {
-        const response = await fetch(browser.runtime.getURL("rules/privacy-common-params.json"));
-        const rules = await response.json();
-        return rules
-            .filter((rule) => rule.pattern && rule.pattern.allUrls && rule.paramsFilter && !rule.paramsFilter.invert)
-            .flatMap((rule) => rule.paramsFilter.values || []);
+        const { referrerProtectionMode = "browser" } = await browser.storage.local.get("referrerProtectionMode");
+        referrerMode.value = ["browser", "balanced", "same-origin", "no-referrer"].includes(referrerProtectionMode)
+            ? referrerProtectionMode
+            : "browser";
     } catch {
-        return ["utm_*", "fbclid", "gclid", "yclid", "ref_*", "referrer"];
+        referrerMode.value = "browser";
     }
 }
 

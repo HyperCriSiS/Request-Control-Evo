@@ -64,10 +64,27 @@ export class DomainMatcher {
         const origin = libTld.getDomain(originUrl);
         const outgoing = libTld.getDomain(targetUrl);
         if (outgoing === null) {
-            // expect request to be from same domain
-            return true;
+            const outgoingHostname = getWebHostname(targetUrl);
+            if (outgoingHostname === null) {
+                // Preserve the established behavior for hostless schemes such as data:.
+                return true;
+            }
+            const originHostname = getWebHostname(originUrl);
+            return originHostname !== null && originHostname === outgoingHostname;
         }
         return origin === outgoing;
+    }
+}
+
+function getWebHostname(value) {
+    try {
+        const url = new URL(value);
+        if ((url.protocol !== "http:" && url.protocol !== "https:") || !url.hostname) {
+            return null;
+        }
+        return url.hostname.toLowerCase().replace(/\.$/, "");
+    } catch {
+        return null;
     }
 }
 

@@ -145,6 +145,40 @@ textarea {
     border-radius: var(--radius-sm);
 }
 
+/* Override the vendored tags-input palette with the project theme tokens. */
+.tags-input .tag {
+    background: var(--surface-subtle);
+    border-color: var(--border-color-strong);
+    color: var(--text-color);
+}
+
+.tags-input .selected {
+    background-color: var(--primary-color);
+    border-color: var(--primary-color);
+    color: var(--on-primary-color);
+}
+
+.tags-input .editing {
+    background: var(--surface-color);
+    color: var(--text-color);
+}
+
+.tags-input .duplicate,
+.tags-input .tag.error {
+    background-color: var(--danger-color);
+    border-color: var(--danger-color);
+    color: var(--on-danger-color);
+}
+
+.tags-input.error input {
+    color: var(--danger-color);
+}
+
+.tags-input.focus {
+    border-color: var(--focus-color);
+    box-shadow: 0 0 0 2px var(--primary-muted);
+}
+
 pre {
     padding: 0.75rem;
     border: 1px solid var(--border-color);
@@ -235,6 +269,25 @@ small,
     textarea {
         min-height: 2.75rem;
         font-size: 1rem;
+    }
+
+    .tags-input {
+        min-height: 2.75rem;
+        align-items: center;
+        padding: 0.25rem !important;
+    }
+
+    .tags-input .tag {
+        display: inline-flex;
+        align-items: center;
+        min-height: 2.75rem;
+        padding: 0.35rem 0.5rem;
+        line-height: 1.4;
+        touch-action: manipulation;
+    }
+
+    .tags-input input {
+        min-height: 2.75rem;
     }
 
     summary,

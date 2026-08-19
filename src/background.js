@@ -5,22 +5,34 @@
 import { ALL_URLS, createRequestFilters } from "./main/api.js";
 import { RequestController } from "./main/control.js";
 import { migrateManagedSourceState } from "./main/catalog.js";
+import { InspectionSessionLimiter } from "./main/inspection/session-limiter.js";
 import { InspectionStore } from "./main/inspection/store.js";
 import { guardian } from "./main/guardian.js";
 import { NavigationAdapter } from "./main/navigation.js";
-import { configureReferrerProtection } from "./main/referrer-protection.js";
+import {
+    configureReferrerProtection,
+    effectiveReferrerProtectionMode,
+} from "./main/referrer-protection.js";
 import * as notifier from "./util/notifier.js";
 import * as records from "./util/records.js";
 
 const listeners = [];
 const inspections = new InspectionStore();
+const inspectionLimiter = new InspectionSessionLimiter({
+    onExpire(tabId) {
+        inspections.stop(tabId);
+        maybeRemoveInspectionListeners();
+    },
+});
 const topLevelUrls = new Map();
 let inspectionListenersActive = false;
+let initGeneration = 0;
 const controller = new RequestController(notify, updateTab);
 const navigation = new NavigationAdapter({
     notify,
     navigate: updateTab,
     replaceHistory: replaceHistoryState,
+    onInvalidRule: () => notifier.error(),
 });
 const storageKeys = ["rules", "imports", "disabled", "referrerProtectionMode"];
 
@@ -43,11 +55,14 @@ async function bootstrap() {
         };
     }
     browser.storage.onChanged.addListener(onOptionsChanged);
-    init(options);
+    const generation = ++initGeneration;
+    init(options, generation);
 }
 
-function init(options) {
-    configureReferrerProtection(options.referrerProtectionMode || "browser");
+function init(options, generation = initGeneration) {
+    configureReferrerProtection(
+        effectiveReferrerProtectionMode(options.referrerProtectionMode || "browser", options.disabled)
+    );
     if (options.disabled) {
         browser.tabs.onRemoved.removeListener(onTabRemoved);
         browser.webNavigation.onCommitted.removeListener(onNavigation);
@@ -65,9 +80,13 @@ function init(options) {
         addRequestListeners(options.rules);
         navigation.setRules(options.rules);
         browser.tabs.query({}).then((tabs) => {
+            if (generation !== initGeneration) {
+                return;
+            }
             for (const tab of tabs) {
                 if (typeof tab.id === "number" && tab.url) {
                     topLevelUrls.set(tab.id, tab.url);
+                    navigation.commit(tab.id, tab.url);
                 }
             }
         });
@@ -76,17 +95,23 @@ function init(options) {
 }
 
 function onOptionsChanged(changes) {
-    if ("referrerProtectionMode" in changes) {
-        configureReferrerProtection(changes.referrerProtectionMode.newValue || "browser");
-    }
-    if (!("rules" in changes) && !("disabled" in changes)) {
+    if (
+        !("rules" in changes) &&
+        !("disabled" in changes) &&
+        !("referrerProtectionMode" in changes)
+    ) {
         return;
     }
+    const generation = ++initGeneration;
     while (listeners.length > 0) {
         browser.webRequest.onBeforeRequest.removeListener(listeners.pop());
     }
     browser.webRequest.onBeforeRequest.removeListener(controlListener);
-    browser.storage.local.get(storageKeys).then(init);
+    browser.storage.local.get(storageKeys).then((options) => {
+        if (generation === initGeneration) {
+            init(options, generation);
+        }
+    });
 }
 
 function addRequestListeners(rules) {
@@ -121,9 +146,6 @@ function ruleListener(rule, matcher) {
 }
 
 function controlListener(request) {
-    if (request.type === "main_frame" && request.frameId === 0) {
-        topLevelUrls.set(request.tabId, request.url);
-    }
     return controller.resolve(request);
 }
 
@@ -183,7 +205,6 @@ async function onHistoryStateUpdated(details) {
     if (details.frameId !== 0) {
         return;
     }
-    topLevelUrls.set(details.tabId, details.url);
 
     let tab;
     try {
@@ -193,9 +214,14 @@ async function onHistoryStateUpdated(details) {
     }
 
     try {
-        await navigation.handle(details, {
+        const result = await navigation.handle(details, {
             incognito: Boolean(tab.incognito),
         });
+        if (!result || result.action === "whitelist") {
+            topLevelUrls.set(details.tabId, details.url);
+        } else if (result.action === "replace") {
+            topLevelUrls.set(details.tabId, result.target);
+        }
     } catch {
         notifier.error();
     }
@@ -217,6 +243,7 @@ function onTabRemoved(tabId) {
 
 function onInspectionTabRemoved(tabId) {
     guardian.stop(tabId);
+    inspectionLimiter.stop(tabId);
     inspections.remove(tabId);
     topLevelUrls.delete(tabId);
     maybeRemoveInspectionListeners();
@@ -247,16 +274,19 @@ function onRuntimeMessage(message) {
                 pageUrl: message.pageUrl || "",
                 title: message.title || "",
             });
+            inspectionLimiter.start(tabId);
             ensureInspectionListeners();
             return Promise.resolve(inspections.snapshot(tabId));
         case "get":
             return Promise.resolve(inspections.snapshot(tabId));
         case "stop": {
+            inspectionLimiter.stop(tabId);
             const snapshot = inspections.stop(tabId);
             maybeRemoveInspectionListeners();
             return Promise.resolve(snapshot);
         }
         case "clear":
+            inspectionLimiter.stop(tabId);
             inspections.remove(tabId);
             maybeRemoveInspectionListeners();
             return Promise.resolve(null);

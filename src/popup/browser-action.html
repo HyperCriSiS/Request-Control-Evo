@@ -15,31 +15,33 @@
         <div class="content">
             <div id="records" class="hidden"></div>
             <div class="header">
-                <label id="showRules" class="btn" data-i18n="options_title"></label>
+                <button id="showRules" class="btn" type="button" data-i18n="options_title"></button>
                 <button
                     id="inspectCurrent"
                     class="btn"
-                    title="Inspect current page"
-                    aria-label="Inspect current page"
+                    type="button"
+                    data-i18n-title="inspection_title"
+                    data-i18n-aria-label="inspection_title"
                 >
                     <img src="/icons/ionicons/list-outline.svg" width="18" alt="" />
-                    <span>Inspect</span>
+                    <span data-i18n="inspection_title"></span>
                 </button>
                 <button
                     id="analyzeCurrent"
                     class="btn"
+                    type="button"
                     data-i18n-title="analyzer_title"
                     data-i18n-aria-label="analyzer_title"
                 >
                     <img src="/icons/ionicons/shuffle-outline.svg" width="18" alt="" />
                 </button>
-                <label id="toggleActive" class="btn"></label>
+                <button id="toggleActive" class="btn" type="button"></button>
             </div>
         </div>
         <div id="details" class="hidden">
             <div class="text-shortcut">
-                <button class="copyButton tooltip" data-copy-target="url" data-i18n-title="copy_to_clipboard">
-                    <img src="/icons/firefox/copy.svg" width="20" />
+                <button type="button" class="copyButton tooltip" data-copy-target="url" data-i18n-title="copy_to_clipboard">
+                    <img src="/icons/firefox/copy.svg" width="20" alt="" />
                     <span class="tooltiptext" data-i18n="copied"></span>
                 </button>
             </div>
@@ -47,8 +49,8 @@
             <pre id="url"></pre>
             <div id="targetBlock" class="hidden">
                 <div class="text-shortcut">
-                    <button class="copyButton tooltip" data-copy-target="target" data-i18n-title="copy_to_clipboard">
-                        <img src="/icons/firefox/copy.svg" width="20" />
+                    <button type="button" class="copyButton tooltip" data-copy-target="target" data-i18n-title="copy_to_clipboard">
+                        <img src="/icons/firefox/copy.svg" width="20" alt="" />
                         <span class="tooltiptext" data-i18n="copied"></span>
                     </button>
                 </div>
@@ -59,16 +61,16 @@
         </div>
         <template id="entryTemplate">
             <div class="entry">
-                <div class="entry-header">
+                <button type="button" class="entry-header">
                     <small class="timestamp"></small>
-                    <img class="icon" src="/icons/icon.svg" height="16" />
+                    <img class="icon" src="/icons/icon.svg" height="16" alt="" />
                     <span class="action"></span>
                     <span class="url"></span>
-                    <div>
-                        <label class="tags badge badge-light"></label>
-                        <label class="type badge badge-info"></label>
-                    </div>
-                </div>
+                    <span class="entry-badges">
+                        <span class="tags badge badge-light"></span>
+                        <span class="type badge badge-info"></span>
+                    </span>
+                </button>
             </div>
         </template>
     </body>

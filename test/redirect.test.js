@@ -1,4 +1,4 @@
-import { RedirectRule } from "../src/main/rules/redirect";
+import { parseReplacePattern, RedirectRule } from "../src/main/rules/redirect";
 
 test("Static redirection url", () => {
     const request = "https://www.amazon.com/AmazonBasics-Type-C-USB-Male-Cable/dp/B01GGKYQ02/ref=sr_1_1?s=amazonbasics&srs=10112675011&ie=UTF8&qid=1489067885&sr=8-1&keywords=usb-c";
@@ -179,6 +179,36 @@ test("Set Search Parameter - encode", () => {
     const target = "http://example.com/?query=http%3A%2F%2Fexample.com";
     const redirectRule = new RedirectRule({ redirectUrl: "[search.query={origin|encodeURIComponent}]" });
     expect(redirectRule.apply(request)).toBe(target);
+});
+
+test("Replace-pattern delimiter honors preceding backslash parity", () => {
+    expect(parseReplacePattern(String.raw`foo/bar`)).toEqual(["foo", "bar"]);
+    expect(parseReplacePattern(String.raw`foo\/bar/baz`)).toEqual([String.raw`foo\/bar`, "baz"]);
+    expect(parseReplacePattern(String.raw`foo\\/bar`)).toEqual([String.raw`foo\\`, "bar"]);
+});
+
+test("Set Search Parameter after another redirect instruction", () => {
+    const request = "https://example.com/?a=1&b=2";
+    const redirectRule = new RedirectRule({ redirectUrl: "[hostname=other.test][search.b=x]" });
+    expect(redirectRule.apply(request)).toBe("https://other.test/?a=1&b=x");
+});
+
+test("Set Search Parameter after multiple redirect instructions", () => {
+    const request = "http://example.com/?a=1&b=2";
+    const redirectRule = new RedirectRule({
+        redirectUrl: "[protocol=https][hostname=other.test][search.b={search.a|encodeURIComponent}]",
+    });
+    expect(redirectRule.apply(request)).toBe("https://other.test/?a=1&b=1");
+});
+
+test("Set Search Parameter after a literal redirect target", () => {
+    const redirectRule = new RedirectRule({ redirectUrl: "https://other.test/[search.b=x]" });
+    expect(redirectRule.apply("https://example.com/?a=1")).toBe("https://other.test/?b=x");
+});
+
+test("Malformed query expansions do not throw while parsing", () => {
+    expect(() => new RedirectRule({ redirectUrl: "[search.=x]" })).not.toThrow();
+    expect(() => new RedirectRule({ redirectUrl: "{search.}" })).not.toThrow();
 });
 
 test("Capture Search Parameter - not found", () => {

@@ -1,0 +1,34 @@
+import fs from "node:fs";
+
+const background = fs.readFileSync(new URL("../src/background.js", import.meta.url), "utf8");
+
+function functionBody(name, nextName) {
+    const start = background.indexOf(`function ${name}`);
+    const end = background.indexOf(`function ${nextName}`, start);
+    return background.slice(start, end);
+}
+
+test("main-frame source context advances only on committed or accepted navigation", () => {
+    const controlListener = functionBody("controlListener", "updateTab");
+    const committedNavigation = functionBody("onNavigation", "onHistoryStateUpdated");
+    const historyNavigation = functionBody("onHistoryStateUpdated", "replaceHistoryState");
+
+    expect(controlListener).not.toContain("topLevelUrls.set");
+    expect(committedNavigation).toContain("topLevelUrls.set(details.tabId, details.url)");
+    expect(historyNavigation.indexOf("navigation.handle")).toBeLessThan(
+        historyNavigation.indexOf("topLevelUrls.set")
+    );
+    expect(background).toContain("navigation.commit(tab.id, tab.url)");
+});
+
+test("stale option reads cannot rebuild listeners after a newer configuration", () => {
+    expect(background).toContain("let initGeneration = 0");
+    expect(background).toContain("const generation = ++initGeneration");
+    expect(background).toContain("if (generation === initGeneration)");
+    expect(background).toContain("if (generation !== initGeneration)");
+});
+
+test("inspection start, stop, clear, and tab removal control the session limiter", () => {
+    expect(background).toContain("inspectionLimiter.start(tabId)");
+    expect(background.match(/inspectionLimiter\.stop\(tabId\)/g)).toHaveLength(3);
+});

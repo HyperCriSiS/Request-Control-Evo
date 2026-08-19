@@ -19,6 +19,9 @@ export function normalizeImportSource(value) {
         if (!ALLOWED_IMPORT_PROTOCOLS.has(url.protocol)) {
             return null;
         }
+        if (url.username || url.password) {
+            return null;
+        }
         return url.href;
     } catch {
         return null;

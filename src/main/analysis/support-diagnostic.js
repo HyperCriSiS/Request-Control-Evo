@@ -6,6 +6,23 @@ import { summarizeInspection } from "./inspection.js";
 
 export const SUPPORT_DIAGNOSTIC_SCHEMA_VERSION = 1;
 
+const SAFE_UUID = /^[A-Za-z0-9_-]{1,128}$/;
+const SAFE_PACKAGE_ID = /^[a-z0-9](?:[a-z0-9-]{0,126}[a-z0-9])?$/;
+const SAFE_VERSION = /^(?:0|[1-9]\d*)(?:\.(?:0|[1-9]\d*)){0,3}(?:[-+][0-9A-Za-z.-]+)?$/;
+const SAFE_CODE = /^[a-z0-9](?:[a-z0-9-]{0,62}[a-z0-9])?$/;
+const SAFE_DIGEST = /^[a-f0-9]{64}$/i;
+const SAFE_ACTIONS = new Set(["block", "filter", "redirect", "secure", "whitelist"]);
+
+function safeString(value, pattern) {
+    return typeof value === "string" && pattern.test(value) ? value : null;
+}
+
+function safeTimestamp(value) {
+    if (typeof value !== "string" || value.length > 40) return null;
+    const parsed = new Date(value);
+    return Number.isNaN(parsed.getTime()) ? null : parsed.toISOString();
+}
+
 function catalogChannel(catalog) {
     if (catalog === "requestcontrol-official") return "official";
     if (catalog === "requestcontrol-community") return "community";
@@ -21,8 +38,8 @@ export function summarizeRuleSource(rule) {
     if (channel) {
         return {
             channel,
-            packageId: rule.source.entry || null,
-            version: rule.source.version || null,
+            packageId: safeString(rule.source.entry, SAFE_PACKAGE_ID),
+            version: safeString(rule.source.version, SAFE_VERSION),
         };
     }
 
@@ -37,27 +54,34 @@ function summarizePackageState(data) {
     const conflicts = Array.isArray(imported.conflicts)
         ? imported.conflicts
             .filter((conflict) => conflict && typeof conflict === "object")
-            .map((conflict) => ({
-                uuid: typeof conflict.uuid === "string" ? conflict.uuid : null,
-                reason: typeof conflict.reason === "string" ? conflict.reason : "unknown-conflict",
-            }))
+            .map((conflict) => {
+                const uuid = safeString(conflict.uuid, SAFE_UUID);
+                if (!uuid) return null;
+                return {
+                    uuid,
+                    reason: safeString(conflict.reason, SAFE_CODE) || "unknown-conflict",
+                };
+            })
+            .filter(Boolean)
         : [];
-    const integrityStatus = imported.integrityStatus || (
-        ["official", "community"].includes(channel) && imported.digest
+    const installedDigest = safeString(imported.digest, SAFE_DIGEST);
+    const availableDigest = safeString(imported.availableDigest, SAFE_DIGEST);
+    const integrityStatus = safeString(imported.integrityStatus, SAFE_CODE) || (
+        ["official", "community"].includes(channel) && installedDigest
             ? "verified-at-import"
             : (channel === "custom" ? "not-required" : "unknown")
     );
 
     return {
         channel,
-        packageId: imported.entry || null,
-        version: imported.version || null,
-        installedDigest: imported.digest || null,
-        availableDigest: imported.availableDigest || null,
-        availableVersion: imported.availableVersion || null,
-        updateAvailable: Boolean(imported.digest && imported.availableDigest && imported.digest !== imported.availableDigest),
+        packageId: safeString(imported.entry, SAFE_PACKAGE_ID),
+        version: safeString(imported.version, SAFE_VERSION),
+        installedDigest,
+        availableDigest,
+        availableVersion: safeString(imported.availableVersion, SAFE_VERSION),
+        updateAvailable: Boolean(installedDigest && availableDigest && installedDigest !== availableDigest),
         integrityStatus,
-        lastCheckStatus: imported.lastCheckStatus || null,
+        lastCheckStatus: safeString(imported.lastCheckStatus, SAFE_CODE),
         conflicts,
     };
 }
@@ -102,14 +126,18 @@ export function summarizeRuleRuntimeState(rule, imports = {}) {
 }
 
 function summarizeAffectedRules(session, rules = []) {
-    const storedRules = new Map((rules || []).filter((rule) => rule?.uuid).map((rule) => [rule.uuid, rule]));
+    const storedRules = new Map(
+        (rules || [])
+            .map((rule) => [safeString(rule?.uuid, SAFE_UUID), rule])
+            .filter(([uuid]) => uuid)
+    );
     const affected = new Map();
 
     for (const request of session?.requests || []) {
-        const uuid = request?.effect?.rule?.uuid;
+        const uuid = safeString(request?.effect?.rule?.uuid, SAFE_UUID);
         if (!uuid) continue;
 
-        const action = request.effect.action || "unknown";
+        const action = SAFE_ACTIONS.has(request.effect.action) ? request.effect.action : "unknown";
         const key = `${uuid}:${action}`;
         if (!affected.has(key)) {
             affected.set(key, {
@@ -136,8 +164,8 @@ export function buildSupportDiagnostic(session, {
     return {
         schemaVersion: SUPPORT_DIAGNOSTIC_SCHEMA_VERSION,
         generatedBy: "request-control-evo",
-        generatedAt,
-        extensionVersion: extensionVersion || null,
+        generatedAt: safeTimestamp(generatedAt),
+        extensionVersion: safeString(extensionVersion, SAFE_VERSION),
         privacy: {
             containsRawUrls: false,
             containsHostnames: false,

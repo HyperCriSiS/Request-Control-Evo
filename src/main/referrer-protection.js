@@ -11,52 +11,75 @@ export const REFERRER_PROTECTION_MODES = Object.freeze([
 
 const VALID_MODES = new Set(REFERRER_PROTECTION_MODES);
 
+export function effectiveReferrerProtectionMode(mode, disabled = false) {
+    if (disabled) {
+        return "browser";
+    }
+    return VALID_MODES.has(mode) ? mode : "browser";
+}
+
 export function applyReferrerProtection(details, mode) {
     if (mode === "browser") {
         return undefined;
     }
 
     const headers = (details.requestHeaders || []).map((header) => ({ ...header }));
-    const index = headers.findIndex((header) => header.name.toLowerCase() === "referer");
-    if (index === -1 || typeof headers[index].value !== "string" || !headers[index].value) {
+    if (!headers.some((header) => header.name.toLowerCase() === "referer")) {
         return undefined;
     }
 
     if (mode === "no-referrer") {
-        headers.splice(index, 1);
-        return { requestHeaders: headers };
+        return {
+            requestHeaders: headers.filter((header) => header.name.toLowerCase() !== "referer"),
+        };
     }
 
-    let source;
     let target;
     try {
-        source = new URL(headers[index].value);
         target = new URL(details.url);
     } catch {
-        return undefined;
+        return {
+            requestHeaders: headers.filter((header) => header.name.toLowerCase() !== "referer"),
+        };
     }
 
-    if (source.origin === target.origin) {
-        return undefined;
-    }
-
-    if (mode === "same-origin") {
-        headers.splice(index, 1);
-        return { requestHeaders: headers };
-    }
-
-    if (mode === "balanced") {
-        if (source.protocol === "https:" && target.protocol === "http:") {
-            headers.splice(index, 1);
-        } else if (source.origin === "null") {
-            headers.splice(index, 1);
-        } else {
-            headers[index] = { ...headers[index], value: `${source.origin}/` };
+    let changed = false;
+    const protectedHeaders = [];
+    for (const header of headers) {
+        if (header.name.toLowerCase() !== "referer") {
+            protectedHeaders.push(header);
+            continue;
         }
-        return { requestHeaders: headers };
+        let source;
+        try {
+            if (typeof header.value !== "string" || !header.value) {
+                throw new TypeError("Invalid Referer header");
+            }
+            source = new URL(header.value);
+        } catch {
+            changed = true;
+            continue;
+        }
+        if (source.origin === target.origin) {
+            protectedHeaders.push(header);
+            continue;
+        }
+        if (
+            mode === "same-origin" ||
+            (mode === "balanced" && (source.protocol === "https:" && target.protocol === "http:")) ||
+            (mode === "balanced" && source.origin === "null")
+        ) {
+            changed = true;
+            continue;
+        }
+        if (mode === "balanced") {
+            const value = `${source.origin}/`;
+            protectedHeaders.push({ ...header, value });
+            changed ||= value !== header.value;
+        }
     }
 
-    return undefined;
+    return changed ? { requestHeaders: protectedHeaders } : undefined;
 }
 
 export class ReferrerProtection {
@@ -68,7 +91,7 @@ export class ReferrerProtection {
     }
 
     configure(mode) {
-        this.currentMode = VALID_MODES.has(mode) ? mode : "browser";
+        this.currentMode = effectiveReferrerProtectionMode(mode);
         const webRequest = this.getWebRequest();
 
         if (this.currentMode === "browser") {
