@@ -2,7 +2,7 @@
 
 This document is the binding source of truth for the active modernization/release line. Detailed historical design notes remain in `docs/roadmap.md` and the phase-specific documents.
 
-**Status: 1.19.0 released and verified; Phase 12 active**
+**Status: 1.19.0 released and verified; Phases 1–12 complete on `dev`**
 
 ## Current baseline
 
@@ -25,6 +25,7 @@ This document is the binding source of truth for the active modernization/releas
 - [x] **Phase 9 — source-site semantic hardening / DNR parity:** conservative source matching and capability-gated session `topDomains` support.
 - [x] **Phase 10 — Firefox Android hardening / 1.19.0:** mobile layouts, full release validation and published 1.19.0 artifacts.
 - [x] **Phase 11 — simplified Imports / Community UX:** lazy community loading, reduced visual density, clearer contribution flow and import integrity regression coverage.
+- [x] **Phase 12 — Official remote rules, selective imports, external curation and Observatory boundary:** completed and validated across the extension and canonical rules repository.
 
 ## Phase 12 — Official remote rules, external curation and Observatory boundary
 
@@ -58,7 +59,6 @@ This document is the binding source of truth for the active modernization/releas
 - [x] Generate positive and negative candidate fixtures and require them for promotion readiness.
 - [x] Add a local review CLI plus CI smoke review against the current Official corpus.
 - [x] Remove legacy root catalog/rule compatibility paths and reject legacy source metadata in catalog validation.
-- [ ] Expand source-specific adapters only where licensing and deterministic semantics justify the maintenance cost.
 
 ### D. Community → Official promotion
 
@@ -89,10 +89,16 @@ This document is the binding source of truth for the active modernization/releas
 
 ### H. Phase validation
 
-- [ ] Run extension audit, lint, tests, build, build-lint/checker and security scans after the Phase 12 runtime changes.
-- [ ] Run rule-catalog validator, curation self-test/review smoke test and security scans after the Phase 12 catalog changes.
-- [ ] Re-check Firefox Android Imports/Official update presentation and selective package controls after the final Phase 12 UI changes.
-- [ ] Mark Phase 12 complete only after both repositories are green and remaining deferred source-adapter work is explicitly moved to later maintenance.
+- [x] Extension audit, lint, tests, build, build-lint/checker and code/secret/dependency security scans are green after the Phase 12 runtime changes.
+- [x] Rule-catalog validator, curation self-test/review smoke test and CodeQL/secret scanning are green after the Phase 12 catalog changes. Dependabot is not enabled in `requestcontrol-rules`, so no Dependabot status is claimed there.
+- [x] Firefox Android Imports/Official update presentation and selective package controls are covered by the final mobile regression suite.
+- [x] Phase 12 is complete after both repositories passed their applicable validation/security gates.
+
+## Future maintenance / next phase candidates
+
+- Expand source-specific curation adapters only where licensing, deterministic semantics and expected rule value justify the ongoing maintenance cost.
+- Re-evaluate the selective-import interaction after hands-on Firefox Android testing with large real-world packages; keep the compact selector unless evidence justifies a more complex UI.
+- Consider an opt-in Wormhole Observatory transport only after its privacy boundary, response-contract tests and local review model remain stable in real use.
 
 ## Release policy
 
@@ -107,4 +113,4 @@ GitHub's optional agentic `github-advanced-security` PR check has previously fai
 
 ## Completion status
 
-**Phases 1–11 are complete on `dev`. Phase 12 is active.** The current development line removes legacy remote-source compatibility and packaged rule duplication, makes Official the single maintainer-managed rule source, strengthens offline curation gates, and prepares compact runtime diagnostics plus a privacy-preserving future Wormhole Observatory boundary.
+**Phases 1–12 are complete on `dev`.** Official is the single maintainer-managed remote rule source, Community and Custom remain separate trust channels, package imports are selectively manageable, external curation is isolated in the rules repository, and the future Wormhole Observatory boundary remains local-first, privacy-preserving and review-only by design.
