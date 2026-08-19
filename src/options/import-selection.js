@@ -2,6 +2,17 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+export const IMPORT_SELECTION_FALLBACK_MESSAGES = Object.freeze({
+    import_choose_rules: "Choose rules",
+    import_select_all: "Select all",
+    import_select_none: "Select none",
+    import_invert_selection: "Invert selection",
+    import_reset_selection: "Reset selection",
+    import_selected_rules: "Import selected rules",
+    import_apply_selection: "Apply selection",
+    import_selected_count: "$1 of $2 rules selected",
+});
+
 export function selectableRuleUuids(rules = []) {
     return rules
         .filter((rule) => rule && typeof rule === "object" && typeof rule.uuid === "string" && rule.uuid)
