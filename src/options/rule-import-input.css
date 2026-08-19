@@ -151,3 +151,97 @@
 :host([aria-busy="true"]) #count {
     opacity: 0.55;
 }
+
+.rule-selection {
+    margin: 0;
+    color: var(--text-color);
+}
+
+.rule-selection > summary {
+    width: max-content;
+    min-height: 2.75rem;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    color: var(--primary-color);
+    font-size: 0.82rem;
+    font-weight: 650;
+}
+
+.selection-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem;
+    margin: 0.25rem 0 0.45rem;
+}
+
+.selection-action {
+    min-height: 2.75rem;
+    padding-inline: 0.7rem;
+}
+
+.selection-list {
+    display: grid;
+    gap: 0.2rem;
+    max-height: min(22rem, 55dvh);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    margin: 0;
+    padding: 0.2rem 0;
+    list-style: none;
+}
+
+.selection-rule {
+    margin: 0;
+    padding: 0;
+}
+
+.selection-rule label {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.55rem;
+    min-height: 2.75rem;
+    padding: 0.45rem 0.35rem;
+    border-radius: 0.35rem;
+    cursor: pointer;
+}
+
+.selection-rule label:hover {
+    background: var(--button-background-hover);
+}
+
+.selection-rule input[type="checkbox"] {
+    flex: 0 0 auto;
+    margin-top: 0.2rem;
+}
+
+.selection-rule-text {
+    min-width: 0;
+    display: grid;
+    gap: 0.15rem;
+}
+
+.selection-rule-text strong,
+.selection-rule-text small {
+    overflow-wrap: anywhere;
+}
+
+.selection-rule-text small {
+    color: var(--text-muted);
+    line-height: 1.35;
+}
+
+@media (max-width: 35em) {
+    .selection-toolbar,
+    .selection-action {
+        width: 100%;
+    }
+
+    .selection-action {
+        justify-content: flex-start;
+    }
+
+    .selection-list {
+        max-height: 50dvh;
+    }
+}
