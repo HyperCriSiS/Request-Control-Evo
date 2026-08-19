@@ -57,3 +57,12 @@ test("Firefox Android package selection remains compact and fully manageable", (
     expect(ruleImportJs).toContain('"invert-rule-selection"');
     expect(ruleImportJs).toContain('"reset-rule-selection"');
 });
+
+test("large package toggles avoid full checkbox resynchronization on every tap", () => {
+    expect(ruleImportJs).toContain("this._selectableRuleCount = selectable.length");
+    expect(ruleImportJs).toContain("updateSelectionPresentation({ syncCheckboxes = true } = {})");
+    expect(ruleImportJs).toContain("updateSelectionPresentation({ syncCheckboxes: false })");
+    expect(ruleImportJs).toContain("if (syncCheckboxes)");
+    expect(ruleImportJs).toContain("const selectedCount = this._selectedUuids.size");
+    expect(ruleImportJs).toContain("this._selectedUuids.size === 0");
+});

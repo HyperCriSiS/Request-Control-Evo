@@ -99,6 +99,7 @@ This document is the binding source of truth for the active modernization/releas
 - Expand source-specific curation adapters only where licensing, deterministic semantics and expected rule value justify the ongoing maintenance cost.
   - [x] 2026-08-19 source-policy re-evaluation: codified adapter eligibility separately from trust-channel integration. ClearURLs and deterministic FastForward URL-only adapters remain active; Actually Legitimate URL Shortener Tool is explicitly deferred because mixed per-entry provenance plus regex/domain-exception/path-sensitive `$removeparam` semantics do not satisfy the deterministic-adapter gate. No lossy approximation was added.
 - Re-evaluate the selective-import interaction after hands-on Firefox Android testing with large real-world packages; keep the compact selector unless evidence justifies a more complex UI.
+  - [x] 2026-08-20 automated large-package hardening: single checkbox toggles no longer resynchronize the entire rendered checkbox list, selected/total state uses cached selectable counts, and a 2,000+ rule regression fixture verifies that sparse installed selections remain stable when upstream packages grow. This reduces Android-side selector work without changing the UX; a real hands-on Firefox Android test is still required before declaring device-level validation complete.
 - Consider an opt-in Wormhole Observatory transport only after its privacy boundary, response-contract tests and local review model remain stable in real use.
 
 ## Release policy

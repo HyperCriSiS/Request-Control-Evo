@@ -33,3 +33,27 @@ test("selection comparison is order independent", () => {
     expect(sameRuleSelection(["one", "two"], ["two", "one"])).toBe(true);
     expect(sameRuleSelection(["one"], ["two"])).toBe(false);
 });
+
+test("large packages preserve sparse installed selections when upstream grows", () => {
+    const largeRules = Array.from({ length: 2000 }, (_, index) => ({
+        uuid: `rule-${index}`,
+        title: `Rule ${index}`,
+    }));
+    const installed = Array.from({ length: 200 }, (_, index) => `rule-${index * 5}`);
+
+    const initial = initialSelectedRuleUuids(largeRules, { selectedUuids: installed });
+    expect(initial.size).toBe(installed.length);
+    expect([...initial]).toEqual(installed);
+
+    const expandedRules = [
+        ...largeRules,
+        ...Array.from({ length: 250 }, (_, index) => ({
+            uuid: `new-rule-${index}`,
+            title: `New rule ${index}`,
+        })),
+    ];
+    const afterUpdate = initialSelectedRuleUuids(expandedRules, { selectedUuids: installed });
+    expect(afterUpdate.size).toBe(installed.length);
+    expect([...afterUpdate]).toEqual(installed);
+    expect(selectedRules(expandedRules, afterUpdate)).toHaveLength(installed.length);
+});

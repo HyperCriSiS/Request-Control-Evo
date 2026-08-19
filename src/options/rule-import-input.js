@@ -20,6 +20,7 @@ class RuleImportInput extends HTMLElement {
         this._loadPromise = null;
         this._selectedUuids = new Set();
         this._baselineSelectedUuids = new Set();
+        this._selectableRuleCount = 0;
         this.loadStatus = "idle";
         this.integrityStatus = "unknown";
         const template = document.getElementById("rule-import-input");
@@ -378,6 +379,7 @@ class RuleImportInput extends HTMLElement {
         }
         list.replaceChildren();
         const selectable = this._rules.filter((rule) => rule?.uuid);
+        this._selectableRuleCount = selectable.length;
         details.hidden = !this.source;
 
         for (const rule of selectable) {
@@ -394,7 +396,7 @@ class RuleImportInput extends HTMLElement {
                 } else {
                     this._selectedUuids.delete(rule.uuid);
                 }
-                this.updateSelectionPresentation();
+                this.updateSelectionPresentation({ syncCheckboxes: false });
             });
 
             const text = document.createElement("span");
@@ -414,23 +416,25 @@ class RuleImportInput extends HTMLElement {
         this.updateSelectionPresentation();
     }
 
-    updateSelectionPresentation() {
+    updateSelectionPresentation({ syncCheckboxes = true } = {}) {
         const summary = this.shadowRoot.getElementById("selection-summary");
         const list = this.shadowRoot.getElementById("selection-list");
         if (!summary || !list) {
             return;
         }
-        const selectable = this._rules.filter((rule) => rule?.uuid);
-        const selectedCount = selectable.filter((rule) => this._selectedUuids.has(rule.uuid)).length;
+        const selectableCount = this._selectableRuleCount;
+        const selectedCount = this._selectedUuids.size;
         summary.textContent = this.digest
-            ? (browser.i18n.getMessage("import_selected_count", [String(selectedCount), String(selectable.length)]) ||
-                `${selectedCount} of ${selectable.length} rules selected`)
+            ? (browser.i18n.getMessage("import_selected_count", [String(selectedCount), String(selectableCount)]) ||
+                `${selectedCount} of ${selectableCount} rules selected`)
             : message("import_choose_rules", "Choose rules");
-        list.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
-            checkbox.checked = this._selectedUuids.has(checkbox.dataset.uuid);
-        });
+        if (syncCheckboxes) {
+            list.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+                checkbox.checked = this._selectedUuids.has(checkbox.dataset.uuid);
+            });
+        }
         this.shadowRoot.querySelectorAll(".selection-action").forEach((button) => {
-            button.disabled = selectable.length === 0;
+            button.disabled = selectableCount === 0;
         });
         const reset = this.shadowRoot.getElementById("reset-rule-selection");
         if (reset) {
@@ -445,7 +449,7 @@ class RuleImportInput extends HTMLElement {
         const selectionDirty = imported && !sameRuleSelection(this._selectedUuids, this._baselineSelectedUuids);
         const unavailable = !this.digest && !this.hasAttribute("lazy");
         importList.hidden = unavailable || Boolean(imported && !this.updateAvailable && !selectionDirty);
-        importList.disabled = Boolean(!imported && this.digest && this.selectedRules.length === 0);
+        importList.disabled = Boolean(!imported && this.digest && this._selectedUuids.size === 0);
         importList.title = imported
             ? message("import_apply_selection", "Apply selection")
             : message("import_selected_rules", "Import selected rules");
