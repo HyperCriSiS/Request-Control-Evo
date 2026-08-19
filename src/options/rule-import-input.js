@@ -3,16 +3,23 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { normalizeImportSource } from "./import-source.js";
+import {
+    initialSelectedRuleUuids,
+    sameRuleSelection,
+    selectedRules as filterSelectedRules,
+} from "./import-selection.js";
 import { fetchWithTimeout } from "../main/remote-fetch.js";
 
 class RuleImportInput extends HTMLElement {
     constructor() {
         super();
-        this.rules = [];
+        this._rules = [];
         this._data = {};
         this._source = "";
         this._fetchSource = "";
         this._loadPromise = null;
+        this._selectedUuids = new Set();
+        this._baselineSelectedUuids = new Set();
         this.loadStatus = "idle";
         this.integrityStatus = "unknown";
         const template = document.getElementById("rule-import-input");
@@ -46,6 +53,10 @@ class RuleImportInput extends HTMLElement {
                 if (!this.digest) {
                     return;
                 }
+                if (this.selectedRules.length === 0 && !this._data?.imported) {
+                    this.shadowRoot.getElementById("rule-selection").open = true;
+                    return;
+                }
                 this.dispatchEvent(
                     new CustomEvent("rule-import-import-list", {
                         bubbles: true,
@@ -53,12 +64,11 @@ class RuleImportInput extends HTMLElement {
                     })
                 );
             } finally {
-                button.disabled = false;
                 button.classList.remove("is-loading");
+                this.updateImportAction();
             }
         });
     }
-
 
     static get observedAttributes() {
         return ["src", "deletable", "expected-sha256"];
@@ -146,6 +156,41 @@ class RuleImportInput extends HTMLElement {
         summary.textContent = message("import_details", "Details");
         details.append(summary, description, meta);
         row.append(details);
+
+        const selection = document.createElement("details");
+        selection.id = "rule-selection";
+        selection.className = "rule-selection";
+        const selectionSummary = document.createElement("summary");
+        selectionSummary.id = "selection-summary";
+        selectionSummary.textContent = message("import_choose_rules", "Choose rules");
+
+        const selectionToolbar = document.createElement("div");
+        selectionToolbar.className = "selection-toolbar";
+        for (const [id, key, fallback, handler] of [
+            ["select-all-rules", "import_select_all", "Select all", () => this.selectAllRules()],
+            ["select-no-rules", "import_select_none", "Select none", () => this.selectNoRules()],
+            ["invert-rule-selection", "import_invert_selection", "Invert selection", () => this.invertRuleSelection()],
+            ["reset-rule-selection", "import_reset_selection", "Reset selection", () => this.resetRuleSelection()],
+        ]) {
+            const button = document.createElement("button");
+            button.id = id;
+            button.type = "button";
+            button.className = "btn text selection-action";
+            button.textContent = message(key, fallback);
+            button.addEventListener("click", handler);
+            selectionToolbar.append(button);
+        }
+
+        const selectionList = document.createElement("ul");
+        selectionList.id = "selection-list";
+        selectionList.className = "selection-list";
+        selection.append(selectionSummary, selectionToolbar, selectionList);
+        selection.addEventListener("toggle", () => {
+            if (selection.open && this.source) {
+                this.load();
+            }
+        });
+        row.append(selection);
     }
 
     onSourceChanged(src) {
@@ -158,8 +203,11 @@ class RuleImportInput extends HTMLElement {
                 text.textContent = "";
             }
             url.removeAttribute("href");
-            this.rules = [];
+            this._rules = [];
             this.digest = null;
+            this._selectedUuids = new Set();
+            this._baselineSelectedUuids = new Set();
+            this.renderRuleSelection();
             this.loadStatus = "idle";
             this.integrityStatus = "unknown";
             return;
@@ -170,6 +218,7 @@ class RuleImportInput extends HTMLElement {
         }
 
         url.href = humanReadableSource(src);
+        this.shadowRoot.getElementById("rule-selection").hidden = false;
         if (!this.hasAttribute("lazy")) {
             this.load();
         }
@@ -229,6 +278,9 @@ class RuleImportInput extends HTMLElement {
                 this.data = this._data;
                 if (!this.digest) {
                     this._loadPromise = null;
+                    this._selectedUuids = new Set();
+                    this._baselineSelectedUuids = new Set();
+                    this.renderRuleSelection();
                 }
             });
         }
@@ -246,15 +298,17 @@ class RuleImportInput extends HTMLElement {
     set data(value = {}) {
         const imported = this.shadowRoot.getElementById("imported");
         const update = this.shadowRoot.getElementById("update");
-        const importList = this.shadowRoot.getElementById("import");
         const deleteImported = this.shadowRoot.getElementById("delete-imported");
         const showImported = this.shadowRoot.getElementById("show-imported");
         imported.hidden = !value.imported;
         update.hidden = !value.imported || !this.digest || value.imported.digest === this.digest;
-        importList.hidden = Boolean(value.imported && update.hidden) || (!this.digest && !this.hasAttribute("lazy"));
         showImported.hidden = !value.imported;
         deleteImported.hidden = !value.imported;
         this._data = value;
+        if (this.digest && this._rules.length) {
+            this.initializeSelection();
+        }
+        this.updateImportAction();
     }
 
     set description(value) {
@@ -271,6 +325,132 @@ class RuleImportInput extends HTMLElement {
         }
     }
 
+    get selectedRules() {
+        return filterSelectedRules(this._rules, this._selectedUuids);
+    }
+
+    get rules() {
+        return this.selectedRules;
+    }
+
+    get selectedUuids() {
+        return this.selectedRules.map((rule) => rule.uuid);
+    }
+
+    initializeSelection() {
+        const selected = initialSelectedRuleUuids(this._rules, this._data?.imported || null);
+        this._selectedUuids = new Set(selected);
+        this._baselineSelectedUuids = new Set(selected);
+        this.renderRuleSelection();
+    }
+
+    selectAllRules() {
+        this._selectedUuids = new Set(this._rules.filter((rule) => rule?.uuid).map((rule) => rule.uuid));
+        this.updateSelectionPresentation();
+    }
+
+    selectNoRules() {
+        this._selectedUuids = new Set();
+        this.updateSelectionPresentation();
+    }
+
+    invertRuleSelection() {
+        const next = new Set();
+        for (const rule of this._rules) {
+            if (rule?.uuid && !this._selectedUuids.has(rule.uuid)) {
+                next.add(rule.uuid);
+            }
+        }
+        this._selectedUuids = next;
+        this.updateSelectionPresentation();
+    }
+
+    resetRuleSelection() {
+        this._selectedUuids = new Set(this._baselineSelectedUuids);
+        this.updateSelectionPresentation();
+    }
+
+    renderRuleSelection() {
+        const details = this.shadowRoot.getElementById("rule-selection");
+        const list = this.shadowRoot.getElementById("selection-list");
+        if (!details || !list) {
+            return;
+        }
+        list.replaceChildren();
+        const selectable = this._rules.filter((rule) => rule?.uuid);
+        details.hidden = !this.source;
+
+        for (const rule of selectable) {
+            const item = document.createElement("li");
+            item.className = "selection-rule";
+            const label = document.createElement("label");
+            const checkbox = document.createElement("input");
+            checkbox.type = "checkbox";
+            checkbox.checked = this._selectedUuids.has(rule.uuid);
+            checkbox.dataset.uuid = rule.uuid;
+            checkbox.addEventListener("change", () => {
+                if (checkbox.checked) {
+                    this._selectedUuids.add(rule.uuid);
+                } else {
+                    this._selectedUuids.delete(rule.uuid);
+                }
+                this.updateSelectionPresentation();
+            });
+
+            const text = document.createElement("span");
+            text.className = "selection-rule-text";
+            const title = document.createElement("strong");
+            title.textContent = rule.title || rule.uuid;
+            text.append(title);
+            if (rule.description) {
+                const description = document.createElement("small");
+                description.textContent = rule.description;
+                text.append(description);
+            }
+            label.append(checkbox, text);
+            item.append(label);
+            list.append(item);
+        }
+        this.updateSelectionPresentation();
+    }
+
+    updateSelectionPresentation() {
+        const summary = this.shadowRoot.getElementById("selection-summary");
+        const list = this.shadowRoot.getElementById("selection-list");
+        if (!summary || !list) {
+            return;
+        }
+        const selectable = this._rules.filter((rule) => rule?.uuid);
+        const selectedCount = selectable.filter((rule) => this._selectedUuids.has(rule.uuid)).length;
+        summary.textContent = this.digest
+            ? (browser.i18n.getMessage("import_selected_count", [String(selectedCount), String(selectable.length)]) ||
+                `${selectedCount} of ${selectable.length} rules selected`)
+            : message("import_choose_rules", "Choose rules");
+        list.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+            checkbox.checked = this._selectedUuids.has(checkbox.dataset.uuid);
+        });
+        this.shadowRoot.querySelectorAll(".selection-action").forEach((button) => {
+            button.disabled = selectable.length === 0;
+        });
+        const reset = this.shadowRoot.getElementById("reset-rule-selection");
+        if (reset) {
+            reset.disabled = sameRuleSelection(this._selectedUuids, this._baselineSelectedUuids);
+        }
+        this.updateImportAction();
+    }
+
+    updateImportAction() {
+        const importList = this.shadowRoot.getElementById("import");
+        const imported = Boolean(this._data?.imported);
+        const selectionDirty = imported && !sameRuleSelection(this._selectedUuids, this._baselineSelectedUuids);
+        const unavailable = !this.digest && !this.hasAttribute("lazy");
+        importList.hidden = unavailable || Boolean(imported && !this.updateAvailable && !selectionDirty);
+        importList.disabled = Boolean(!imported && this.digest && this.selectedRules.length === 0);
+        importList.title = imported
+            ? message("import_apply_selection", "Apply selection")
+            : message("import_selected_rules", "Import selected rules");
+    }
+
     async fetchRules(src) {
         const count = this.shadowRoot.getElementById("count");
         const integrity = this.shadowRoot.getElementById("integrity");
@@ -278,7 +458,7 @@ class RuleImportInput extends HTMLElement {
         count.hidden = true;
         integrity.hidden = true;
         this.digest = null;
-        this.rules = [];
+        this._rules = [];
         this.loadStatus = "loading";
         this.integrityStatus = this.expectedSha256 ? "pending" : "not-required";
 
@@ -305,20 +485,24 @@ class RuleImportInput extends HTMLElement {
                 this.integrityStatus = "verified";
             }
             const parsed = JSON.parse(text);
-            this.rules = Array.isArray(parsed) ? parsed : [parsed];
-            if (this.rules.some((rule) => !rule || typeof rule !== "object")) {
+            this._rules = Array.isArray(parsed) ? parsed : [parsed];
+            if (this._rules.some((rule) => !rule || typeof rule !== "object")) {
                 throw new TypeError("Invalid rule payload");
             }
             this.loadStatus = "available";
+            this.initializeSelection();
             count.hidden = false;
-            if (this.rules.length === 1) {
+            if (this._rules.length === 1) {
                 count.textContent = browser.i18n.getMessage("count_rule") || "1 rule";
             } else {
-                count.textContent = browser.i18n.getMessage("count_rules", this.rules.length) || `${this.rules.length} rules`;
+                count.textContent = browser.i18n.getMessage("count_rules", this._rules.length) || `${this._rules.length} rules`;
             }
         } catch {
             this.digest = null;
-            this.rules = [];
+            this._rules = [];
+            this._selectedUuids = new Set();
+            this._baselineSelectedUuids = new Set();
+            this.renderRuleSelection();
             this.loadStatus = "unavailable";
             if (this.integrityStatus === "pending") {
                 this.integrityStatus = "unknown";
