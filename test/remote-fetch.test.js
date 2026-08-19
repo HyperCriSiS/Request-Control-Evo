@@ -1,3 +1,4 @@
+import { jest } from "@jest/globals";
 import { fetchWithTimeout } from "../src/main/remote-fetch.js";
 
 test("remote fetch preserves options and clears its timeout after success", async () => {
