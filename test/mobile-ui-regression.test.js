@@ -6,6 +6,8 @@ const optionsJs = fs.readFileSync(new URL("../src/options/options.js", import.me
 const commonCss = fs.readFileSync(new URL("../src/options/common.css", import.meta.url), "utf8");
 const ruleInputCss = fs.readFileSync(new URL("../src/options/rule-input.css", import.meta.url), "utf8");
 const ruleListCss = fs.readFileSync(new URL("../src/options/rule-list.css", import.meta.url), "utf8");
+const ruleImportCss = fs.readFileSync(new URL("../src/options/rule-import-input.css", import.meta.url), "utf8");
+const ruleImportJs = fs.readFileSync(new URL("../src/options/rule-import-input.js", import.meta.url), "utf8");
 const modalCss = fs.readFileSync(new URL("../src/options/modal-dialog.css", import.meta.url), "utf8");
 const popupCss = fs.readFileSync(new URL("../src/popup/browser-action.css", import.meta.url), "utf8");
 const inspectorCss = fs.readFileSync(new URL("../src/inspector/inspector.css", import.meta.url), "utf8");
@@ -24,6 +26,9 @@ test("Android-sized touch targets are provided across interactive surfaces", () 
     expect(popupCss).toContain("min-height: 2.75rem");
     expect(inspectorCss).toContain("min-height: 2.75rem");
     expect(analyzerCss).toContain("min-height: 2.75rem");
+    expect(ruleImportCss).toContain(".rule-selection > summary");
+    expect(ruleImportCss).toContain("max-height: 50dvh");
+    expect(ruleImportJs).toContain("selection-toolbar");
 });
 
 test("narrow Firefox viewports can scroll tabs and keep popups inside the viewport", () => {
@@ -51,4 +56,7 @@ test("Firefox Android Imports renders Official, Community and Custom with reacha
     expect(optionsCss).toContain("#tab-imports summary");
     expect(optionsCss).toContain("min-height: 2.75rem");
     expect(commonCss).toContain("min-height: 2.75rem");
+    expect(ruleImportCss).toContain(".rule-selection > summary");
+    expect(ruleImportCss).toContain("max-height: 50dvh");
+    expect(ruleImportJs).toContain("selection-toolbar");
 });
