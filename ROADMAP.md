@@ -2,7 +2,7 @@
 
 This document is the binding source of truth for the active modernization/release line. Detailed historical design notes remain in `docs/roadmap.md` and the phase-specific documents.
 
-**Status: 1.20.0-rc.1 prerelease published and verified; post-RC UI hardening is active on `dev`; Phases 1–12 remain complete; stable 1.20.0 promotion remains gated by fresh validation and hands-on testing**
+**Status: 1.20.0-rc.1 prerelease published and verified; post-RC UI hardening is validated on `dev`; Phases 1–12 remain complete; stable 1.20.0 promotion remains gated by a fresh prerelease and hands-on desktop/Firefox Android testing**
 
 ## Current baseline
 
@@ -119,7 +119,7 @@ The first post-1.19 extension release is now justified by substantial user-visib
 
 - [x] The RC1 baseline build/test/lint/build-lint workflow is green on candidate commit `f8c7b5ae5a8e3747828cec14088c968b1e25d5c1` (Build #340). The preceding RC test failure was corrected without weakening runtime migration semantics.
 - [x] Applicable authoritative automated security gates are green for the RC1 baseline: npm audit/build validation passes and there are no open code-scanning or Dependabot alerts. Optional agentic GHAS service-start failures are not treated as code findings.
-- [ ] Run the full authoritative build/test/lint/build-lint validation again for the post-RC UI-hardening commit before creating the next prerelease.
+- [x] Re-run the full authoritative build/test/lint/build-lint validation for the post-RC UI-hardening candidate. Build #354 passed on commit `5ab8f8a8c2e625c94299aa766a470a4e2ac3bd9e` after aligning the stale import-theme regression with the intentionally removed nested-details UI; runtime behavior was not weakened.
 - [ ] Perform a Firefox desktop smoke test of Imports, Official update state, selective package editing and local-rule preservation.
 - [ ] Perform the still-open hands-on Firefox Android test with a large real-world package, including expand/collapse behavior, sparse selections, repeated individual taps, package update reconciliation and touch/scroll usability. Automated 2,000+ rule fixtures remain supporting evidence, not a substitute for this device-level gate.
 - [x] Add explicit 1.19.0 → 1.20.0 upgrade regression coverage for existing local rules and managed-source state. The test verifies preservation/demotion of retired managed rules, Custom-source retention, UUID-collision protection and that newly published rules remain unselected. Physical upgrade smoke testing remains part of the hands-on release gate.
@@ -153,4 +153,4 @@ GitHub's optional agentic `github-advanced-security` PR check has previously fai
 
 ## Completion status
 
-**Phases 1–12 are complete on `dev`, and GitHub prerelease 1.20.0-rc.1 remains the published pre-RC-feedback milestone.** Post-RC UI hardening now fixes popup sizing and substantially improves Rule Sources and large-rule-set management without changing rule-engine semantics. Official is the single maintainer-managed remote rule source, Community and Custom remain separate trust channels, and the future Wormhole Observatory boundary remains local-first, privacy-preserving and review-only by design. Stable 1.20.0 promotion requires fresh automated validation of the post-RC changes, a new prerelease candidate, and the explicit hands-on desktop/Firefox Android gates above.
+**Phases 1–12 are complete on `dev`, and GitHub prerelease 1.20.0-rc.1 remains the published pre-RC-feedback milestone.** Post-RC UI hardening now fixes popup sizing and substantially improves Rule Sources and large-rule-set management without changing rule-engine semantics. Official is the single maintainer-managed remote rule source, Community and Custom remain separate trust channels, and the future Wormhole Observatory boundary remains local-first, privacy-preserving and review-only by design. The post-RC automated validation is green. Stable 1.20.0 promotion still requires a fresh prerelease candidate and the explicit hands-on desktop/Firefox Android gates above.
