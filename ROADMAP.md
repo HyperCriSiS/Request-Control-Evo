@@ -2,7 +2,7 @@
 
 This document is the binding source of truth for the active modernization/release line. Detailed historical design notes remain in `docs/roadmap.md` and the phase-specific documents.
 
-**Status: 1.20.0-rc.3 prerelease published and verified from the refined Rules-management candidate; Phases 1–12 remain complete; stable 1.20.0 promotion remains gated by hands-on desktop/Firefox Android testing**
+**Status: post-RC 1.20.0 functional hardening is active on `dev`; 1.20.0-rc.3 remains an immutable tested milestone but is no longer the final candidate; Phases 1–12 remain complete; stable 1.20.0 promotion is gated by fresh automated validation plus hands-on desktop/Firefox Android testing**
 
 ## Current baseline
 
@@ -10,82 +10,77 @@ This document is the binding source of truth for the active modernization/releas
 - Firefox `webRequest` remains the semantic reference implementation; Chromium/DNR support is capability-gated and must not silently approximate unsupported semantics.
 - Privacy-sensitive analysis remains local and bounded by explicit Inspection/Guardian sessions.
 - Runtime rule distribution is now **Official / Community / Custom**. There is no Built-in/Recommended rule channel and no packaged duplicate of the Official corpus.
-- External research sources are handled only by `HyperCriSiS/requestcontrol-rules` maintenance/CI. The extension never interprets those upstream formats.
+- Official catalog content is hosted in `HyperCriSiS/requestcontrol-rules`; the extension fetches declarative JSON only and never executes remote code.
+- Existing locally modified imported rules are preserved; remote updates are explicit and conflict-safe.
 
-## Completed phases
+## Completed modernization phases
 
-- [x] **Phase 1 — reliability and modernization:** `dev` workflow, dependency/audit policy, reproducible CI prerequisites.
-- [x] **Phase 2 — rule engine and navigation hardening:** Firefox reference semantics, redirect/SPA coverage, explicit unsupported boundaries, DNR compiler foundation.
-- [x] **Phase 3 — 1.17.0 release:** validated, promoted and published.
-- [x] **Phase 4 — post-1.17 UI/community workflow:** dark-theme accessibility, structured imports, GitHub-backed submissions/ratings and integrity-preserving managed imports.
-- [x] **Phase 5 — Inspection Mode and guided rule creation:** bounded reload-and-inspect sessions, request grouping/details and disabled rule drafts from observed requests.
+- [x] **Phase 1 — baseline modernization:** tooling, tests, lint/build gates, dependency/security hygiene.
+- [x] **Phase 2 — Manifest V3 / browser parity foundation:** conservative DNR compiler, Firefox semantic reference, unsupported-semantics gating.
+- [x] **Phase 3 — rule creation usability:** guided rule creation, clearer forms and test flows.
+- [x] **Phase 4 — Inspection Mode:** explicit reload-and-inspect sessions, request summaries and Rule-from-Request flow.
+- [x] **Phase 5 — Compatibility Guardian / Referer foundation:** on-demand diagnostics and conservative Referer modes.
 - [x] **Phase 6 — URL analysis and special rulesets:** URL Analyzer, curated privacy/direct-link presets and explicit risk warnings.
-- [x] **Phase 7 — compatibility/diagnostic hardening:** rule explanations, conflict visibility and regression coverage.
-- [x] **Phase 8 — Compatibility Guardian and Referer protection:** on-demand diagnostics and conservative header modes.
-- [x] **Phase 9 — source-site semantic hardening / DNR parity:** conservative source matching and capability-gated session `topDomains` support.
-- [x] **Phase 10 — Firefox Android hardening / 1.19.0:** mobile layouts, full release validation and published 1.19.0 artifacts.
+- [x] **Phase 7 — rule-source/distribution architecture:** Official / Community / Custom channels, provenance and integrity model.
+- [x] **Phase 8 — community workflow:** GitHub sharing/contribution flow and community ratings separate from Official trust.
+- [x] **Phase 9 — Official managed updates:** package version/digest tracking, per-package and bulk update checks, conflict-safe reconciliation.
+- [x] **Phase 10 — source curation / offline boundary:** curated deterministic adapters live only in the rules repo; extension runtime does not diagnose external source lists.
 - [x] **Phase 11 — simplified Imports / Community UX:** lazy community loading, reduced visual density, clearer contribution flow and import integrity regression coverage.
-- [x] **Phase 12 — Official remote rules, selective imports, external curation and Observatory boundary:** completed and validated across the extension and canonical rules repository.
+- [x] **Phase 12 — runtime/source diagnostics + Android hardening:** runtime-relevant source identity, selective package imports and large-package/mobile performance safeguards.
 
-## Phase 12 — Official remote rules, external curation and Observatory boundary
+## Distribution architecture
 
-### A. Runtime and rule-channel architecture
+### A. Trust channels
 
-- [x] Keep the common redirect-safety assessment in the extension runtime; reject non-web targets, credential URLs, redirect loops and HTTPS-to-HTTP downgrades, and require review for security-looking wrappers.
-- [x] Keep the versioned privacy-minimized Wormhole Observatory snapshot contract local-only; no transport or remote execution.
-- [x] Split rule distribution into **Official**, **Community** and **Custom** channels with separate versioned Official/Community catalogs in `HyperCriSiS/requestcontrol-rules`.
-- [x] Retire Built-in/Recommended completely. The extension no longer ships a second copy of the Official rule corpus.
-- [x] Preserve installed rules when the network/catalog is unavailable; remote failure never disables or deletes the active local ruleset.
-- [x] Validate catalog schema/channel and package SHA-256 before import/update.
-- [x] Normalize single-rule and array rule packages in the import path.
-- [x] Keep managed-source identity narrow: only current Official/Community identities and explicit Custom sources are managed.
-- [x] Remove historical source aliases instead of retaining compatibility mappings. Managed rules whose source is no longer current are preserved unchanged and demoted to ordinary local rules; obsolete import state is pruned.
-- [x] Remove packaged `rules/` compatibility assets from the extension.
+- [x] **Official** is the single maintainer-managed remote rules channel.
+- [x] **Community** is a separately labeled contribution/discovery channel and never inherits Official trust.
+- [x] **Custom** is user-supplied/local source material.
+- [x] Remove old upstream remote-source references such as `tumpio.github.io` from extension/project metadata.
+- [x] Remove the old Built-in/Recommended runtime channel and packaged duplicate corpus.
 
-### B. Official update UX
+### B. Official package update behavior
 
 - [x] Check Official catalog metadata when Imports is initialized.
-- [x] Detect updates per installed Official package by published digest/version state.
-- [x] Surface per-package update actions and an Official update counter.
-- [x] Add **Update all** for all currently available Official package updates.
-- [x] Never silently apply remote rule changes in the background.
-- [x] Preserve locally modified managed rules as conflicts instead of overwriting them.
+- [x] Expose installed/available version or digest and explicit update state.
+- [x] Support per-package update and **Update All**.
+- [x] Never silently update or silently replace locally modified managed rules.
+- [x] Preserve local rules and surface conflicts instead of overwriting.
+- [x] Keep package IDs/native rule UUIDs stable across presentation-only catalog changes.
 
-### C. External curation — `requestcontrol-rules`
+### C. Imports / selective package review
 
-- [x] Keep source/license policy, normalization and risk analysis outside the extension runtime.
-- [x] Add offline adapters for reviewed ClearURLs parameter candidates and deterministic FastForward URL-only redirect candidates; no runtime fetching.
-- [x] Add deterministic comparison against Official with `duplicate`, `narrower`, `broader`, `contradictory` and `none` outcomes.
-- [x] Generate positive and negative candidate fixtures and require them for promotion readiness.
-- [x] Add a local review CLI plus CI smoke review against the current Official corpus.
-- [x] Remove legacy root catalog/rule compatibility paths and reject legacy source metadata in catalog validation.
+- [x] Rule packages can be expanded before import.
+- [x] Individual rules can be selected/deselected before import.
+- [x] Provide Select all / none / invert / reset controls.
+- [x] Show selected/total count and short descriptions/tooltips.
+- [x] Keep large package checkbox DOM lazy while collapsed.
+- [x] Keep mobile/touch interaction covered by automated regression tests.
 
-### D. Community → Official promotion
+### D. Community contribution and ratings
 
-- [x] Keep Community structurally separate from Official; popularity/reactions never imply Official trust.
-- [x] Keep Custom sources as an explicit advanced user-owned channel.
-- [x] Add a maintainer promotion workflow: Community candidate → provenance preservation → curation/risk/conflict/fixture gates → explicit review → Official package.
+- [x] GitHub Community contribution flow is explicit and review-based.
+- [x] Community ratings/reputation remain separate from Official trust and integrity.
+- [x] Share/export flows never upload browsing history or silently publish local rules.
 
 ### E. Inspector and support diagnostics
 
-- [x] Keep upstream-source curation diagnostics out of the extension UI.
+- [x] Keep inspection local, explicit and bounded.
 - [x] Surface only runtime-relevant package/channel identity, installed/available version or digest, integrity state, managed-rule conflicts and actual Evo rule effects in compact Inspector/support details.
-- [x] Add an exportable support diagnostic that excludes raw browsing URLs by default and is safe to attach to bug reports.
-- [x] Keep all behavioral intelligence bounded to explicit Inspection/Guardian sessions and add a regression assertion for that invariant.
+- [x] Do not include external research-source health/diagnostics in the extension runtime.
 
-### F. Observatory readiness
+### F. Source curation boundary
 
-- [x] Define the reviewable response contract for future Observatory classifications/recommendations; recommendations must never be executable remote code.
-- [x] Add forward/backward schema compatibility and rejection tests before any transport integration exists.
-- [x] Keep Observatory availability completely independent from local rule execution and Official catalog updates.
+- [x] External source adapters run only in `requestcontrol-rules` curation tooling.
+- [x] Curated output is deterministic declarative Request Control rules.
+- [x] No remote executable code or hidden automatic rule generation enters the extension.
+- [x] ClearURLs and deterministic FastForward URL-only curation adapters are active where semantics are lossless.
+- [x] Risky/deferred source candidates remain review-only until deterministic semantics and licensing are resolved.
 
-### G. Selective package imports
+### G. Wormhole Observatory boundary
 
-- [x] Make every remote rule package expandable before import so individual rules can be reviewed and selected.
-- [x] Provide **Select all**, **Select none**, **Invert selection** and **Reset selection** controls plus an explicit selected/total counter.
-- [x] Persist package selection through stable managed-rule UUIDs so **Update all** never silently expands an installed package; newly published rules remain unchecked until the user selects them.
-- [x] Allow an installed package selection to be edited later, including applying an empty selection to remove all unchanged managed rules.
-- [x] Keep the selector compact, scrollable and touch-friendly for Firefox Android.
+- [x] Any future Observatory integration remains opt-in, local-first and review-only.
+- [x] No browsing-history upload, remote executable rules or hidden automatic policy changes.
+- [x] Observatory transport remains deferred until real-use maturity justifies it.
 
 ### H. Phase validation
 
@@ -114,7 +109,22 @@ The first post-1.19 extension release is now justified by substantial user-visib
 - [x] Add drag-and-drop manual ordering as a separately persisted **display order only**. Reordering the UI must never mutate the stored execution order or silently alter rule-engine priority/semantics.
 - [x] Make per-rule **Test / Export / Share / Delete** Quick Actions individually opt-in instead of exposing the whole strip at once; retain the existing multi-select bulk toolbar. Compact the always-common Edit and Enable/Disable controls into icon buttons with tooltips/accessible labels.
 - [x] Make user groups a first-class Rules-management control: create named groups from the top command bar, reuse them as suggestions while editing rules, and filter the Rules view through **All groups / Ungrouped / named group** choices without changing rule-engine semantics.
-- [ ] Re-run hands-on Firefox/Waterfox desktop and Firefox Android UX checks against the post-RC interface before stable promotion. Because Quick Actions and group management were refined after `1.20.0-rc.2`, **1.20.0-rc.3** is now the fresh post-feedback test candidate for these gates.
+
+### Post-RC functional hardening
+
+The following regressions and usability issues were reported after RC3 and are release blockers. Work them in dependency order: functional correctness first, then Referer architecture, then Imports information architecture/layout. RC3 remains immutable and must not be silently retagged; a fresh prerelease is required after this block is green.
+
+- [ ] **Inspector regression:** reproduce/locate the apparent post-1.19 Inspector break, compare the full message/session lifecycle against 1.19.0, repair the regression without weakening the 10-minute safety limiter, and add integration-style regression coverage for start → reload/capture → get/render → stop/cleanup. The post-1.19 Rule Source diagnostic must not be allowed to break the core Inspector.
+- [ ] **URL Analyzer correctness/usefulness:** restore useful deterministic analysis after removal of the packaged legacy rules corpus. The Analyzer must enumerate/understand URL parameters structurally, distinguish high-confidence cleanup from review-only candidates, gate nested redirect unwrapping through the existing safety checks, and never imply that an ambiguous parameter is safe to remove.
+- [ ] **Separate unrelated tools:** remove Referer protection controls from the URL Analyzer surface. Keep Guardian/diagnostics only where their relationship to the current page is explicit and understandable.
+- [ ] **Referer protection architecture:** treat Referer control as a first-class privacy feature rather than a hidden global selector. Keep browser-default as the conservative default; expose the global mode in the browser-action popup; add a one-click per-host exception/whitelist from the popup; make exception scope explicit; preserve extension-global disable semantics; and add regression coverage for same-origin, cross-origin, HTTPS→HTTP and exception behavior.
+- [ ] **Referer + Inspector diagnostics:** during an explicit Inspection session, surface whether Referer protection actually trimmed/suppressed a request and offer a deliberate per-host exception when that is a plausible breakage source. Do not silently disable protection or auto-whitelist sites. Any future breakage-aware automation must remain recommendation-only and be backed by evidence collected in the explicit Inspector/Guardian session.
+- [ ] **Imports behavior hierarchy:** within each trust channel (**Official / Community / Custom**) and Standard/Advanced tier, sort/group packages by understandable top-level behavior categories (for example URL Cleanup, Redirect, Request Transform, Block/Allow, Privacy/Special) rather than presenting a long flat package list. Package review may still group contained rules by native action.
+- [ ] **Imports visual-density cleanup:** reduce competing badges/details, establish a stable row hierarchy (name → short purpose → behavior/risk → actions), keep technical integrity/version data secondary, and avoid nested disclosure layers.
+- [ ] **Control sizing/alignment audit:** textual buttons must size to localized strings instead of fixed icon dimensions; icon-only buttons remain square; checkbox hit targets/alignment/gaps must be consistent; long localized labels must wrap or expand without clipping; verify the same rules at desktop and narrow/coarse-pointer widths.
+- [ ] Add targeted regression tests for the Inspector, URL Analyzer, Referer popup/whitelist path, Imports category ordering and localized control sizing/alignment, then re-run the authoritative build/test/lint/build-lint/checker gate.
+- [ ] Publish and verify a fresh 1.20.0 prerelease only after this entire automated hardening block is green. Do not treat RC3 as the final stable candidate after these changes.
+- [ ] Re-run hands-on Firefox/Waterfox desktop and Firefox Android UX checks against the fresh post-hardening prerelease before stable promotion.
 
 ### Validation and publication gates
 
@@ -142,15 +152,15 @@ This follow-up is driven by RC usability feedback and is intentionally broader t
 
 ### A. Standard vs Advanced presentation
 
-- [ ] Define a clear **Standard / Advanced** boundary for supplied and importable rulesets.
-- [ ] Keep the normal Imports/Rules experience focused on common, directly understandable Request Control behavior: URL cleanup, redirect handling, request redirection/transformation, allow/block decisions and other high-value everyday actions.
-- [ ] Move unusual, expert-oriented or potentially disruptive Request Control modes into an **Advanced** section so they do not dominate the default view. This includes specialist privacy/firewall/low-bandwidth-style modes and similar non-typical behaviors unless an audit shows that a specific set belongs in the standard experience.
-- [ ] Preserve full capability: moving a ruleset to Advanced is a presentation/discoverability decision, not removal of functionality.
+- [x] Define a clear **Standard / Advanced** boundary for supplied and importable rulesets. Official catalog metadata now carries presentation tier, behavior scope and risk without changing package IDs/native UUIDs.
+- [x] Keep the normal Imports/Rules experience focused on common, directly understandable Request Control behavior: URL cleanup, redirect handling, request redirection/transformation, allow/block decisions and other high-value everyday actions. Standard packages are presented before Advanced packages.
+- [x] Move unusual, expert-oriented or potentially disruptive Request Control modes into an **Advanced** section so they do not dominate the default view. Specialist firewall/low-bandwidth/provider-override/high-risk packages are explicitly classified there by catalog metadata.
+- [x] Preserve full capability: moving a ruleset to Advanced is a presentation/discoverability decision, not removal of functionality. Runtime rule semantics and managed identities are unchanged.
 - [ ] Ensure Import categories and post-import rule organization use the same mental model wherever practical; trust channel (**Official / Community / Custom**) remains separate from rule behavior.
 
 ### B. Full Official/importable ruleset audit
 
-- [ ] Review **every supplied/importable filter and ruleset**, not only the currently suspicious tracking-parameter entries.
+- [x] Review **every supplied/importable filter and ruleset**, not only the currently suspicious tracking-parameter entries. The 2026-08-20 Official audit covered all 19 packages / 67 native rules in the catalog.
 - [ ] For each package/ruleset, verify and record:
   - actual behavior and native action types used;
   - whether the title/description accurately explains that behavior;
@@ -162,9 +172,9 @@ This follow-up is driven by RC usability feedback and is intentionally broader t
   - whether package boundaries are sensible or should be merged/split;
   - whether UI summaries expose useful differences without forcing users to inspect raw rule JSON/technical fields;
   - whether the feature fits Request Control Evo's request-manipulation focus or drifts unnecessarily toward a uBlock-style generic blocking/filter-list role.
-- [ ] Pay particular attention to tracking-parameter/privacy packages, site-specific cleanup packages, redirect-unwrapping/direct-link packages, request-blocking packages and special modes.
+- [x] Pay particular attention to tracking-parameter/privacy packages, site-specific cleanup packages, redirect-unwrapping/direct-link packages, request-blocking packages and special modes. The audit identified `Common Images` as unexpectedly complex/high-risk and `Search Engine Escape` as a provider override rather than ordinary privacy cleanup.
 - [ ] Remove, merge, rename, re-categorize or demote problematic/duplicated packages based on the audit; do not preserve confusing catalog structure solely for compatibility.
-- [ ] Add regression coverage for any catalog restructuring so managed-rule identity/update behavior remains deterministic and locally modified rules are never silently overwritten.
+- [x] Add regression coverage for catalog presentation restructuring so managed-rule identity/update behavior remains deterministic and locally modified rules are never silently overwritten. Extension Build #368 passed on `7a8a3a2eb3e8638d9727bfc835b5dade1d2842f0`; rules-catalog validation #93 passed for the corresponding metadata contract.
 - [ ] Re-evaluate the compact package summary UI after the audit so users can distinguish packages by **what they do**, scope and risk before expanding technical details.
 
 ## Future maintenance / next phase candidates
@@ -191,4 +201,4 @@ GitHub's optional agentic `github-advanced-security` PR check has previously fai
 
 ## Completion status
 
-**Phases 1–12 are complete on `dev`, and GitHub prerelease 1.20.0-rc.3 is the current post-RC-feedback test candidate.** Post-RC UI hardening fixes popup sizing, substantially improves Rule Sources and large-rule-set management, makes Quick Actions individually configurable, compacts Edit/Enable-Disable controls and adds top-level group creation plus group filtering without changing rule-engine semantics. Official is the single maintainer-managed remote rule source, Community and Custom remain separate trust channels, and the future Wormhole Observatory boundary remains local-first, privacy-preserving and review-only by design. Automated validation and the RC3 release workflow are green, and the RC3 ZIP/XPI pair is verified. Stable 1.20.0 promotion now remains gated only by the explicit hands-on desktop/Firefox Android checks plus the final changelog/promotion/publication steps above.
+**Phases 1–12 are complete on `dev`; 1.20.0-rc.3 is an immutable verified prerelease milestone, but it is no longer the final candidate because post-RC functional hardening is active.** The Ruleset audit has classified all Official packages by Standard/Advanced presentation, behavior scope and risk without changing managed identity. The remaining 1.20 blockers now include the reported Inspector/URL-Analyzer regressions, first-class popup/whitelist Referer controls with Inspector diagnostics, behavior-first Imports grouping and a localized control-spacing/sizing pass. After those changes, authoritative automated validation and a fresh prerelease are required before the still-open hands-on Firefox/Waterfox desktop and Firefox Android gates. Stable 1.20.0 remains intentionally unpromoted.
