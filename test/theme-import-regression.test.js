@@ -55,11 +55,14 @@ test("rule editor and modal no longer carry known light-only foreground/backgrou
     }
 });
 
-test("import presentation keeps secondary metadata behind compact details", () => {
+test("import presentation keeps metadata compact without nested details", () => {
     expect(importCss).toContain(".description");
     expect(importCss).toContain(".source-link");
     expect(importCss).toContain(".rating-link");
-    expect(importCss).toContain(".import-details");
+    expect(importCss).toContain(".selection-toggle");
+    expect(importCss).toContain(".import-types");
+    expect(importCss).toContain(".rule-selection[hidden]");
+    expect(importCss).not.toContain(".import-details");
     expect(importJs).toContain("description.title = text");
     expect(importJs).toContain("humanReadableSource");
     expect(importJs).toContain("community_review");
