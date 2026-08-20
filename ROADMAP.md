@@ -2,7 +2,7 @@
 
 This document is the binding source of truth for the active modernization/release line. Detailed historical design notes remain in `docs/roadmap.md` and the phase-specific documents.
 
-**Status: 1.19.0 released and verified; Phases 1–12 complete on `dev`; 1.20.0 release preparation active**
+**Status: 1.20.0-rc.1 prerelease published and verified; Phases 1–12 complete on `dev`; stable 1.20.0 promotion remains gated by hands-on validation**
 
 ## Current baseline
 
@@ -108,14 +108,16 @@ The first post-1.19 extension release is now justified by substantial user-visib
 
 ### Validation and publication gates
 
-- [ ] The final 1.20.0 candidate commit passes the full authoritative build/test/lint/build-lint workflow.
-- [ ] Applicable authoritative code/dependency/security checks are green; optional agentic GHAS service-start failures are not treated as code findings.
+- [x] The authoritative build/test/lint/build-lint workflow is green on candidate commit `f8c7b5ae5a8e3747828cec14088c968b1e25d5c1` (Build #340). The preceding RC test failure was corrected without weakening runtime migration semantics.
+- [x] Applicable authoritative automated security gates are green for the candidate: npm audit/build validation passes and there are no open code-scanning or Dependabot alerts. Optional agentic GHAS service-start failures are not treated as code findings.
 - [ ] Perform a Firefox desktop smoke test of Imports, Official update state, selective package editing and local-rule preservation.
 - [ ] Perform the still-open hands-on Firefox Android test with a large real-world package, including expand/collapse behavior, sparse selections, repeated individual taps, package update reconciliation and touch/scroll usability. Automated 2,000+ rule fixtures remain supporting evidence, not a substitute for this device-level gate.
-- [ ] Verify the 1.19.0 → 1.20.0 upgrade path with existing local rules and managed-source state before promotion; no migration may silently enable new remote rules or discard local modifications.
-- [ ] Replace the changelog's `Unreleased` marker with the actual release date only when promotion is approved.
-- [ ] Promote the validated candidate to `master` only after all release gates are satisfied. The `master` release workflow creates the stable tag/release automatically from the manifest version, so no release-triggering merge is performed during preparation.
-- [ ] Verify the published ZIP/XPI artifact pair and record final release/security status in this roadmap after publication.
+- [x] Add explicit 1.19.0 → 1.20.0 upgrade regression coverage for existing local rules and managed-source state. The test verifies preservation/demotion of retired managed rules, Custom-source retention, UUID-collision protection and that newly published rules remain unselected. Physical upgrade smoke testing remains part of the hands-on release gate.
+- [x] Publish GitHub prerelease **1.20.0-rc.1** from the validated candidate commit. Release workflow #9 passed; the prerelease tag points to `f8c7b5ae5a8e3747828cec14088c968b1e25d5c1`; Mozilla signing/publishing was intentionally skipped.
+- [x] Verify the prerelease ZIP/XPI pair. `request_control-1.20.0.zip` and `request_control-1.20.0.xpi` are byte-identical at 226,936 bytes with SHA-256 `d1b8336046458d32e4b5b444e764fab1ff7c941380792035983671c2653458b2`.
+- [ ] Replace the changelog's `Unreleased` marker with the actual release date only when stable promotion is approved.
+- [ ] Promote the validated candidate to `master` only after all hands-on release gates are satisfied. The `master` release workflow creates the stable `1.20.0` tag/release automatically from the manifest version; stable tag `1.20.0` remains intentionally absent during prerelease testing.
+- [ ] After stable publication, verify the final ZIP/XPI artifact pair and record final stable release/security status in this roadmap.
 
 ## Future maintenance / next phase candidates
 
@@ -140,4 +142,4 @@ GitHub's optional agentic `github-advanced-security` PR check has previously fai
 
 ## Completion status
 
-**Phases 1–12 are complete on `dev`, and 1.20.0 release preparation is active.** Official is the single maintainer-managed remote rule source, Community and Custom remain separate trust channels, package imports are selectively manageable, external curation is isolated in the rules repository, and the future Wormhole Observatory boundary remains local-first, privacy-preserving and review-only by design. Release publication remains blocked on the explicit 1.20.0 validation gates above.
+**Phases 1–12 are complete on `dev`, and GitHub prerelease 1.20.0-rc.1 is published from the validated candidate.** Official is the single maintainer-managed remote rule source, Community and Custom remain separate trust channels, package imports are selectively manageable, external curation is isolated in the rules repository, and the future Wormhole Observatory boundary remains local-first, privacy-preserving and review-only by design. Stable 1.20.0 promotion remains blocked only on the explicit hands-on desktop/Firefox Android validation gates and final stable-release bookkeeping above.
