@@ -442,6 +442,68 @@ a {
     padding: 0;
 }
 
+#tab-imports .imports-tier-heading {
+    margin: 0.15rem 0 0.2rem;
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    font-weight: 720;
+    letter-spacing: 0.02em;
+    text-transform: uppercase;
+}
+
+#tab-imports .imports-advanced-toggle {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    width: 100%;
+    min-height: 2.35rem;
+    margin: 0.45rem 0 0;
+    padding: 0.4rem 0.55rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--surface-subtle);
+    color: var(--text-color);
+    font: inherit;
+    font-weight: 680;
+    text-align: left;
+    cursor: pointer;
+}
+
+#tab-imports .imports-advanced-toggle[hidden] {
+    display: none;
+}
+
+#tab-imports .imports-advanced-toggle:hover {
+    background: var(--button-background-hover);
+}
+
+#tab-imports .imports-advanced-toggle::after {
+    content: "▸";
+    margin-left: auto;
+    color: var(--text-muted);
+}
+
+#tab-imports .imports-advanced-toggle[aria-expanded="true"]::after {
+    content: "▾";
+}
+
+#tab-imports .imports-advanced-hint {
+    min-width: 0;
+    color: var(--text-muted);
+    font-size: 0.76rem;
+    font-weight: 500;
+}
+
+#tab-imports .imports-advanced-packages[hidden] {
+    display: none;
+}
+
+#tab-imports .imports-advanced-packages {
+    margin-top: 0.25rem;
+    padding: 0 0.4rem;
+    border-left: 2px solid var(--border-color);
+}
+
 #community-rule-status {
     font-size: 0.86rem;
 }
@@ -614,6 +676,15 @@ a {
 
     #tab-imports .imports-section-head #official-update-all {
         width: 100%;
+    }
+
+    #tab-imports .imports-advanced-toggle {
+        min-height: 2.75rem;
+        flex-wrap: wrap;
+    }
+
+    #tab-imports .imports-advanced-hint {
+        flex: 1 1 12rem;
     }
 
     #import-source-form {
