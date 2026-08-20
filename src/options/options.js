@@ -24,15 +24,35 @@ import { normalizeImportSource } from "./import-source.js";
 const COMMUNITY_REPOSITORY = "HyperCriSiS/requestcontrol-rules";
 const OFFICIAL_CATALOG_URL = "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/official/catalog.json";
 const COMMUNITY_CATALOG_URL = "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/community/catalog.json";
+const RULE_VIEW_SETTINGS_KEY = "ruleViewSettings";
+const RULE_QUICK_ACTIONS_KEY = "ruleQuickActions";
+const RULE_UI_ORDER_KEY = "ruleUiOrder";
+
+let ruleViewSettings = {
+    status: "all",
+    source: "all",
+    groupBy: "group",
+    sort: "title",
+};
+let ruleUiOrder = {};
 
 document.addEventListener("DOMContentLoaded", async () => {
-    const { rules } = await browser.storage.local.get("rules");
+    const stored = await browser.storage.local.get({
+        rules: [],
+        [RULE_VIEW_SETTINGS_KEY]: ruleViewSettings,
+        [RULE_QUICK_ACTIONS_KEY]: false,
+        [RULE_UI_ORDER_KEY]: {},
+    });
+    const rules = stored.rules || [];
+    ruleViewSettings = { ...ruleViewSettings, ...(stored[RULE_VIEW_SETTINGS_KEY] || {}) };
+    ruleUiOrder = stored[RULE_UI_ORDER_KEY] || {};
 
-    if (rules) {
+    if (rules.length > 0) {
         createRuleInputs(rules);
     } else {
         toggleEmpty();
     }
+    setupRuleViewControls(Boolean(stored[RULE_QUICK_ACTIONS_KEY]));
 
     const query = new URLSearchParams(location.search);
     if (query.has("edit")) {
@@ -91,7 +111,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         exportObject(fileName, selected);
     });
 
-    document.getElementById("shareSelectedRulesGitHub").addEventListener("click", showCommunityShareDialog);
+    document.getElementById("shareSelectedRulesGitHub").addEventListener("click", () => showCommunityShareDialog());
 
     document.getElementById("removeSelectedRules").addEventListener("click", async () => {
         const selected = new Set(getSelectedRules().map((rule) => rule.uuid));
@@ -119,6 +139,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     document.getElementById("selectedRules").addEventListener("click", () => {
         document.querySelector(".mobile-toolbar").classList.toggle("show");
     });
+
+    document.getElementById("tab-rules").addEventListener("click", onRuleQuickAction);
 
     document.querySelector(".mobile-toolbar").addEventListener("click", function () {
         this.classList.remove("show");
@@ -179,6 +201,12 @@ document.addEventListener("rule-deleted", async (e) => {
 });
 
 document.addEventListener("rule-selected", updateToolbar);
+
+document.addEventListener("rule-ui-order-changed", async (e) => {
+    ruleUiOrder = { ...(e.detail?.manualOrder || {}) };
+    await browser.storage.local.set({ [RULE_UI_ORDER_KEY]: ruleUiOrder });
+    applyRuleView();
+});
 
 document.addEventListener("rule-import-deleted", onImportSourceDeleted);
 
@@ -309,29 +337,38 @@ async function setupImportsTab() {
         }
     });
 
-    const communityDetails = document.getElementById("community-rule-lists");
-    communityDetails.addEventListener("toggle", () => {
-        if (communityDetails.open) {
-            setupCommunityCatalog(importState);
-        }
-    });
-
-    const customDetails = document.getElementById("custom-rule-lists");
-    customDetails.addEventListener("toggle", () => {
-        if (customDetails.open) {
-            customDetails.querySelectorAll("rule-import-input").forEach((input) => input.load());
-        }
+    document.querySelectorAll("[data-import-channel]").forEach((button) => {
+        button.addEventListener("click", () => activateImportChannel(button.dataset.importChannel, importState));
     });
 
     document.getElementById("official-update-all").addEventListener("click", updateAllOfficial);
     document.getElementById("import-source-form").addEventListener("submit", onImportSourceAdded);
     document.getElementById("new-import-source").addEventListener("input", checkImportSourceValidity);
-    setupOfficialCatalog(importState);
+    await setupOfficialCatalog(importState);
+}
+
+async function activateImportChannel(channel, importState) {
+    document.querySelectorAll("[data-import-channel]").forEach((button) => {
+        const active = button.dataset.importChannel === channel;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", String(active));
+    });
+    document.querySelectorAll("[data-import-panel]").forEach((panel) => {
+        const active = panel.dataset.importPanel === channel;
+        panel.hidden = !active;
+        panel.classList.toggle("active", active);
+    });
+
+    if (channel === CATALOG_CHANNEL.COMMUNITY) {
+        await setupCommunityCatalog(importState);
+    } else if (channel === "custom") {
+        document.querySelectorAll("#custom-rule-lists rule-import-input").forEach((input) => input.load());
+    }
 }
 
 async function setupOfficialCatalog(imports) {
     return setupRemoteCatalog({
-        detailsId: "official-rule-lists",
+        panelId: "official-rule-lists",
         statusId: "official-rule-status",
         listId: "official-rule-list",
         catalogUrl: OFFICIAL_CATALOG_URL,
@@ -342,7 +379,7 @@ async function setupOfficialCatalog(imports) {
 
 async function setupCommunityCatalog(imports) {
     return setupRemoteCatalog({
-        detailsId: "community-rule-lists",
+        panelId: "community-rule-lists",
         statusId: "community-rule-status",
         listId: "community-rule-list",
         catalogUrl: COMMUNITY_CATALOG_URL,
@@ -351,15 +388,15 @@ async function setupCommunityCatalog(imports) {
     });
 }
 
-async function setupRemoteCatalog({ detailsId, statusId, listId, catalogUrl, channel, imports }) {
-    const details = document.getElementById(detailsId);
-    if (details.dataset.loaded === "true" || details.dataset.loading === "true") {
+async function setupRemoteCatalog({ panelId, statusId, listId, catalogUrl, channel, imports }) {
+    const panel = document.getElementById(panelId);
+    if (panel.dataset.loaded === "true" || panel.dataset.loading === "true") {
         return;
     }
 
     const status = document.getElementById(statusId);
     const list = document.getElementById(listId);
-    details.dataset.loading = "true";
+    panel.dataset.loading = "true";
     status.hidden = false;
     status.textContent = channel === CATALOG_CHANNEL.OFFICIAL
         ? (browser.i18n.getMessage("imports_official_loading") || "Checking official rule packages…")
@@ -413,7 +450,7 @@ async function setupRemoteCatalog({ detailsId, statusId, listId, catalogUrl, cha
             }
         }
 
-        details.dataset.loaded = "true";
+        panel.dataset.loaded = "true";
         await Promise.allSettled(importedChecks);
         await persistRemoteCheckResults(importedInputs);
 
@@ -432,7 +469,7 @@ async function setupRemoteCatalog({ detailsId, statusId, listId, catalogUrl, cha
             ? (browser.i18n.getMessage("imports_official_unavailable") || "Official rule updates are currently unavailable.")
             : (browser.i18n.getMessage("imports_community_unavailable") || "Community catalog is currently unavailable.");
     } finally {
-        delete details.dataset.loading;
+        delete panel.dataset.loading;
     }
 }
 
@@ -612,7 +649,7 @@ function createImportInput(src, data) {
     input.setAttribute("deletable", true);
     input.data = data;
     inputs.append(input);
-    if (document.getElementById("custom-rule-lists")?.open) {
+    if (!document.getElementById("custom-rule-lists")?.hidden) {
         input.load();
     }
     return input;
@@ -641,6 +678,7 @@ function onRuleEditCompleted(e) {
 function createRuleInputs(rules) {
     rules.forEach((rule) => document.getElementById(rule.action).add(rule));
     updateLists();
+    applyRuleView();
     updateToolbar();
 }
 
@@ -708,8 +746,8 @@ function updateLists() {
     toggleEmpty();
 }
 
-function showCommunityShareDialog() {
-    const selected = getSelectedRules();
+function showCommunityShareDialog(rules = null) {
+    const selected = Array.isArray(rules) ? rules : getSelectedRules();
     if (selected.length === 0) {
         return;
     }
@@ -782,6 +820,91 @@ function showCommunityShareDialog() {
     content.append(description, warning, preview, actions);
     dialog.append(title, content);
     document.body.append(dialog);
+}
+
+function setupRuleViewControls(showQuickActions) {
+    const search = document.getElementById("ruleSearch");
+    const status = document.getElementById("ruleStatusFilter");
+    const source = document.getElementById("ruleSourceFilter");
+    const groupBy = document.getElementById("ruleGroupBy");
+    const sort = document.getElementById("ruleSort");
+    const quickActions = document.getElementById("showRuleQuickActions");
+
+    status.value = ruleViewSettings.status || "all";
+    source.value = ruleViewSettings.source || "all";
+    groupBy.value = ruleViewSettings.groupBy || "group";
+    sort.value = ruleViewSettings.sort || "title";
+    quickActions.checked = showQuickActions;
+    document.body.classList.toggle("show-rule-quick-actions", showQuickActions);
+
+    search.addEventListener("input", applyRuleView);
+    for (const control of [status, source, groupBy, sort]) {
+        control.addEventListener("change", async () => {
+            ruleViewSettings = {
+                status: status.value,
+                source: source.value,
+                groupBy: groupBy.value,
+                sort: sort.value,
+            };
+            await browser.storage.local.set({ [RULE_VIEW_SETTINGS_KEY]: ruleViewSettings });
+            applyRuleView();
+        });
+    }
+    quickActions.addEventListener("change", async () => {
+        document.body.classList.toggle("show-rule-quick-actions", quickActions.checked);
+        await browser.storage.local.set({ [RULE_QUICK_ACTIONS_KEY]: quickActions.checked });
+    });
+    applyRuleView();
+}
+
+function applyRuleView() {
+    const search = document.getElementById("ruleSearch");
+    const view = {
+        query: search?.value || "",
+        status: document.getElementById("ruleStatusFilter")?.value || ruleViewSettings.status || "all",
+        source: document.getElementById("ruleSourceFilter")?.value || ruleViewSettings.source || "all",
+        groupBy: document.getElementById("ruleGroupBy")?.value || ruleViewSettings.groupBy || "group",
+        sort: document.getElementById("ruleSort")?.value || ruleViewSettings.sort || "title",
+        manualOrder: ruleUiOrder,
+    };
+    document.body.classList.toggle("rule-sort-manual", view.sort === "manual");
+    document.querySelectorAll("rule-list").forEach((list) => list.setView(view));
+}
+
+function onRuleQuickAction(e) {
+    const button = e.target.closest("[data-rule-command]");
+    if (!button) return;
+    const input = button.closest("[data-uuid]");
+    if (!input?.rule) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    switch (button.dataset.ruleCommand) {
+        case "test":
+            showRuleTestDialog([input.rule]);
+            break;
+        case "export": {
+            const fileName = browser.i18n.getMessage("export-file-name");
+            exportObject(fileName, [input.rule]);
+            break;
+        }
+        case "share":
+            showCommunityShareDialog([input.rule]);
+            break;
+        case "delete": {
+            const prompt = browser.i18n.getMessage("rule_quick_delete_confirm") || "Delete this rule?";
+            if (window.confirm(prompt)) {
+                input.dispatchEvent(new CustomEvent("rule-deleted", {
+                    bubbles: true,
+                    composed: true,
+                    detail: { uuid: input.rule.uuid },
+                }));
+            }
+            break;
+        }
+        default:
+            break;
+    }
 }
 
 function toggleEmpty() {
