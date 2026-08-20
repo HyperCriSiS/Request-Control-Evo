@@ -39,8 +39,13 @@ test("web-ext ignore patterns are passed as distinct arguments", () => {
     expect(args.slice(-4)).toEqual(["--ignore-files", "test/", "coverage/", "**/manual.wiki"]);
 });
 
-test("build lint resolves the manifest-versioned archive without shell substitution", () => {
-    expect(defaultArchivePath().replaceAll("\\", "/")).toMatch(
-        /web-ext-artifacts\/request_control-1\.19\.0\.zip$/
-    );
+test("build lint resolves the manifest-versioned archive without shell substitution", async () => {
+    const manifest = JSON.parse(await readFile(join(process.cwd(), "manifest.json"), "utf8"));
+    const expected = join(
+        process.cwd(),
+        "web-ext-artifacts",
+        `request_control-${manifest.version}.zip`
+    ).replaceAll("\\", "/");
+
+    expect(defaultArchivePath().replaceAll("\\", "/")).toBe(expected);
 });
