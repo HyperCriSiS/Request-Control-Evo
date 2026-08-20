@@ -2,7 +2,7 @@
 
 This document is the binding source of truth for the active modernization/release line. Detailed historical design notes remain in `docs/roadmap.md` and the phase-specific documents.
 
-**Status: 1.20.0-rc.2 prerelease published and verified from the post-RC UI-hardening candidate; Phases 1–12 remain complete; stable 1.20.0 promotion remains gated by hands-on desktop/Firefox Android testing**
+**Status: 1.20.0-rc.3 prerelease published and verified from the refined Rules-management candidate; Phases 1–12 remain complete; stable 1.20.0 promotion remains gated by hands-on desktop/Firefox Android testing**
 
 ## Current baseline
 
@@ -112,8 +112,9 @@ The first post-1.19 extension release is now justified by substantial user-visib
 - [x] Replace the nested Rule Sources `details` hierarchy with compact **Official / Community / Custom** channel tabs and space-efficient package rows. Trust/update channels remain separate from rule behavior; when a package is reviewed, its contained rules are grouped by the same native actions used after import: **Filter / Redirect / Secure / Block / Whitelist**.
 - [x] Scale the Rules view for large collections with live search, active/disabled and source filters, grouping by user group or source, title/source/manual sort modes and collapsible group headers.
 - [x] Add drag-and-drop manual ordering as a separately persisted **display order only**. Reordering the UI must never mutate the stored execution order or silently alter rule-engine priority/semantics.
-- [x] Add an opt-in compact quick-action strip per rule for **Test / Export / Share / Delete** while retaining the existing multi-select bulk toolbar.
-- [ ] Re-run hands-on Firefox/Waterfox desktop and Firefox Android UX checks against the post-RC interface before stable promotion. Because these are user-visible changes after `1.20.0-rc.1`, that prerelease is no longer the final UI candidate; **1.20.0-rc.2** is now the fresh post-feedback test candidate for these gates.
+- [x] Make per-rule **Test / Export / Share / Delete** Quick Actions individually opt-in instead of exposing the whole strip at once; retain the existing multi-select bulk toolbar. Compact the always-common Edit and Enable/Disable controls into icon buttons with tooltips/accessible labels.
+- [x] Make user groups a first-class Rules-management control: create named groups from the top command bar, reuse them as suggestions while editing rules, and filter the Rules view through **All groups / Ungrouped / named group** choices without changing rule-engine semantics.
+- [ ] Re-run hands-on Firefox/Waterfox desktop and Firefox Android UX checks against the post-RC interface before stable promotion. Because Quick Actions and group management were refined after `1.20.0-rc.2`, **1.20.0-rc.3** is now the fresh post-feedback test candidate for these gates.
 
 ### Validation and publication gates
 
@@ -128,6 +129,9 @@ The first post-1.19 extension release is now justified by substantial user-visib
 - [x] Generalize manual `dev` prerelease dispatch to advance sequential release candidates (`1.20.0-rc.2`, `rc.3`, ...), while keeping stable publication restricted to `master` and Mozilla signing disabled for prereleases. Build #357 passed on commit `b8b7d4c701e34c9330167088b82af623667a25a6`.
 - [x] Publish and verify fresh post-RC prerelease **1.20.0-rc.2** from commit `b8b7d4c701e34c9330167088b82af623667a25a6`. Release workflow #10 passed; the annotated tag resolves to that commit; Mozilla signing/publishing was intentionally skipped.
 - [x] Verify the RC2 ZIP/XPI pair. `request_control-1.20.0.zip` and `request_control-1.20.0.xpi` are both 234,365 bytes and carry the identical SHA-256 `842279f4ab878ae193f2fdb3df8df2d5de100e623ce9fd5a599b18b7890b6be6`, matching the release workflow's byte-identical artifact check.
+- [x] Re-run the authoritative build/test/lint/build-lint/checker gate after the configurable Quick Actions and top-level group-management refinement. Build #361 passed on candidate commit `5c63d94c9813bdb93365940d47a57b8ed8f72f7c`; the preceding Build #360 failure was a stale regression-test string and was corrected without weakening product behavior.
+- [x] Publish and verify **1.20.0-rc.3** from candidate commit `5c63d94c9813bdb93365940d47a57b8ed8f72f7c`. Release workflow #11 (`32328460547`) passed; the annotated `1.20.0-rc.3` tag resolves to that commit; Mozilla signing/publishing was intentionally skipped for the prerelease.
+- [x] Verify the RC3 ZIP/XPI pair. `request_control-1.20.0.zip` and `request_control-1.20.0.xpi` are both 239,572 bytes and carry the identical SHA-256 `102dce73240287a5dbb463d9a6279d9f41485ef083f8b7d1c05248b51a1e7c36`.
 - [ ] Replace the changelog's `Unreleased` marker with the actual release date only when stable promotion is approved.
 - [ ] Promote the validated candidate to `master` only after all hands-on release gates are satisfied. The `master` release workflow creates the stable `1.20.0` tag/release automatically from the manifest version; stable tag `1.20.0` remains intentionally absent during prerelease testing.
 - [ ] After stable publication, verify the final ZIP/XPI artifact pair and record final stable release/security status in this roadmap.
@@ -187,4 +191,4 @@ GitHub's optional agentic `github-advanced-security` PR check has previously fai
 
 ## Completion status
 
-**Phases 1–12 are complete on `dev`, and GitHub prerelease 1.20.0-rc.2 is the current post-RC-feedback test candidate.** Post-RC UI hardening fixes popup sizing and substantially improves Rule Sources and large-rule-set management without changing rule-engine semantics. Official is the single maintainer-managed remote rule source, Community and Custom remain separate trust channels, and the future Wormhole Observatory boundary remains local-first, privacy-preserving and review-only by design. Automated validation and the RC2 release workflow are green, and the RC2 ZIP/XPI pair is verified. Stable 1.20.0 promotion now remains gated only by the explicit hands-on desktop/Firefox Android checks plus the final changelog/promotion/publication steps above.
+**Phases 1–12 are complete on `dev`, and GitHub prerelease 1.20.0-rc.3 is the current post-RC-feedback test candidate.** Post-RC UI hardening fixes popup sizing, substantially improves Rule Sources and large-rule-set management, makes Quick Actions individually configurable, compacts Edit/Enable-Disable controls and adds top-level group creation plus group filtering without changing rule-engine semantics. Official is the single maintainer-managed remote rule source, Community and Custom remain separate trust channels, and the future Wormhole Observatory boundary remains local-first, privacy-preserving and review-only by design. Automated validation and the RC3 release workflow are green, and the RC3 ZIP/XPI pair is verified. Stable 1.20.0 promotion now remains gated only by the explicit hands-on desktop/Firefox Android checks plus the final changelog/promotion/publication steps above.
