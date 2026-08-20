@@ -25,18 +25,20 @@ test("Android-sized touch targets are provided across interactive surfaces", () 
     expect(popupCss).toContain("min-height: 2.75rem");
     expect(inspectorCss).toContain("min-height: 2.75rem");
     expect(analyzerCss).toContain("min-height: 2.75rem");
-    expect(ruleImportCss).toContain(".rule-selection > summary");
+    expect(ruleImportCss).toContain(".selection-toggle");
     expect(ruleImportCss).toContain("max-height: 50dvh");
     expect(ruleImportJs).toContain("selection-toolbar");
 });
 
-test("narrow Firefox viewports can scroll tabs and keep popups inside the viewport", () => {
+test("Firefox popup keeps an intrinsic desktop width without provisional viewport collapse", () => {
     expect(optionsCss).toContain("overflow-x: auto");
     expect(optionsCss).toContain("100dvh");
     expect(optionsCss).not.toContain("z-index: -1");
     expect(optionsCss).toContain("z-index: 20");
-    expect(popupCss).toContain("min-width: min(22rem, 100vw)");
-    expect(popupCss).toContain("max-width: min(32rem, 100vw)");
+    expect(popupCss).toContain("width: 22rem");
+    expect(popupCss).toContain("min-width: 22rem");
+    expect(popupCss).toContain("@media (hover: none) and (pointer: coarse) and (max-width: 28rem)");
+    expect(popupCss).not.toContain("min-width: min(22rem, 100vw)");
 });
 
 test("mobile dialogs use the dynamic viewport and cannot exceed screen width", () => {
@@ -69,7 +71,7 @@ test("large package toggles avoid full checkbox resynchronization on every tap",
 
 test("collapsed large packages defer checkbox DOM until the selector is opened", () => {
     expect(ruleImportJs).toContain("this._selectionListDirty = true");
-    expect(ruleImportJs).toContain("if (!details.open)");
+    expect(ruleImportJs).toContain("if (panel.hidden)");
     expect(ruleImportJs).toContain("list.replaceChildren()");
     expect(ruleImportJs).toContain("this.updateSelectionPresentation({ syncCheckboxes: false })");
     expect(ruleImportJs).toContain("if (this._selectionListDirty)");

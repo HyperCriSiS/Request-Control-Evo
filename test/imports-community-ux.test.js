@@ -22,12 +22,17 @@ test("official packages expose individual and bulk update states", () => {
     expect(importJs).toContain("get updateAvailable()");
 });
 
-test("official and community catalogs are remote while bundled presets are no longer rendered", () => {
+test("official and community catalogs are remote while source channels use compact tabs", () => {
     expect(optionsJs).toContain("/official/catalog.json");
     expect(optionsJs).toContain("/community/catalog.json");
-    expect(optionsJs).toContain('communityDetails.addEventListener("toggle"');
-    expect(optionsJs.indexOf('communityDetails.addEventListener("toggle"'))
-        .toBeLessThan(optionsJs.indexOf("setupOfficialCatalog(importState)"));
+    expect(optionsHtml).toContain('data-import-channel="official"');
+    expect(optionsHtml).toContain('data-import-channel="community"');
+    expect(optionsHtml).toContain('data-import-channel="custom"');
+    expect(optionsJs).toContain("activateImportChannel");
+    expect(optionsJs).not.toContain('communityDetails.addEventListener("toggle"');
+    expect(optionsHtml).not.toContain('<details id="official-rule-lists"');
+    expect(optionsHtml).not.toContain('<details id="community-rule-lists"');
+    expect(optionsHtml).not.toContain('<details id="custom-rule-lists"');
     expect(importJs).not.toContain("setupRecommendedRulesets");
     expect(importJs).not.toContain("browser.runtime.getURL(preset.path)");
 });
@@ -51,8 +56,12 @@ test("import integrity status has a real template target", () => {
     expect(importJs).toContain('getElementById("integrity")');
 });
 
-test("rule packages can be expanded and selectively imported before installation", () => {
+test("rule packages use one compact inline selector grouped by native rule action", () => {
     expect(importJs).toContain('selection.id = "rule-selection"');
+    expect(importJs).toContain('const ACTION_ORDER = ["filter", "redirect", "secure", "block", "whitelist"]');
+    expect(importJs).toContain("groupRulesByAction(selectable)");
+    expect(importJs).toContain('header.className = "selection-group-header"');
+    expect(importJs).not.toContain('document.createElement("details")');
     expect(importJs).toContain('"select-all-rules"');
     expect(importJs).toContain('"select-no-rules"');
     expect(importJs).toContain('"invert-rule-selection"');
