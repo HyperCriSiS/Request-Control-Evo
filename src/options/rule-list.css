@@ -134,3 +134,39 @@ rule-list .group-hidden {
         min-height: 2.75rem;
     }
 }
+
+rule-list.view-empty {
+    display: none !important;
+}
+
+rule-list .view-hidden {
+    display: none !important;
+}
+
+rule-list [data-uuid].drag-enabled:not(.editing) {
+    cursor: grab;
+}
+
+rule-list [data-uuid].dragging {
+    opacity: 0.45;
+    cursor: grabbing;
+}
+
+rule-list [data-uuid].drag-target-before::before,
+rule-list [data-uuid].drag-target-after::after {
+    content: "";
+    position: absolute;
+    left: 0.6rem;
+    right: 0.6rem;
+    height: 2px;
+    background: var(--primary-color);
+    z-index: 2;
+}
+
+rule-list [data-uuid].drag-target-before::before {
+    top: -1px;
+}
+
+rule-list [data-uuid].drag-target-after::after {
+    bottom: -1px;
+}
