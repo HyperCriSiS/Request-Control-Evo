@@ -340,7 +340,6 @@ async function setupImportsTab() {
     document.querySelectorAll("[data-import-channel]").forEach((button) => {
         button.addEventListener("click", () => activateImportChannel(button.dataset.importChannel, importState));
     });
-
     document.getElementById("official-update-all").addEventListener("click", updateAllOfficial);
     document.getElementById("import-source-form").addEventListener("submit", onImportSourceAdded);
     document.getElementById("new-import-source").addEventListener("input", checkImportSourceValidity);
@@ -366,6 +365,14 @@ async function activateImportChannel(channel, importState) {
     }
 }
 
+function toggleAdvancedPackages(button) {
+    const target = document.getElementById(button.getAttribute("aria-controls"));
+    if (!target) return;
+    const open = target.hidden;
+    target.hidden = !open;
+    button.setAttribute("aria-expanded", String(open));
+}
+
 async function setupOfficialCatalog(imports) {
     return setupRemoteCatalog({
         panelId: "official-rule-lists",
@@ -388,6 +395,53 @@ async function setupCommunityCatalog(imports) {
     });
 }
 
+function ensureCatalogPresentation(panel, list, channel) {
+    let heading = panel.querySelector(`.imports-tier-heading[data-channel="${channel}"]`);
+    if (!heading) {
+        heading = document.createElement("div");
+        heading.className = "imports-tier-heading";
+        heading.dataset.channel = channel;
+        heading.textContent = browser.i18n.getMessage("imports_standard") || "Standard";
+        list.before(heading);
+    }
+
+    let advancedToggle = document.getElementById(`${channel}-advanced-toggle`);
+    let advancedList = document.getElementById(`${channel}-advanced-rule-list`);
+    let advancedCount = document.getElementById(`${channel}-advanced-count`);
+    if (!advancedToggle || !advancedList || !advancedCount) {
+        advancedToggle = document.createElement("button");
+        advancedToggle.id = `${channel}-advanced-toggle`;
+        advancedToggle.type = "button";
+        advancedToggle.className = "imports-advanced-toggle";
+        advancedToggle.hidden = true;
+        advancedToggle.setAttribute("aria-expanded", "false");
+        advancedToggle.setAttribute("aria-controls", `${channel}-advanced-packages`);
+
+        const label = document.createElement("span");
+        label.textContent = browser.i18n.getMessage("imports_advanced") || "Advanced";
+        advancedCount = document.createElement("span");
+        advancedCount.id = `${channel}-advanced-count`;
+        advancedCount.className = "badge badge-light";
+        const hint = document.createElement("span");
+        hint.className = "imports-advanced-hint";
+        hint.textContent = browser.i18n.getMessage("imports_advanced_hint") ||
+            "Expert, broad or potentially disruptive packages";
+        advancedToggle.append(label, advancedCount, hint);
+        advancedToggle.addEventListener("click", () => toggleAdvancedPackages(advancedToggle));
+
+        const advancedPackages = document.createElement("div");
+        advancedPackages.id = `${channel}-advanced-packages`;
+        advancedPackages.className = "imports-advanced-packages";
+        advancedPackages.hidden = true;
+        advancedList = document.createElement("ul");
+        advancedList.id = `${channel}-advanced-rule-list`;
+        advancedList.className = "imports-package-list";
+        advancedPackages.append(advancedList);
+        list.after(advancedToggle, advancedPackages);
+    }
+    return { advancedList, advancedToggle, advancedCount };
+}
+
 async function setupRemoteCatalog({ panelId, statusId, listId, catalogUrl, channel, imports }) {
     const panel = document.getElementById(panelId);
     if (panel.dataset.loaded === "true" || panel.dataset.loading === "true") {
@@ -396,6 +450,7 @@ async function setupRemoteCatalog({ panelId, statusId, listId, catalogUrl, chann
 
     const status = document.getElementById(statusId);
     const list = document.getElementById(listId);
+    const { advancedList, advancedToggle, advancedCount } = ensureCatalogPresentation(panel, list, channel);
     panel.dataset.loading = "true";
     status.hidden = false;
     status.textContent = channel === CATALOG_CHANNEL.OFFICIAL
@@ -414,8 +469,10 @@ async function setupRemoteCatalog({ panelId, statusId, listId, catalogUrl, chann
         }
 
         list.replaceChildren();
+        advancedList?.replaceChildren();
         const importedChecks = [];
         const importedInputs = [];
+        let advancedPackages = 0;
         for (const entry of catalog.ruleSets) {
             const source = normalizeImportSource(entry.url);
             if (!source) continue;
@@ -431,6 +488,7 @@ async function setupRemoteCatalog({ panelId, statusId, listId, catalogUrl, chann
             input.dataset.channel = channel;
             input.catalogDefinition = catalog;
             input.catalogEntry = entry;
+            input.catalogMetadata = entry;
             if (entry.sha256) input.setAttribute("expected-sha256", entry.sha256);
             input.source = source;
             if (entry.homepage) input.sourceHomepage = entry.homepage;
@@ -443,13 +501,19 @@ async function setupRemoteCatalog({ panelId, statusId, listId, catalogUrl, chann
             const imported = findCatalogImportState(imports, entry, source);
             input.dataset.importKey = imported.key || source;
             input.data = imported.data;
-            list.append(input);
+            const targetList = entry.presentation === "advanced" && advancedList ? advancedList : list;
+            targetList.append(input);
+            if (entry.presentation === "advanced") advancedPackages += 1;
             if (input.data.imported) {
                 importedInputs.push(input);
                 importedChecks.push(input.load());
             }
         }
 
+        if (advancedToggle && advancedCount) {
+            advancedToggle.hidden = advancedPackages === 0;
+            advancedCount.textContent = String(advancedPackages);
+        }
         panel.dataset.loaded = "true";
         await Promise.allSettled(importedChecks);
         await persistRemoteCheckResults(importedInputs);
@@ -511,14 +575,14 @@ async function persistCatalogFailure(channel) {
 }
 
 function refreshOfficialUpdateState() {
-    const list = document.getElementById("official-rule-list");
+    const panel = document.getElementById("official-rule-lists");
     const status = document.getElementById("official-rule-status");
     const badge = document.getElementById("official-update-count");
     const button = document.getElementById("official-update-all");
-    if (!list || !status || !badge || !button) return;
+    if (!panel || !status || !badge || !button) return;
 
-    const updates = Array.from(list.querySelectorAll("rule-import-input")).filter((input) => input.updateAvailable);
-    const failedChecks = Array.from(list.querySelectorAll("rule-import-input")).filter((input) =>
+    const updates = Array.from(panel.querySelectorAll("rule-import-input")).filter((input) => input.updateAvailable);
+    const failedChecks = Array.from(panel.querySelectorAll("rule-import-input")).filter((input) =>
         input.data?.imported && ["integrity-failed", "unavailable"].includes(input.loadStatus)
     );
     badge.hidden = updates.length === 0;
@@ -540,7 +604,7 @@ function refreshOfficialUpdateState() {
 
 async function updateAllOfficial() {
     const button = document.getElementById("official-update-all");
-    const inputs = Array.from(document.querySelectorAll("#official-rule-list rule-import-input")).filter((input) => input.updateAvailable);
+    const inputs = Array.from(document.querySelectorAll("#official-rule-lists rule-import-input")).filter((input) => input.updateAvailable);
     button.disabled = true;
     button.classList.add("is-loading");
     try {
