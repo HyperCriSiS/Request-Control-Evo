@@ -6,7 +6,7 @@ const list = fs.readFileSync(new URL("../src/options/rule-list.js", import.meta.
 test("rule quick actions are independently configurable instead of all-or-nothing", () => {
     expect(list).toContain('import "./rule-management-ui.js"');
     expect(ui).toContain('const QUICK_COMMANDS = ["test", "export", "share", "delete"]');
-    expect(ui).toContain("data.quickActionToggle");
+    expect(ui).toContain("input.dataset.quickActionToggle = command");
     expect(ui).toContain("rc-show-quick-test");
     expect(ui).toContain("rc-show-quick-export");
     expect(ui).toContain("rc-show-quick-share");
