@@ -11,6 +11,10 @@ const ENTRY = {
     version: "1.0.0",
     url: "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/official/rules/privacy-common-params.json",
     sha256: "a".repeat(64),
+    presentation: "standard",
+    behavior: "url-cleanup",
+    scope: "global",
+    risk: "medium",
 };
 
 const CATALOG = {
@@ -58,6 +62,25 @@ test("catalog entry ids and source URLs are unique", () => {
     expect(validateRemoteCatalog(duplicateUrl, CATALOG_CHANNEL.OFFICIAL)).toContain(
         "duplicate-entry-url:other-package"
     );
+});
+
+test("catalog entries require validated presentation metadata", () => {
+    const invalid = {
+        ...CATALOG,
+        ruleSets: [{
+            ...ENTRY,
+            presentation: "expert",
+            behavior: "anything",
+            scope: "internet",
+            risk: "severe",
+        }],
+    };
+    const errors = validateRemoteCatalog(invalid, CATALOG_CHANNEL.OFFICIAL);
+
+    expect(errors).toContain("invalid-presentation:privacy-common-params");
+    expect(errors).toContain("invalid-behavior:privacy-common-params");
+    expect(errors).toContain("invalid-scope:privacy-common-params");
+    expect(errors).toContain("invalid-risk:privacy-common-params");
 });
 
 test("catalog import state uses only the current exact source", () => {

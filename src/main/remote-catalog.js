@@ -9,6 +9,22 @@ export const CATALOG_CHANNEL = Object.freeze({
     COMMUNITY: "community",
 });
 
+const CATALOG_PRESENTATIONS = new Set(["standard", "advanced"]);
+const CATALOG_BEHAVIORS = new Set([
+    "direct-link",
+    "media-quality",
+    "media-url-cleanup",
+    "site-cleanup",
+    "request-blocking",
+    "url-cleanup",
+    "privacy-embed",
+    "provider-override",
+    "special-mode",
+    "url-normalization",
+]);
+const CATALOG_SCOPES = new Set(["site-specific", "cross-site", "global"]);
+const CATALOG_RISKS = new Set(["low", "medium", "high"]);
+
 const CATALOG_IDENTITIES = Object.freeze({
     [CATALOG_CHANNEL.OFFICIAL]: {
         catalog: "requestcontrol-official",
@@ -59,6 +75,18 @@ export function validateRemoteCatalog(catalog, expectedChannel) {
         urls.add(entry?.url);
         if (!/^[a-f0-9]{64}$/i.test(entry?.sha256 || "")) {
             errors.push(`invalid-sha256:${entry?.id || "unknown"}`);
+        }
+        if (!CATALOG_PRESENTATIONS.has(entry?.presentation)) {
+            errors.push(`invalid-presentation:${entry?.id || "unknown"}`);
+        }
+        if (!CATALOG_BEHAVIORS.has(entry?.behavior)) {
+            errors.push(`invalid-behavior:${entry?.id || "unknown"}`);
+        }
+        if (!CATALOG_SCOPES.has(entry?.scope)) {
+            errors.push(`invalid-scope:${entry?.id || "unknown"}`);
+        }
+        if (!CATALOG_RISKS.has(entry?.risk)) {
+            errors.push(`invalid-risk:${entry?.id || "unknown"}`);
         }
     }
     return errors;
