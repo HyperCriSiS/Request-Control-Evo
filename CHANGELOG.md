@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add compact privacy-minimized package/source diagnostics and support export data while keeping behavioral analysis bounded to explicit Inspection/Guardian sessions and Wormhole Observatory transport disabled.
 - Remove legacy managed-source aliases and packaged Official rule copies; obsolete managed identities are pruned while their installed rules are preserved as ordinary local rules.
 - Harden Firefox Android large-package imports by avoiding full checkbox-list resynchronization on individual taps, caching selection counts and deferring checkbox DOM creation until an expanded package selector is actually opened.
+- Refine large-rule-set management with individually configurable per-rule Quick Actions, compact Edit/Enable-Disable icon controls, and top-level named-group creation plus group filtering.
 
 ## [1.19.0] - Aug. 18, 2026
 - Add the on-demand Compatibility Guardian for bounded per-tab diagnostics, including lifecycle cleanup and local scoring without continuous browsing surveillance.
