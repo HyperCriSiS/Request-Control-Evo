@@ -2,7 +2,7 @@
 
 This document is the binding source of truth for the active modernization/release line. Detailed historical design notes remain in `docs/roadmap.md` and the phase-specific documents.
 
-**Status: 1.20.0-rc.1 prerelease published and verified; Phases 1–12 complete on `dev`; stable 1.20.0 promotion remains gated by hands-on validation**
+**Status: 1.20.0-rc.1 prerelease published and verified; post-RC UI hardening is active on `dev`; Phases 1–12 remain complete; stable 1.20.0 promotion remains gated by fresh validation and hands-on testing**
 
 ## Current baseline
 
@@ -106,10 +106,20 @@ The first post-1.19 extension release is now justified by substantial user-visib
 - [x] Align the `dev` manifest and changelog with the 1.20.0 candidate. The changelog remains explicitly marked `Unreleased` until final promotion.
 - [x] Keep Wormhole Observatory transport deferred and keep further source-adapter expansion out of the release scope.
 
+### RC feedback hardening
+
+- [x] Fix the Firefox/Waterfox browser-action popup intrinsic-width regression reported from RC testing. Desktop popup sizing no longer derives its minimum width from a tiny provisional `100vw`, while coarse-pointer Android layouts retain viewport-width behavior.
+- [x] Replace the nested Rule Sources `details` hierarchy with compact **Official / Community / Custom** channel tabs and space-efficient package rows. Trust/update channels remain separate from rule behavior; when a package is reviewed, its contained rules are grouped by the same native actions used after import: **Filter / Redirect / Secure / Block / Whitelist**.
+- [x] Scale the Rules view for large collections with live search, active/disabled and source filters, grouping by user group or source, title/source/manual sort modes and collapsible group headers.
+- [x] Add drag-and-drop manual ordering as a separately persisted **display order only**. Reordering the UI must never mutate the stored execution order or silently alter rule-engine priority/semantics.
+- [x] Add an opt-in compact quick-action strip per rule for **Test / Export / Share / Delete** while retaining the existing multi-select bulk toolbar.
+- [ ] Re-run hands-on Firefox/Waterfox desktop and Firefox Android UX checks against the post-RC interface before stable promotion. Because these are user-visible changes after `1.20.0-rc.1`, that prerelease is no longer the final UI candidate; a fresh prerelease is required before stable promotion.
+
 ### Validation and publication gates
 
-- [x] The authoritative build/test/lint/build-lint workflow is green on candidate commit `f8c7b5ae5a8e3747828cec14088c968b1e25d5c1` (Build #340). The preceding RC test failure was corrected without weakening runtime migration semantics.
-- [x] Applicable authoritative automated security gates are green for the candidate: npm audit/build validation passes and there are no open code-scanning or Dependabot alerts. Optional agentic GHAS service-start failures are not treated as code findings.
+- [x] The RC1 baseline build/test/lint/build-lint workflow is green on candidate commit `f8c7b5ae5a8e3747828cec14088c968b1e25d5c1` (Build #340). The preceding RC test failure was corrected without weakening runtime migration semantics.
+- [x] Applicable authoritative automated security gates are green for the RC1 baseline: npm audit/build validation passes and there are no open code-scanning or Dependabot alerts. Optional agentic GHAS service-start failures are not treated as code findings.
+- [ ] Run the full authoritative build/test/lint/build-lint validation again for the post-RC UI-hardening commit before creating the next prerelease.
 - [ ] Perform a Firefox desktop smoke test of Imports, Official update state, selective package editing and local-rule preservation.
 - [ ] Perform the still-open hands-on Firefox Android test with a large real-world package, including expand/collapse behavior, sparse selections, repeated individual taps, package update reconciliation and touch/scroll usability. Automated 2,000+ rule fixtures remain supporting evidence, not a substitute for this device-level gate.
 - [x] Add explicit 1.19.0 → 1.20.0 upgrade regression coverage for existing local rules and managed-source state. The test verifies preservation/demotion of retired managed rules, Custom-source retention, UUID-collision protection and that newly published rules remain unselected. Physical upgrade smoke testing remains part of the hands-on release gate.
@@ -124,9 +134,10 @@ The first post-1.19 extension release is now justified by substantial user-visib
 - Expand source-specific curation adapters only where licensing, deterministic semantics and expected rule value justify the ongoing maintenance cost.
   - [x] 2026-08-19 source-policy re-evaluation: codified adapter eligibility separately from trust-channel integration. ClearURLs and deterministic FastForward URL-only adapters remain active; Actually Legitimate URL Shortener Tool is explicitly deferred because mixed per-entry provenance plus regex/domain-exception/path-sensitive `$removeparam` semantics do not satisfy the deterministic-adapter gate. No lossy approximation was added.
   - [x] 2026-08-20 source-policy hardening: evaluated AdGuard URL Tracking as a high-value candidate but kept it deferred because its allowlist includes domain/path/content-type exceptions and GPL-3.0 provenance still needs explicit review. The curation risk gate now also rejects `review-only` candidates whose adapter is not active, so a manually supplied candidate cannot bypass a deferred source-policy decision.
-- Re-evaluate the selective-import interaction after hands-on Firefox Android testing with large real-world packages; keep the compact selector unless evidence justifies a more complex UI.
+- Re-evaluate the selective-import interaction after hands-on Firefox Android testing with large real-world packages; keep package review compact and avoid nested disclosure layers unless evidence justifies them.
   - [x] 2026-08-20 automated large-package hardening: single checkbox toggles no longer resynchronize the entire rendered checkbox list, selected/total state uses cached selectable counts, and a 2,000+ rule regression fixture verifies that sparse installed selections remain stable when upstream packages grow. This reduces Android-side selector work without changing the UX; a real hands-on Firefox Android test is still required before declaring device-level validation complete.
   - [x] 2026-08-20 collapsed-package rendering hardening: loaded packages now keep selection/count state without eagerly materializing every checkbox row while the rule chooser is closed; the DOM list is created only when the chooser is opened and is invalidated safely when package data changes. This reduces initial Imports-page DOM/memory pressure for large packages without adding UI complexity; the physical Firefox Android validation remains open.
+  - [x] 2026-08-20 RC usability feedback supplied the missing real-world evidence: nested source/package disclosure was too space-heavy and difficult to scan. The post-RC UI therefore keeps lazy checkbox materialization but replaces nested `details` with channel tabs plus one compact inline package selector grouped by native rule action; physical Android validation remains open.
 - Consider an opt-in Wormhole Observatory transport only after its privacy boundary, response-contract tests and local review model remain stable in real use.
 
 ## Release policy
@@ -142,4 +153,4 @@ GitHub's optional agentic `github-advanced-security` PR check has previously fai
 
 ## Completion status
 
-**Phases 1–12 are complete on `dev`, and GitHub prerelease 1.20.0-rc.1 is published from the validated candidate.** Official is the single maintainer-managed remote rule source, Community and Custom remain separate trust channels, package imports are selectively manageable, external curation is isolated in the rules repository, and the future Wormhole Observatory boundary remains local-first, privacy-preserving and review-only by design. Stable 1.20.0 promotion remains blocked only on the explicit hands-on desktop/Firefox Android validation gates and final stable-release bookkeeping above.
+**Phases 1–12 are complete on `dev`, and GitHub prerelease 1.20.0-rc.1 remains the published pre-RC-feedback milestone.** Post-RC UI hardening now fixes popup sizing and substantially improves Rule Sources and large-rule-set management without changing rule-engine semantics. Official is the single maintainer-managed remote rule source, Community and Custom remain separate trust channels, and the future Wormhole Observatory boundary remains local-first, privacy-preserving and review-only by design. Stable 1.20.0 promotion requires fresh automated validation of the post-RC changes, a new prerelease candidate, and the explicit hands-on desktop/Firefox Android gates above.
