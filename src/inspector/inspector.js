@@ -5,7 +5,6 @@
 import { buildInspectionBlockRule, summarizeInspection } from "../main/analysis/inspection.js";
 import { uuid } from "../util/uuid.js";
 import { getInspectionMessage } from "./strings.js";
-import { renderRuleSourceDetails } from "./rule-source-details.js";
 
 const params = new URLSearchParams(location.search);
 const targetTabId = Number(params.get("tabId"));
@@ -24,6 +23,7 @@ const requestFilter = document.getElementById("request-filter");
 const requestSearch = document.getElementById("request-search");
 const assistant = document.getElementById("assistant");
 const assistantScope = document.getElementById("assistant-scope");
+let ruleSourceDetailsModule = null;
 
 startButton.addEventListener("click", startInspection);
 stopButton.addEventListener("click", stopInspection);
@@ -64,7 +64,12 @@ async function initialize() {
     document.getElementById("target-title").textContent = state.tab.title || msg("inspection_untitled_tab");
     document.getElementById("target-url").textContent = state.tab.url || "";
 
-    state.session = await inspectionMessage("get");
+    try {
+        state.session = inspectionSnapshot(await inspectionMessage("get"), { allowNull: true });
+    } catch {
+        setUnavailable(msg("inspection_unavailable"));
+        return;
+    }
     render();
     if (state.session?.active) {
         startPolling();
@@ -80,10 +85,10 @@ async function startInspection() {
         }
         state.domain = null;
         state.selectedRequestId = null;
-        state.session = await inspectionMessage("start", {
+        state.session = inspectionSnapshot(await inspectionMessage("start", {
             pageUrl: state.tab.url,
             title: state.tab.title || "",
-        });
+        }));
         render();
         startPolling();
         await browser.tabs.reload(targetTabId);
@@ -93,28 +98,40 @@ async function startInspection() {
 }
 
 async function stopInspection() {
-    state.session = await inspectionMessage("stop");
-    stopPolling();
-    render();
+    try {
+        state.session = inspectionSnapshot(await inspectionMessage("stop"), { allowNull: true });
+        stopPolling();
+        render();
+    } catch {
+        setUnavailable(msg("inspection_unavailable"));
+    }
 }
 
 async function clearInspection() {
-    await inspectionMessage("clear");
-    state.session = null;
-    state.domain = null;
-    state.selectedRequestId = null;
-    stopPolling();
-    render();
+    try {
+        inspectionSnapshot(await inspectionMessage("clear"), { allowNull: true });
+        state.session = null;
+        state.domain = null;
+        state.selectedRequestId = null;
+        stopPolling();
+        render();
+    } catch {
+        setUnavailable(msg("inspection_unavailable"));
+    }
 }
 
 async function refreshInspection() {
-    const session = await inspectionMessage("get");
-    if (session) {
-        state.session = session;
-        render();
-        if (!session.active) {
-            stopPolling();
+    try {
+        const session = inspectionSnapshot(await inspectionMessage("get"), { allowNull: true });
+        if (session) {
+            state.session = session;
+            render();
+            if (!session.active) {
+                stopPolling();
+            }
         }
+    } catch {
+        setUnavailable(msg("inspection_unavailable"));
     }
 }
 
@@ -188,52 +205,51 @@ function renderDomains(domains) {
             renderLists();
         });
 
-        const name = document.createElement("span");
-        name.className = "domain-name";
-        name.textContent = domain.hostname;
-        const count = document.createElement("span");
-        count.className = "domain-meta";
-        count.textContent = msg("inspection_request_count", String(domain.total));
-        const meta = document.createElement("span");
-        meta.className = "domain-meta";
-        meta.textContent = domain.thirdParty > 0
-            ? msg("inspection_third_party_count", String(domain.thirdParty))
-            : msg("inspection_first_party");
+        const host = document.createElement("span");
+        host.className = "domain-host";
+        host.textContent = domain.hostname;
         const badges = document.createElement("span");
         badges.className = "domain-badges";
-        if (domain.affected > 0) {
-            badges.append(createBadge(msg("inspection_affected_count", String(domain.affected)), "affected"));
+        badges.append(createBadge(String(domain.count)));
+        if (domain.thirdParty) {
+            badges.append(createBadge(msg("inspection_third_party_count", String(domain.thirdParty)), "third-party"));
         }
         if (domain.trackingHint) {
             badges.append(createBadge(msg("inspection_tracking_hint"), "tracking"));
         }
-
-        button.append(name, count, meta, badges);
+        if (domain.affected) {
+            badges.append(createBadge(msg("inspection_affected_count", String(domain.affected)), "affected"));
+        }
+        button.append(host, badges);
         list.append(button);
     }
 }
 
 function renderLists() {
-    const summary = summarizeInspection(state.session);
-    renderDomains(summary.domains);
+    renderDomains(summarizeInspection(state.session).domains);
     renderRequests();
+    renderDetails();
 }
 
 function renderRequests() {
     const list = document.getElementById("request-list");
-    const requests = filteredRequests();
     list.replaceChildren();
+    const requests = filteredRequests();
+    const total = state.session?.requests?.length || 0;
+    document.getElementById("request-count").textContent = msg("inspection_showing_requests", [String(requests.length), String(total)]);
     list.dataset.empty = requests.length === 0 ? "true" : "false";
     if (requests.length === 0) {
-        list.textContent = msg("inspection_no_matching_requests");
+        list.textContent = total > 0 ? msg("inspection_no_matching_requests") : msg("inspection_no_data");
+        state.selectedRequestId = null;
+        renderDetails();
+        return;
     }
 
-    const visible = requests.slice().reverse().slice(0, 600);
-    document.getElementById("request-count").textContent = requests.length > visible.length
-        ? msg("inspection_showing_requests", [String(visible.length), String(requests.length)])
-        : msg("inspection_request_count", String(requests.length));
+    if (!requests.some((request) => request.requestId === state.selectedRequestId)) {
+        state.selectedRequestId = requests[0].requestId;
+    }
 
-    for (const request of visible) {
+    for (const request of requests) {
         const button = document.createElement("button");
         button.type = "button";
         button.className = "request-row";
@@ -245,10 +261,9 @@ function renderRequests() {
         });
 
         const type = document.createElement("span");
-        type.className = "request-meta";
+        type.className = "request-type";
         type.textContent = friendlyType(request.type);
-        const host = document.createElement("span");
-        host.className = "request-host";
+        const host = document.createElement("strong");
         host.textContent = request.classification?.hostname || safeHostname(request.url);
         const url = document.createElement("span");
         url.className = "request-url";
@@ -256,7 +271,7 @@ function renderRequests() {
         const badges = document.createElement("span");
         badges.className = "request-badges";
         if (request.classification?.thirdParty) {
-            badges.append(createBadge(msg("inspection_third_party")));
+            badges.append(createBadge(msg("inspection_third_party"), "third-party"));
         }
         if (request.effect) {
             badges.append(createBadge(request.effect.action, "affected"));
@@ -318,9 +333,7 @@ function renderDetails() {
     ruleWrap.classList.toggle("hidden", !request.effect?.rule?.uuid);
     if (request.effect?.rule?.uuid) {
         ruleButton.textContent = request.effect.rule.title || request.effect.rule.tag || request.effect.rule.uuid;
-        void renderRuleSourceDetails(ruleWrap, request.effect.rule.uuid);
-    } else {
-        void renderRuleSourceDetails(ruleWrap, null);
+        renderRuleSourceDetailsSafely(ruleWrap, request.effect.rule.uuid);
     }
 
     const siteScopedAvailable = isInspectableUrl(state.session?.pageUrl);
@@ -458,6 +471,29 @@ function inspectionMessage(action, extra = {}) {
         tabId: targetTabId,
         ...extra,
     });
+}
+
+function inspectionSnapshot(response, { allowNull = false } = {}) {
+    if (response?.error) {
+        throw new Error(response.error);
+    }
+    if (response === null && allowNull) {
+        return null;
+    }
+    if (response === null || typeof response !== "object" || Array.isArray(response)) {
+        throw new TypeError("Invalid inspection response");
+    }
+    return response;
+}
+
+function renderRuleSourceDetailsSafely(ruleWrap, ruleUuid) {
+    if (!ruleUuid) return;
+    if (!ruleSourceDetailsModule) {
+        ruleSourceDetailsModule = import("./rule-source-details.js").catch(() => null);
+    }
+    void ruleSourceDetailsModule
+        .then((module) => module?.renderRuleSourceDetails?.(ruleWrap, ruleUuid))
+        .catch(() => undefined);
 }
 
 function isInspectableUrl(url) {
