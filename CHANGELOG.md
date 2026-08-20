@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.0] - Unreleased
+- Simplify Imports and Community presentation while keeping Official, Community and Custom as explicit, separate trust channels.
+- Move the maintainer-managed Official corpus fully to the versioned remote catalog with schema/channel validation, SHA-256 verification, per-package update detection, Update all, offline-safe local retention and conflict preservation for locally modified managed rules.
+- Add expandable selective package imports with Select all, Select none, Invert and Reset controls; persist selections by stable rule UUID so upstream package growth never silently enables newly published rules.
+- Add compact privacy-minimized package/source diagnostics and support export data while keeping behavioral analysis bounded to explicit Inspection/Guardian sessions and Wormhole Observatory transport disabled.
+- Remove legacy managed-source aliases and packaged Official rule copies; obsolete managed identities are pruned while their installed rules are preserved as ordinary local rules.
+- Harden Firefox Android large-package imports by avoiding full checkbox-list resynchronization on individual taps, caching selection counts and deferring checkbox DOM creation until an expanded package selector is actually opened.
+
 ## [1.19.0] - Aug. 18, 2026
 - Add the on-demand Compatibility Guardian for bounded per-tab diagnostics, including lifecycle cleanup and local scoring without continuous browsing surveillance.
 - Add configurable Referer protection modes for browser-default, balanced cross-origin origin-only, same-origin only and no-referrer behavior; browser-default remains listener-free and balanced mode preserves HTTPS-to-HTTP downgrade protection.
@@ -211,7 +219,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add tabs to options view.
 - Fix trim parameter inconsistency: support literal string params and regexp params. #17
 - Fix pageAction details bug with block rules. #19
-- Fix filter rule redirection url filtering. #20
 - Remove url status icon. #19
 
 ## [1.6.1] - June 21, 2017

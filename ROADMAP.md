@@ -2,7 +2,7 @@
 
 This document is the binding source of truth for the active modernization/release line. Detailed historical design notes remain in `docs/roadmap.md` and the phase-specific documents.
 
-**Status: 1.19.0 released and verified; Phases 1–12 complete on `dev`**
+**Status: 1.19.0 released and verified; Phases 1–12 complete on `dev`; 1.20.0 release preparation active**
 
 ## Current baseline
 
@@ -94,6 +94,29 @@ This document is the binding source of truth for the active modernization/releas
 - [x] Firefox Android Imports/Official update presentation and selective package controls are covered by the final mobile regression suite.
 - [x] Phase 12 is complete after both repositories passed their applicable validation/security gates.
 
+## 1.20.0 release preparation
+
+The first post-1.19 extension release is now justified by substantial user-visible and runtime changes completed in Phases 11–12. This is a release-preparation milestone, not a new feature phase: no Phase 13 is introduced and no deferred Observatory transport work is pulled forward.
+
+### Candidate scope
+
+- [x] Confirm that 1.19.0 is still the latest published release and that `master` remains on the 1.19.0 release line.
+- [x] Confirm that `dev` contains unreleased extension behavior changes that require a new extension release under the release policy: simplified Imports/Community UX, Official/Community/Custom distribution, integrity-checked Official update management, selective package imports, runtime support/source diagnostics and Firefox Android large-package performance hardening.
+- [x] Select **1.20.0** as the next version because the accumulated post-1.19 work is a substantial feature/behavior release rather than a narrow patch.
+- [x] Align the `dev` manifest and changelog with the 1.20.0 candidate. The changelog remains explicitly marked `Unreleased` until final promotion.
+- [x] Keep Wormhole Observatory transport deferred and keep further source-adapter expansion out of the release scope.
+
+### Validation and publication gates
+
+- [ ] The final 1.20.0 candidate commit passes the full authoritative build/test/lint/build-lint workflow.
+- [ ] Applicable authoritative code/dependency/security checks are green; optional agentic GHAS service-start failures are not treated as code findings.
+- [ ] Perform a Firefox desktop smoke test of Imports, Official update state, selective package editing and local-rule preservation.
+- [ ] Perform the still-open hands-on Firefox Android test with a large real-world package, including expand/collapse behavior, sparse selections, repeated individual taps, package update reconciliation and touch/scroll usability. Automated 2,000+ rule fixtures remain supporting evidence, not a substitute for this device-level gate.
+- [ ] Verify the 1.19.0 → 1.20.0 upgrade path with existing local rules and managed-source state before promotion; no migration may silently enable new remote rules or discard local modifications.
+- [ ] Replace the changelog's `Unreleased` marker with the actual release date only when promotion is approved.
+- [ ] Promote the validated candidate to `master` only after all release gates are satisfied. The `master` release workflow creates the stable tag/release automatically from the manifest version, so no release-triggering merge is performed during preparation.
+- [ ] Verify the published ZIP/XPI artifact pair and record final release/security status in this roadmap after publication.
+
 ## Future maintenance / next phase candidates
 
 - Expand source-specific curation adapters only where licensing, deterministic semantics and expected rule value justify the ongoing maintenance cost.
@@ -117,4 +140,4 @@ GitHub's optional agentic `github-advanced-security` PR check has previously fai
 
 ## Completion status
 
-**Phases 1–12 are complete on `dev`.** Official is the single maintainer-managed remote rule source, Community and Custom remain separate trust channels, package imports are selectively manageable, external curation is isolated in the rules repository, and the future Wormhole Observatory boundary remains local-first, privacy-preserving and review-only by design.
+**Phases 1–12 are complete on `dev`, and 1.20.0 release preparation is active.** Official is the single maintainer-managed remote rule source, Community and Custom remain separate trust channels, package imports are selectively manageable, external curation is isolated in the rules repository, and the future Wormhole Observatory boundary remains local-first, privacy-preserving and review-only by design. Release publication remains blocked on the explicit 1.20.0 validation gates above.
