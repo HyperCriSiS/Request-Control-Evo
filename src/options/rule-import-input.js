@@ -10,6 +10,8 @@ import {
 } from "./import-selection.js";
 import { fetchWithTimeout } from "../main/remote-fetch.js";
 
+const ACTION_ORDER = ["filter", "redirect", "secure", "block", "whitelist"];
+
 class RuleImportInput extends HTMLElement {
     constructor() {
         super();
@@ -56,7 +58,7 @@ class RuleImportInput extends HTMLElement {
                     return;
                 }
                 if (this.selectedRules.length === 0 && !this._data?.imported) {
-                    this.shadowRoot.getElementById("rule-selection").open = true;
+                    await this.openSelection();
                     return;
                 }
                 this.dispatchEvent(
@@ -98,9 +100,16 @@ class RuleImportInput extends HTMLElement {
 
         const heading = document.createElement("div");
         heading.className = "import-heading";
+
+        const copy = document.createElement("div");
+        copy.className = "import-copy";
         const name = this.shadowRoot.getElementById("name");
         name.classList.add("import-name");
-        heading.append(name);
+        const description = document.createElement("p");
+        description.id = "description";
+        description.className = "description";
+        description.hidden = true;
+        copy.append(name, description);
 
         const actions = document.createElement("div");
         actions.className = "import-actions";
@@ -109,34 +118,39 @@ class RuleImportInput extends HTMLElement {
             "imported",
             "update",
             "integrity",
+            "error",
             "import",
             "delete-imported",
             "show-imported",
             "delete",
-            "error",
         ]) {
             const element = this.shadowRoot.getElementById(id);
-            if (element) {
-                actions.append(element);
-            }
+            if (element) actions.append(element);
         }
-        heading.append(actions);
+        heading.append(copy, actions);
         row.prepend(heading);
-
-        const description = document.createElement("p");
-        description.id = "description";
-        description.className = "description";
-        description.hidden = true;
 
         const meta = document.createElement("div");
         meta.className = "import-meta";
 
+        const selectionToggle = document.createElement("button");
+        selectionToggle.id = "selection-toggle";
+        selectionToggle.type = "button";
+        selectionToggle.className = "btn text selection-toggle";
+        selectionToggle.setAttribute("aria-expanded", "false");
+        selectionToggle.textContent = message("import_choose_rules", "Choose rules");
+        selectionToggle.addEventListener("click", () => this.toggleSelection());
+        meta.append(selectionToggle);
+
+        const types = document.createElement("span");
+        types.id = "import-types";
+        types.className = "import-types";
+        types.hidden = true;
+        meta.append(types);
+
         const url = this.shadowRoot.getElementById("url");
         url.classList.add("source-link");
         url.rel = "noopener noreferrer";
-        const sourceLabel = document.createElement("span");
-        sourceLabel.textContent = message("source", "Source");
-        url.append(sourceLabel);
         meta.append(url);
 
         const rating = document.createElement("span");
@@ -151,20 +165,12 @@ class RuleImportInput extends HTMLElement {
         ratingLink.textContent = message("community_review", "Community review");
         rating.append(ratingLink);
         meta.append(rating);
+        row.append(meta);
 
-        const details = document.createElement("details");
-        details.className = "import-details";
-        const summary = document.createElement("summary");
-        summary.textContent = message("import_details", "Details");
-        details.append(summary, description, meta);
-        row.append(details);
-
-        const selection = document.createElement("details");
+        const selection = document.createElement("div");
         selection.id = "rule-selection";
         selection.className = "rule-selection";
-        const selectionSummary = document.createElement("summary");
-        selectionSummary.id = "selection-summary";
-        selectionSummary.textContent = message("import_choose_rules", "Choose rules");
+        selection.hidden = true;
 
         const selectionToolbar = document.createElement("div");
         selectionToolbar.className = "selection-toolbar";
@@ -186,29 +192,44 @@ class RuleImportInput extends HTMLElement {
         const selectionList = document.createElement("ul");
         selectionList.id = "selection-list";
         selectionList.className = "selection-list";
-        selection.append(selectionSummary, selectionToolbar, selectionList);
-        selection.addEventListener("toggle", () => {
-            if (selection.open && this.source) {
-                this.load().then(() => {
-                    if (this._selectionListDirty) {
-                        this.renderRuleSelection();
-                    }
-                });
-            }
-        });
+        selection.append(selectionToolbar, selectionList);
         row.append(selection);
+    }
+
+    async toggleSelection() {
+        const panel = this.shadowRoot.getElementById("rule-selection");
+        if (panel.hidden) {
+            await this.openSelection();
+        } else {
+            panel.hidden = true;
+            this.shadowRoot.getElementById("selection-toggle").setAttribute("aria-expanded", "false");
+            this.renderRuleSelection();
+        }
+    }
+
+    async openSelection() {
+        const panel = this.shadowRoot.getElementById("rule-selection");
+        const toggle = this.shadowRoot.getElementById("selection-toggle");
+        panel.hidden = false;
+        toggle.setAttribute("aria-expanded", "true");
+        if (this.source) {
+            await this.load();
+        }
+        if (this._selectionListDirty) {
+            this.renderRuleSelection();
+        }
     }
 
     onSourceChanged(src) {
         const text = this.shadowRoot.getElementById("name");
         const url = this.shadowRoot.getElementById("url");
+        const toggle = this.shadowRoot.getElementById("selection-toggle");
         url.title = message("view_list", "View source");
 
         if (!src) {
-            if (!this.textContent.trim()) {
-                text.textContent = "";
-            }
+            if (!this.textContent.trim()) text.textContent = "";
             url.removeAttribute("href");
+            toggle.hidden = true;
             this._rules = [];
             this.digest = null;
             this._selectedUuids = new Set();
@@ -223,8 +244,8 @@ class RuleImportInput extends HTMLElement {
             text.textContent = new URL(src).hostname || src;
         }
 
+        toggle.hidden = false;
         url.href = humanReadableSource(src);
-        this.shadowRoot.getElementById("rule-selection").hidden = false;
         if (!this.hasAttribute("lazy")) {
             this.load();
         }
@@ -260,9 +281,7 @@ class RuleImportInput extends HTMLElement {
     set sourceHomepage(value) {
         const link = this.shadowRoot.getElementById("url");
         const source = normalizeImportSource(value);
-        if (source) {
-            link.href = source;
-        }
+        if (source) link.href = source;
     }
 
     set communityReview(value) {
@@ -270,11 +289,8 @@ class RuleImportInput extends HTMLElement {
         const link = this.shadowRoot.getElementById("rating-link");
         const source = normalizeImportSource(value);
         rating.hidden = !source;
-        if (source) {
-            link.href = source;
-        } else {
-            link.removeAttribute("href");
-        }
+        if (source) link.href = source;
+        else link.removeAttribute("href");
     }
 
     load() {
@@ -311,9 +327,7 @@ class RuleImportInput extends HTMLElement {
         showImported.hidden = !value.imported;
         deleteImported.hidden = !value.imported;
         this._data = value;
-        if (this.digest && this._rules.length) {
-            this.initializeSelection();
-        }
+        if (this.digest && this._rules.length) this.initializeSelection();
         this.updateImportAction();
     }
 
@@ -323,12 +337,6 @@ class RuleImportInput extends HTMLElement {
         description.textContent = text;
         description.title = text;
         description.hidden = !text;
-        if (this.hasAttribute("warning") && text) {
-            const details = this.shadowRoot.querySelector(".import-details");
-            if (details) {
-                details.open = true;
-            }
-        }
     }
 
     get selectedRules() {
@@ -363,9 +371,7 @@ class RuleImportInput extends HTMLElement {
     invertRuleSelection() {
         const next = new Set();
         for (const rule of this._rules) {
-            if (rule?.uuid && !this._selectedUuids.has(rule.uuid)) {
-                next.add(rule.uuid);
-            }
+            if (rule?.uuid && !this._selectedUuids.has(rule.uuid)) next.add(rule.uuid);
         }
         this._selectedUuids = next;
         this.updateSelectionPresentation();
@@ -377,16 +383,15 @@ class RuleImportInput extends HTMLElement {
     }
 
     renderRuleSelection() {
-        const details = this.shadowRoot.getElementById("rule-selection");
+        const panel = this.shadowRoot.getElementById("rule-selection");
         const list = this.shadowRoot.getElementById("selection-list");
-        if (!details || !list) {
-            return;
-        }
+        if (!panel || !list) return;
+
         const selectable = this._rules.filter((rule) => rule?.uuid);
         this._selectableRuleCount = selectable.length;
-        details.hidden = !this.source;
+        this.renderActionBadges(selectable);
 
-        if (!details.open) {
+        if (panel.hidden) {
             list.replaceChildren();
             this._selectionListDirty = true;
             this.updateSelectionPresentation({ syncCheckboxes: false });
@@ -394,50 +399,74 @@ class RuleImportInput extends HTMLElement {
         }
 
         list.replaceChildren();
-        for (const rule of selectable) {
-            const item = document.createElement("li");
-            item.className = "selection-rule";
-            const label = document.createElement("label");
-            const checkbox = document.createElement("input");
-            checkbox.type = "checkbox";
-            checkbox.checked = this._selectedUuids.has(rule.uuid);
-            checkbox.dataset.uuid = rule.uuid;
-            checkbox.addEventListener("change", () => {
-                if (checkbox.checked) {
-                    this._selectedUuids.add(rule.uuid);
-                } else {
-                    this._selectedUuids.delete(rule.uuid);
-                }
-                this.updateSelectionPresentation({ syncCheckboxes: false });
-            });
+        for (const [action, rules] of groupRulesByAction(selectable)) {
+            const header = document.createElement("li");
+            header.className = "selection-group-header";
+            header.dataset.action = action;
+            const label = document.createElement("span");
+            label.textContent = actionLabel(action);
+            const count = document.createElement("span");
+            count.className = "badge badge-light";
+            count.textContent = String(rules.length);
+            header.append(label, count);
+            list.append(header);
 
-            const text = document.createElement("span");
-            text.className = "selection-rule-text";
-            const title = document.createElement("strong");
-            title.textContent = rule.title || rule.uuid;
-            text.append(title);
-            if (rule.description) {
-                const description = document.createElement("small");
-                description.textContent = rule.description;
-                text.append(description);
+            for (const rule of rules) {
+                const item = document.createElement("li");
+                item.className = "selection-rule";
+                item.dataset.action = action;
+                const labelNode = document.createElement("label");
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.checked = this._selectedUuids.has(rule.uuid);
+                checkbox.dataset.uuid = rule.uuid;
+                checkbox.addEventListener("change", () => {
+                    if (checkbox.checked) this._selectedUuids.add(rule.uuid);
+                    else this._selectedUuids.delete(rule.uuid);
+                    this.updateSelectionPresentation({ syncCheckboxes: false });
+                });
+
+                const text = document.createElement("span");
+                text.className = "selection-rule-text";
+                const title = document.createElement("strong");
+                title.textContent = rule.title || rule.uuid;
+                text.append(title);
+                if (rule.description) {
+                    const description = document.createElement("small");
+                    description.textContent = rule.description;
+                    text.append(description);
+                }
+                labelNode.append(checkbox, text);
+                item.append(labelNode);
+                list.append(item);
             }
-            label.append(checkbox, text);
-            item.append(label);
-            list.append(item);
         }
         this._selectionListDirty = false;
         this.updateSelectionPresentation();
     }
 
-    updateSelectionPresentation({ syncCheckboxes = true } = {}) {
-        const summary = this.shadowRoot.getElementById("selection-summary");
-        const list = this.shadowRoot.getElementById("selection-list");
-        if (!summary || !list) {
-            return;
+    renderActionBadges(rules) {
+        const container = this.shadowRoot.getElementById("import-types");
+        if (!container) return;
+        const actions = [...new Set(rules.map((rule) => rule.action).filter(Boolean))]
+            .sort((a, b) => actionRank(a) - actionRank(b));
+        container.replaceChildren();
+        for (const action of actions) {
+            const badge = document.createElement("span");
+            badge.className = "badge badge-light import-type-badge";
+            badge.textContent = actionLabel(action).replace(/\s+rules$/i, "");
+            container.append(badge);
         }
+        container.hidden = actions.length === 0;
+    }
+
+    updateSelectionPresentation({ syncCheckboxes = true } = {}) {
+        const toggle = this.shadowRoot.getElementById("selection-toggle");
+        const list = this.shadowRoot.getElementById("selection-list");
+        if (!toggle || !list) return;
         const selectableCount = this._selectableRuleCount;
         const selectedCount = this._selectedUuids.size;
-        summary.textContent = this.digest
+        toggle.textContent = this.digest
             ? (browser.i18n.getMessage("import_selected_count", [String(selectedCount), String(selectableCount)]) ||
                 `${selectedCount} of ${selectableCount} rules selected`)
             : message("import_choose_rules", "Choose rules");
@@ -450,9 +479,7 @@ class RuleImportInput extends HTMLElement {
             button.disabled = selectableCount === 0;
         });
         const reset = this.shadowRoot.getElementById("reset-rule-selection");
-        if (reset) {
-            reset.disabled = sameRuleSelection(this._selectedUuids, this._baselineSelectedUuids);
-        }
+        if (reset) reset.disabled = sameRuleSelection(this._selectedUuids, this._baselineSelectedUuids);
         this.updateImportAction();
     }
 
@@ -481,13 +508,9 @@ class RuleImportInput extends HTMLElement {
 
         try {
             const source = normalizeImportSource(src);
-            if (!source) {
-                throw new TypeError("Unsupported rule source URL");
-            }
+            if (!source) throw new TypeError("Unsupported rule source URL");
             const response = await fetchWithTimeout(source, { cache: "no-store" });
-            if (!response.ok) {
-                throw new Error(`Failed to fetch rule list: ${response.status}`);
-            }
+            if (!response.ok) throw new Error(`Failed to fetch rule list: ${response.status}`);
             const text = await response.text();
             this.digest = await digest(text);
             if (this.expectedSha256 && this.digest !== this.expectedSha256) {
@@ -498,9 +521,7 @@ class RuleImportInput extends HTMLElement {
                 this.integrityStatus = "failed";
                 return;
             }
-            if (this.expectedSha256) {
-                this.integrityStatus = "verified";
-            }
+            if (this.expectedSha256) this.integrityStatus = "verified";
             const parsed = JSON.parse(text);
             this._rules = Array.isArray(parsed) ? parsed : [parsed];
             if (this._rules.some((rule) => !rule || typeof rule !== "object")) {
@@ -521,9 +542,7 @@ class RuleImportInput extends HTMLElement {
             this._baselineSelectedUuids = new Set();
             this.renderRuleSelection();
             this.loadStatus = "unavailable";
-            if (this.integrityStatus === "pending") {
-                this.integrityStatus = "unknown";
-            }
+            if (this.integrityStatus === "pending") this.integrityStatus = "unknown";
             count.hidden = false;
             count.textContent = message("import_unavailable", "Unavailable");
         } finally {
@@ -534,11 +553,35 @@ class RuleImportInput extends HTMLElement {
 
 customElements.define("rule-import-input", RuleImportInput);
 
+function groupRulesByAction(rules) {
+    const groups = new Map();
+    for (const rule of rules) {
+        const action = rule.action || "other";
+        if (!groups.has(action)) groups.set(action, []);
+        groups.get(action).push(rule);
+    }
+    return Array.from(groups.entries()).sort(([a], [b]) => actionRank(a) - actionRank(b));
+}
+
+function actionRank(action) {
+    const index = ACTION_ORDER.indexOf(action);
+    return index === -1 ? ACTION_ORDER.length : index;
+}
+
+function actionLabel(action) {
+    const keys = {
+        filter: "filter_rules",
+        redirect: "redirect_rules",
+        secure: "secure_rules",
+        block: "block_rules",
+        whitelist: "whitelist_rules",
+    };
+    return browser.i18n.getMessage(keys[action]) || action || "Other";
+}
+
 function humanReadableSource(src) {
     const source = normalizeImportSource(src);
-    if (!source) {
-        return "about:blank";
-    }
+    if (!source) return "about:blank";
 
     try {
         const url = new URL(source);
@@ -562,7 +605,7 @@ function message(key, fallback, substitutions) {
 async function digest(text, algorithm = "SHA-256") {
     const encoder = new TextEncoder();
     const data = encoder.encode(text);
-    const digest = await crypto.subtle.digest(algorithm, data);
-    const bytes = Array.from(new Uint8Array(digest));
+    const digestValue = await crypto.subtle.digest(algorithm, data);
+    const bytes = Array.from(new Uint8Array(digestValue));
     return bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
 }
