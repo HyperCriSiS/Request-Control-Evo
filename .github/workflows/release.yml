@@ -43,9 +43,22 @@ jobs:
               echo "Manual prereleases are only allowed from dev; got '$GITHUB_REF_NAME'."
               exit 1
             fi
-            TAG="$VERSION-rc.1"
+
+            git fetch --tags --force
+            MAX_RC=0
+            while IFS= read -r EXISTING_TAG; do
+              if [[ "$EXISTING_TAG" =~ ^${VERSION}-rc\.([0-9]+)$ ]]; then
+                RC_NUMBER="${BASH_REMATCH[1]}"
+                if (( RC_NUMBER > MAX_RC )); then
+                  MAX_RC=$RC_NUMBER
+                fi
+              fi
+            done < <(git tag --list "$VERSION-rc.*")
+
+            RC_NUMBER=$((MAX_RC + 1))
+            TAG="$VERSION-rc.$RC_NUMBER"
             PRERELEASE=true
-            RELEASE_NAME="Request Control $VERSION RC 1"
+            RELEASE_NAME="Request Control $VERSION RC $RC_NUMBER"
           else
             if [[ "$GITHUB_REF_NAME" != "master" ]]; then
               echo "Stable releases are only allowed from master; got '$GITHUB_REF_NAME'."
