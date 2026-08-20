@@ -6,11 +6,38 @@ import {assessRedirectCandidate, shouldAutoSuggestRedirect} from "../intelligenc
 
 const HTTP_PROTOCOLS = new Set(["http:", "https:"]);
 
+// These are intentionally limited to parameter families whose primary purpose is
+// attribution/tracking. Ambiguous names such as ref/source stay review-only.
 export const CONSERVATIVE_PARAMETER_PATTERNS = Object.freeze([
     "utm_*",
     "fbclid",
     "gclid",
+    "dclid",
+    "msclkid",
+    "twclid",
     "yclid",
+    "gbraid",
+    "wbraid",
+    "mc_cid",
+    "mc_eid",
+    "mkt_tok",
+    "vero_conv",
+    "vero_id",
+]);
+
+export const REVIEW_PARAMETER_PATTERNS = Object.freeze([
+    "ref",
+    "referrer",
+    "ref_*",
+    "source",
+    "src",
+    "campaign",
+    "campaign_id",
+    "affiliate",
+    "aff",
+    "aff_id",
+    "clickid",
+    "click_id",
 ]);
 
 function decodeRepeatedly(value, maxRounds = 2) {
@@ -53,6 +80,14 @@ export function analyzeUrl(input) {
             input,
             valid: false,
             error: "invalid-url",
+        };
+    }
+
+    if (!HTTP_PROTOCOLS.has(url.protocol)) {
+        return {
+            input,
+            valid: false,
+            error: "unsupported-protocol",
         };
     }
 
@@ -151,6 +186,7 @@ export function suggestSafeRedirectActions(analysis) {
             return {
                 type: "unwrap-query-parameter",
                 parameter: parameter.name,
+                parameterIndex: parameter.index,
                 targetUrl: parameter.nestedUrl,
                 confidence: "structural",
                 safety,
@@ -159,30 +195,64 @@ export function suggestSafeRedirectActions(analysis) {
         });
 }
 
-export function suggestParameterActions(analysis, removablePatterns = []) {
+export function assessQueryParameters(
+    analysis,
+    removablePatterns = CONSERVATIVE_PARAMETER_PATTERNS,
+    reviewPatterns = REVIEW_PARAMETER_PATTERNS
+) {
+    if (!analysis.valid) {
+        return [];
+    }
+
+    const redirects = new Map(
+        suggestSafeRedirectActions(analysis).map((suggestion) => [suggestion.parameterIndex, suggestion])
+    );
+
+    return analysis.queryParameters.map((parameter) => {
+        const matchedPattern = removablePatterns.find((pattern) => matchParameterPattern(parameter.name, pattern)) || null;
+        const reviewPattern = reviewPatterns.find((pattern) => matchParameterPattern(parameter.name, pattern)) || null;
+        const redirect = redirects.get(parameter.index) || null;
+
+        let classification = "ordinary";
+        if (matchedPattern) {
+            classification = "tracking";
+        } else if (redirect?.autoSuggest) {
+            classification = "redirect";
+        } else if (redirect) {
+            classification = "redirect-review";
+        } else if (reviewPattern) {
+            classification = "review";
+        }
+
+        return {
+            ...parameter,
+            classification,
+            matchedPattern,
+            reviewPattern,
+            redirect,
+        };
+    });
+}
+
+export function suggestParameterActions(analysis, removablePatterns = CONSERVATIVE_PARAMETER_PATTERNS) {
     if (!analysis.valid) {
         return [];
     }
 
     const suggestions = [];
-    for (const parameter of analysis.queryParameters) {
-        const matchedPattern = removablePatterns.find((pattern) => matchParameterPattern(parameter.name, pattern));
-        if (matchedPattern) {
+    for (const assessment of assessQueryParameters(analysis, removablePatterns)) {
+        if (assessment.matchedPattern) {
             suggestions.push({
                 type: "remove-query-parameter",
-                parameter: parameter.name,
-                matchedPattern,
-                confidence: "catalog",
+                parameter: assessment.name,
+                matchedPattern: assessment.matchedPattern,
+                confidence: "high",
+                autoSuggest: true,
             });
         }
 
-        if (parameter.nestedUrl) {
-            suggestions.push({
-                type: "unwrap-query-parameter",
-                parameter: parameter.name,
-                targetUrl: parameter.nestedUrl,
-                confidence: "structural",
-            });
+        if (assessment.redirect) {
+            suggestions.push(assessment.redirect);
         }
     }
     return suggestions;

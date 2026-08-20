@@ -4,43 +4,24 @@
 
 import {
     analyzeUrl,
+    assessQueryParameters,
     CONSERVATIVE_PARAMETER_PATTERNS,
     suggestParameterActions,
 } from "../main/analysis/url-analyzer.js";
 import { buildSuggestedFilterRule } from "../main/analysis/rule-suggestions.js";
 import { uuid } from "../util/uuid.js";
 
-let state = null;
-document.title = browser.i18n.getMessage("analyzer_title");
-
 const form = document.getElementById("analyzer-form");
 const input = document.getElementById("url");
 const error = document.getElementById("error");
 const results = document.getElementById("results");
+const parametersNode = document.getElementById("parameters");
 const suggestionsNode = document.getElementById("suggestions");
 const noSuggestions = document.getElementById("no-suggestions");
 const createButton = document.getElementById("create-rule");
+let state = null;
 
-const patterns = CONSERVATIVE_PARAMETER_PATTERNS;
 const params = new URLSearchParams(location.search);
-const requestedTabId = Number.parseInt(params.get("tabId"), 10);
-const guardianButton = document.getElementById("guardian-run");
-const guardianStatus = document.getElementById("guardian-status");
-const guardianResult = document.getElementById("guardian-result");
-const referrerMode = document.getElementById("referrer-mode");
-
-initializeReferrerMode();
-referrerMode.addEventListener("change", () =>
-    browser.storage.local.set({ referrerProtectionMode: referrerMode.value })
-);
-
-if (!Number.isInteger(requestedTabId)) {
-    guardianButton.disabled = true;
-    guardianStatus.textContent = browser.i18n.getMessage("guardian_no_tab");
-} else {
-    guardianButton.addEventListener("click", runGuardian);
-}
-
 const requestedUrl = params.get("url");
 if (requestedUrl) {
     input.value = requestedUrl;
@@ -55,21 +36,11 @@ form.addEventListener("submit", (event) => {
 document.getElementById("open-options").addEventListener("click", () => browser.runtime.openOptionsPage());
 createButton.addEventListener("click", createRule);
 
-async function initializeReferrerMode() {
-    try {
-        const { referrerProtectionMode = "browser" } = await browser.storage.local.get("referrerProtectionMode");
-        referrerMode.value = ["browser", "balanced", "same-origin", "no-referrer"].includes(referrerProtectionMode)
-            ? referrerProtectionMode
-            : "browser";
-    } catch {
-        referrerMode.value = "browser";
-    }
-}
-
 function analyzeInput() {
     const analysis = analyzeUrl(input.value);
     error.classList.toggle("hidden", analysis.valid);
     results.classList.toggle("hidden", !analysis.valid);
+    parametersNode.replaceChildren();
     suggestionsNode.replaceChildren();
     state = null;
     createButton.disabled = true;
@@ -78,11 +49,48 @@ function analyzeInput() {
         return;
     }
 
-    const suggestions = suggestParameterActions(analysis, patterns);
+    const assessments = assessQueryParameters(analysis, CONSERVATIVE_PARAMETER_PATTERNS);
+    const suggestions = suggestParameterActions(analysis, CONSERVATIVE_PARAMETER_PATTERNS);
     state = { analysis, suggestions };
     document.getElementById("host").textContent = analysis.hostname;
     document.getElementById("path").textContent = analysis.pathname;
     document.getElementById("parameter-count").textContent = String(analysis.queryParameters.length);
+
+    renderParameters(assessments);
+    renderSuggestions(suggestions);
+    updateCreateButton();
+}
+
+function renderParameters(assessments) {
+    if (assessments.length === 0) {
+        const empty = document.createElement("p");
+        empty.className = "muted";
+        empty.textContent = message("analyzer_no_parameters", "This URL has no query parameters.");
+        parametersNode.append(empty);
+        return;
+    }
+
+    for (const assessment of assessments) {
+        const row = document.createElement("div");
+        row.className = `parameter-row ${assessment.classification}`;
+
+        const copy = document.createElement("div");
+        copy.className = "parameter-copy";
+        const name = document.createElement("strong");
+        name.textContent = assessment.name;
+        const value = document.createElement("small");
+        value.textContent = assessment.value || message("analyzer_empty_value", "Empty value");
+        copy.append(name, value);
+
+        const badge = document.createElement("span");
+        badge.className = "parameter-classification";
+        badge.textContent = classificationLabel(assessment.classification);
+        row.append(copy, badge);
+        parametersNode.append(row);
+    }
+}
+
+function renderSuggestions(suggestions) {
     noSuggestions.classList.toggle("hidden", suggestions.length > 0);
 
     suggestions.forEach((suggestion, index) => {
@@ -91,7 +99,8 @@ function analyzeInput() {
         const checkbox = document.createElement("input");
         checkbox.type = "checkbox";
         checkbox.dataset.index = index;
-        checkbox.checked = suggestion.type === "remove-query-parameter";
+        checkbox.disabled = suggestion.type === "unwrap-query-parameter" && !suggestion.autoSuggest;
+        checkbox.checked = suggestion.type === "remove-query-parameter" && suggestion.autoSuggest !== false;
         checkbox.addEventListener("change", updateCreateButton);
         const text = document.createElement("span");
         const title = document.createElement("strong");
@@ -99,24 +108,42 @@ function analyzeInput() {
 
         if (suggestion.type === "remove-query-parameter") {
             title.textContent = browser.i18n.getMessage("analyzer_remove_parameter", suggestion.parameter);
-            details.textContent = browser.i18n.getMessage("analyzer_catalog_match", suggestion.matchedPattern);
+            details.textContent = message(
+                "analyzer_high_confidence_match",
+                `High-confidence tracking pattern: ${suggestion.matchedPattern}`,
+                suggestion.matchedPattern
+            );
         } else {
             title.textContent = browser.i18n.getMessage("analyzer_unwrap_parameter", suggestion.parameter);
-            details.textContent = suggestion.targetUrl;
+            details.textContent = suggestion.autoSuggest
+                ? suggestion.targetUrl
+                : message("analyzer_redirect_review", "Nested destination detected, but automatic unwrapping is blocked by the safety check.");
+            label.classList.toggle("review-only", !suggestion.autoSuggest);
         }
 
         text.append(title, details);
         label.append(checkbox, text);
         suggestionsNode.append(label);
     });
-    updateCreateButton();
+}
+
+function classificationLabel(classification) {
+    const labels = {
+        tracking: ["analyzer_class_tracking", "Tracking"],
+        redirect: ["analyzer_class_redirect", "Redirect"],
+        "redirect-review": ["analyzer_class_review", "Review"],
+        review: ["analyzer_class_review", "Review"],
+        ordinary: ["analyzer_class_ordinary", "No automatic change"],
+    };
+    const [key, fallback] = labels[classification] || labels.ordinary;
+    return message(key, fallback);
 }
 
 function selectedSuggestions() {
     if (!state) {
         return [];
     }
-    return Array.from(suggestionsNode.querySelectorAll("input:checked"), (checkbox) =>
+    return Array.from(suggestionsNode.querySelectorAll("input:checked:not(:disabled)"), (checkbox) =>
         state.suggestions[Number(checkbox.dataset.index)]
     );
 }
@@ -142,46 +169,6 @@ async function createRule() {
     window.close();
 }
 
-
-async function runGuardian() {
-    guardianButton.disabled = true;
-    guardianResult.classList.add("hidden");
-    guardianStatus.textContent = browser.i18n.getMessage("guardian_running");
-    try {
-        const start = await browser.runtime.sendMessage({ namespace: "guardian", action: "start", tabId: requestedTabId });
-        if (start?.error) {
-            throw new Error(start.error);
-        }
-        await browser.tabs.reload(requestedTabId);
-        await new Promise((resolve) => setTimeout(resolve, 8000));
-        const report = await browser.runtime.sendMessage({ namespace: "guardian", action: "stop", tabId: requestedTabId });
-        renderGuardianReport(report);
-    } catch {
-        guardianStatus.textContent = browser.i18n.getMessage("guardian_failed");
-        try {
-            await browser.runtime.sendMessage({ namespace: "guardian", action: "stop", tabId: requestedTabId });
-        } catch {
-            // Sessions auto-expire in the background even if cleanup messaging fails.
-        }
-    } finally {
-        guardianButton.disabled = false;
-    }
-}
-
-function renderGuardianReport(report) {
-    if (!report || report.error) {
-        guardianStatus.textContent = browser.i18n.getMessage("guardian_failed");
-        return;
-    }
-    guardianStatus.textContent = browser.i18n.getMessage(
-        report.score >= 60 ? "guardian_result_warning" : "guardian_result_ok"
-    );
-    document.getElementById("guardian-score").textContent = `${report.score}/100`;
-    document.getElementById("guardian-errors").textContent = String(
-        report.counts.mainFrameErrors + report.counts.subresourceErrors
-    );
-    document.getElementById("guardian-http").textContent = String(
-        report.counts.serverFailures + report.counts.clientFailures
-    );
-    guardianResult.classList.remove("hidden");
+function message(key, fallback, substitutions) {
+    return browser.i18n.getMessage(key, substitutions) || fallback;
 }

@@ -51,10 +51,19 @@ dd { margin: .15rem 0 0; overflow-wrap: anywhere; }
 .suggestion input { margin-top: .2rem; }
 .suggestion strong { display: block; }
 .suggestion small { color: var(--muted); }
+
+.parameter-list { display: grid; gap: .4rem; margin-top: .65rem; }
+.parameter-row { display: grid; grid-template-columns: minmax(0, 1fr) auto; align-items: center; gap: .75rem; padding: .6rem .7rem; border: 1px solid var(--border); border-radius: .45rem; }
+.parameter-copy { min-width: 0; }
+.parameter-copy strong, .parameter-copy small { display: block; overflow-wrap: anywhere; }
+.parameter-copy small { margin-top: .15rem; color: var(--muted); }
+.parameter-classification { justify-self: end; padding: .2rem .45rem; border: 1px solid var(--border); border-radius: 999px; color: var(--muted); font-size: .78rem; font-weight: 650; white-space: nowrap; }
+.suggestion.review-only { cursor: default; opacity: .8; }
+.suggestion.review-only:hover { background: transparent; }
+.suggestion input:disabled { cursor: not-allowed; }
+
 .actions { margin-top: 1rem; }
 .row-actions { display: flex; align-items: center; gap: .75rem; flex-wrap: wrap; }
-select { width: 100%; max-width: 28rem; padding: .65rem .75rem; background: var(--surface); color: var(--text); border: 1px solid var(--border); border-radius: .45rem; font: inherit; }
-#guardian-result { margin-top: 1rem; }
 .muted { color: var(--muted); }
 .error { color: var(--danger); font-weight: 650; margin-top: .6rem; }
 .hidden { display: none !important; }
@@ -62,7 +71,9 @@ select { width: 100%; max-width: 28rem; padding: .65rem .75rem; background: var(
   main { width: calc(100% - 1rem); margin: .5rem auto 1rem; }
   .input-row, header { align-items: stretch; flex-direction: column; }
   dl { grid-template-columns: 1fr; }
-  button, input[type="url"], select { min-height: 2.75rem; font-size: 1rem; }
+  button, input[type="url"] { min-height: 2.75rem; font-size: 1rem; }
   button, .suggestion { touch-action: manipulation; }
   .row-actions > button { flex: 1 1 10rem; }
+  .parameter-row { grid-template-columns: 1fr; gap: .35rem; }
+  .parameter-classification { justify-self: start; white-space: normal; }
 }

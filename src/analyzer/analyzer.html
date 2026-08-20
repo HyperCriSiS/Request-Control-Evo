@@ -21,34 +21,6 @@
       <button id="open-options" type="button" data-i18n="rules"></button>
     </header>
 
-    <section class="card" id="guardian-card">
-      <h2 data-i18n="guardian_title"></h2>
-      <p class="muted" data-i18n="guardian_on_demand_note"></p>
-      <div class="actions row-actions">
-        <button id="guardian-run" class="primary" type="button" data-i18n="guardian_run"></button>
-        <span id="guardian-status" class="muted"></span>
-      </div>
-      <div id="guardian-result" class="hidden">
-        <dl>
-          <div><dt data-i18n="guardian_score"></dt><dd id="guardian-score"></dd></div>
-          <div><dt data-i18n="guardian_request_errors"></dt><dd id="guardian-errors"></dd></div>
-          <div><dt data-i18n="guardian_http_failures"></dt><dd id="guardian-http"></dd></div>
-        </dl>
-      </div>
-    </section>
-
-    <section class="card">
-      <h2 data-i18n="referrer_title"></h2>
-      <p class="muted" data-i18n="referrer_note"></p>
-      <label for="referrer-mode" data-i18n="referrer_mode"></label>
-      <select id="referrer-mode">
-        <option value="browser" data-i18n="referrer_browser"></option>
-        <option value="balanced" data-i18n="referrer_balanced"></option>
-        <option value="same-origin" data-i18n="referrer_same_origin"></option>
-        <option value="no-referrer" data-i18n="referrer_none"></option>
-      </select>
-    </section>
-
     <section class="card">
       <form id="analyzer-form">
         <label for="url" data-i18n="analyzer_url_label"></label>
@@ -66,6 +38,10 @@
         <div><dt data-i18n="path"></dt><dd id="path"></dd></div>
         <div><dt data-i18n="analyzer_query_parameters"></dt><dd id="parameter-count"></dd></div>
       </dl>
+
+      <h2 data-i18n="analyzer_parameter_details"></h2>
+      <p class="muted" data-i18n="analyzer_parameter_details_note"></p>
+      <div id="parameters" class="parameter-list"></div>
 
       <h2 data-i18n="analyzer_suggestions"></h2>
       <div id="suggestions"></div>
