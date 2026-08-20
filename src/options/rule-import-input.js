@@ -133,6 +133,12 @@ class RuleImportInput extends HTMLElement {
         const meta = document.createElement("div");
         meta.className = "import-meta";
 
+        const catalogMetadata = document.createElement("span");
+        catalogMetadata.id = "catalog-metadata";
+        catalogMetadata.className = "catalog-metadata";
+        catalogMetadata.hidden = true;
+        meta.append(catalogMetadata);
+
         const selectionToggle = document.createElement("button");
         selectionToggle.id = "selection-toggle";
         selectionToggle.type = "button";
@@ -282,6 +288,21 @@ class RuleImportInput extends HTMLElement {
         const link = this.shadowRoot.getElementById("url");
         const source = normalizeImportSource(value);
         if (source) link.href = source;
+    }
+
+    set catalogMetadata(value = {}) {
+        const container = this.shadowRoot.getElementById("catalog-metadata");
+        if (!container) return;
+        container.replaceChildren();
+
+        const behavior = catalogBehaviorLabel(value.behavior);
+        const scope = catalogScopeLabel(value.scope);
+        if (behavior) container.append(createMetadataBadge(behavior, "behavior"));
+        if (scope) container.append(createMetadataBadge(scope, "scope"));
+        if (value.risk === "medium" || value.risk === "high") {
+            container.append(createMetadataBadge(catalogRiskLabel(value.risk), `risk risk-${value.risk}`));
+        }
+        container.hidden = container.childElementCount === 0;
     }
 
     set communityReview(value) {
@@ -596,6 +617,46 @@ function humanReadableSource(src) {
     } catch {
         return "about:blank";
     }
+}
+
+function createMetadataBadge(text, kind) {
+    const badge = document.createElement("span");
+    badge.className = `catalog-badge catalog-badge-${kind.split(" ").join(" catalog-badge-")}`;
+    badge.textContent = text;
+    return badge;
+}
+
+function catalogBehaviorLabel(value) {
+    const labels = {
+        "direct-link": ["catalog_behavior_direct_link", "Direct links"],
+        "media-quality": ["catalog_behavior_media_quality", "Media quality"],
+        "media-url-cleanup": ["catalog_behavior_media_url_cleanup", "Media URL cleanup"],
+        "site-cleanup": ["catalog_behavior_site_cleanup", "Site cleanup"],
+        "request-blocking": ["catalog_behavior_request_blocking", "Request blocking"],
+        "url-cleanup": ["catalog_behavior_url_cleanup", "URL cleanup"],
+        "privacy-embed": ["catalog_behavior_privacy_embed", "Private embeds"],
+        "provider-override": ["catalog_behavior_provider_override", "Provider override"],
+        "special-mode": ["catalog_behavior_special_mode", "Special mode"],
+        "url-normalization": ["catalog_behavior_url_normalization", "URL normalization"],
+    };
+    const label = labels[value];
+    return label ? message(label[0], label[1]) : "";
+}
+
+function catalogScopeLabel(value) {
+    const labels = {
+        "site-specific": ["catalog_scope_site_specific", "Site-specific"],
+        "cross-site": ["catalog_scope_cross_site", "Cross-site"],
+        global: ["catalog_scope_global", "Global"],
+    };
+    const label = labels[value];
+    return label ? message(label[0], label[1]) : "";
+}
+
+function catalogRiskLabel(value) {
+    return value === "high"
+        ? message("catalog_risk_high", "High risk")
+        : message("catalog_risk_medium", "Medium risk");
 }
 
 function message(key, fallback, substitutions) {
