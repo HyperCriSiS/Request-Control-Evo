@@ -25,6 +25,7 @@ export function filterRuleInputs(inputs, view = {}) {
     const query = String(view.query || "").trim().toLocaleLowerCase();
     const status = view.status || "all";
     const source = view.source || "all";
+    const group = view.group || "all";
 
     return inputs.filter((input) => {
         const rule = input.rule || {};
@@ -35,6 +36,13 @@ export function filterRuleInputs(inputs, view = {}) {
             return false;
         }
         if (source !== "all" && getRuleSourceKind(rule) !== source) {
+            return false;
+        }
+        const ruleGroup = String(rule.group || "").trim();
+        if (group === "ungrouped" && ruleGroup) {
+            return false;
+        }
+        if (group.startsWith("group:") && ruleGroup !== group.slice("group:".length)) {
             return false;
         }
         if (!query) {
