@@ -132,6 +132,37 @@ The first post-1.19 extension release is now justified by substantial user-visib
 - [ ] Promote the validated candidate to `master` only after all hands-on release gates are satisfied. The `master` release workflow creates the stable `1.20.0` tag/release automatically from the manifest version; stable tag `1.20.0` remains intentionally absent during prerelease testing.
 - [ ] After stable publication, verify the final ZIP/XPI artifact pair and record final stable release/security status in this roadmap.
 
+## Ruleset information architecture and full catalog audit
+
+This follow-up is driven by RC usability feedback and is intentionally broader than a visual cleanup. The goal is to keep Request Control Evo centered on understandable request manipulation rather than presenting the product like a generic ad-block/filter-list manager.
+
+### A. Standard vs Advanced presentation
+
+- [ ] Define a clear **Standard / Advanced** boundary for supplied and importable rulesets.
+- [ ] Keep the normal Imports/Rules experience focused on common, directly understandable Request Control behavior: URL cleanup, redirect handling, request redirection/transformation, allow/block decisions and other high-value everyday actions.
+- [ ] Move unusual, expert-oriented or potentially disruptive Request Control modes into an **Advanced** section so they do not dominate the default view. This includes specialist privacy/firewall/low-bandwidth-style modes and similar non-typical behaviors unless an audit shows that a specific set belongs in the standard experience.
+- [ ] Preserve full capability: moving a ruleset to Advanced is a presentation/discoverability decision, not removal of functionality.
+- [ ] Ensure Import categories and post-import rule organization use the same mental model wherever practical; trust channel (**Official / Community / Custom**) remains separate from rule behavior.
+
+### B. Full Official/importable ruleset audit
+
+- [ ] Review **every supplied/importable filter and ruleset**, not only the currently suspicious tracking-parameter entries.
+- [ ] For each package/ruleset, verify and record:
+  - actual behavior and native action types used;
+  - whether the title/description accurately explains that behavior;
+  - overlap, duplication or near-duplication with other packages;
+  - whether multiple similarly presented entries are genuinely distinct;
+  - category and Standard-vs-Advanced placement;
+  - expected breakage/risk level and whether warnings are adequate;
+  - whether the rules are still useful, current and maintainable;
+  - whether package boundaries are sensible or should be merged/split;
+  - whether UI summaries expose useful differences without forcing users to inspect raw rule JSON/technical fields;
+  - whether the feature fits Request Control Evo's request-manipulation focus or drifts unnecessarily toward a uBlock-style generic blocking/filter-list role.
+- [ ] Pay particular attention to tracking-parameter/privacy packages, site-specific cleanup packages, redirect-unwrapping/direct-link packages, request-blocking packages and special modes.
+- [ ] Remove, merge, rename, re-categorize or demote problematic/duplicated packages based on the audit; do not preserve confusing catalog structure solely for compatibility.
+- [ ] Add regression coverage for any catalog restructuring so managed-rule identity/update behavior remains deterministic and locally modified rules are never silently overwritten.
+- [ ] Re-evaluate the compact package summary UI after the audit so users can distinguish packages by **what they do**, scope and risk before expanding technical details.
+
 ## Future maintenance / next phase candidates
 
 - Expand source-specific curation adapters only where licensing, deterministic semantics and expected rule value justify the ongoing maintenance cost.
