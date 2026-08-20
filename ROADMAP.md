@@ -2,7 +2,7 @@
 
 This document is the binding source of truth for the active modernization/release line. Detailed historical design notes remain in `docs/roadmap.md` and the phase-specific documents.
 
-**Status: 1.20.0-rc.1 prerelease published and verified; post-RC UI hardening is validated on `dev`; Phases 1–12 remain complete; stable 1.20.0 promotion remains gated by a fresh prerelease and hands-on desktop/Firefox Android testing**
+**Status: 1.20.0-rc.2 prerelease published and verified from the post-RC UI-hardening candidate; Phases 1–12 remain complete; stable 1.20.0 promotion remains gated by hands-on desktop/Firefox Android testing**
 
 ## Current baseline
 
@@ -113,7 +113,7 @@ The first post-1.19 extension release is now justified by substantial user-visib
 - [x] Scale the Rules view for large collections with live search, active/disabled and source filters, grouping by user group or source, title/source/manual sort modes and collapsible group headers.
 - [x] Add drag-and-drop manual ordering as a separately persisted **display order only**. Reordering the UI must never mutate the stored execution order or silently alter rule-engine priority/semantics.
 - [x] Add an opt-in compact quick-action strip per rule for **Test / Export / Share / Delete** while retaining the existing multi-select bulk toolbar.
-- [ ] Re-run hands-on Firefox/Waterfox desktop and Firefox Android UX checks against the post-RC interface before stable promotion. Because these are user-visible changes after `1.20.0-rc.1`, that prerelease is no longer the final UI candidate; a fresh prerelease is required before stable promotion.
+- [ ] Re-run hands-on Firefox/Waterfox desktop and Firefox Android UX checks against the post-RC interface before stable promotion. Because these are user-visible changes after `1.20.0-rc.1`, that prerelease is no longer the final UI candidate; **1.20.0-rc.2** is now the fresh post-feedback test candidate for these gates.
 
 ### Validation and publication gates
 
@@ -125,6 +125,9 @@ The first post-1.19 extension release is now justified by substantial user-visib
 - [x] Add explicit 1.19.0 → 1.20.0 upgrade regression coverage for existing local rules and managed-source state. The test verifies preservation/demotion of retired managed rules, Custom-source retention, UUID-collision protection and that newly published rules remain unselected. Physical upgrade smoke testing remains part of the hands-on release gate.
 - [x] Publish GitHub prerelease **1.20.0-rc.1** from the validated candidate commit. Release workflow #9 passed; the prerelease tag points to `f8c7b5ae5a8e3747828cec14088c968b1e25d5c1`; Mozilla signing/publishing was intentionally skipped.
 - [x] Verify the prerelease ZIP/XPI pair. `request_control-1.20.0.zip` and `request_control-1.20.0.xpi` are byte-identical at 226,936 bytes with SHA-256 `d1b8336046458d32e4b5b444e764fab1ff7c941380792035983671c2653458b2`.
+- [x] Generalize manual `dev` prerelease dispatch to advance sequential release candidates (`1.20.0-rc.2`, `rc.3`, ...), while keeping stable publication restricted to `master` and Mozilla signing disabled for prereleases. Build #357 passed on commit `b8b7d4c701e34c9330167088b82af623667a25a6`.
+- [x] Publish and verify fresh post-RC prerelease **1.20.0-rc.2** from commit `b8b7d4c701e34c9330167088b82af623667a25a6`. Release workflow #10 passed; the annotated tag resolves to that commit; Mozilla signing/publishing was intentionally skipped.
+- [x] Verify the RC2 ZIP/XPI pair. `request_control-1.20.0.zip` and `request_control-1.20.0.xpi` are both 234,365 bytes and carry the identical SHA-256 `842279f4ab878ae193f2fdb3df8df2d5de100e623ce9fd5a599b18b7890b6be6`, matching the release workflow's byte-identical artifact check.
 - [ ] Replace the changelog's `Unreleased` marker with the actual release date only when stable promotion is approved.
 - [ ] Promote the validated candidate to `master` only after all hands-on release gates are satisfied. The `master` release workflow creates the stable `1.20.0` tag/release automatically from the manifest version; stable tag `1.20.0` remains intentionally absent during prerelease testing.
 - [ ] After stable publication, verify the final ZIP/XPI artifact pair and record final stable release/security status in this roadmap.
@@ -153,4 +156,4 @@ GitHub's optional agentic `github-advanced-security` PR check has previously fai
 
 ## Completion status
 
-**Phases 1–12 are complete on `dev`, and GitHub prerelease 1.20.0-rc.1 remains the published pre-RC-feedback milestone.** Post-RC UI hardening now fixes popup sizing and substantially improves Rule Sources and large-rule-set management without changing rule-engine semantics. Official is the single maintainer-managed remote rule source, Community and Custom remain separate trust channels, and the future Wormhole Observatory boundary remains local-first, privacy-preserving and review-only by design. The post-RC automated validation is green. Stable 1.20.0 promotion still requires a fresh prerelease candidate and the explicit hands-on desktop/Firefox Android gates above.
+**Phases 1–12 are complete on `dev`, and GitHub prerelease 1.20.0-rc.2 is the current post-RC-feedback test candidate.** Post-RC UI hardening fixes popup sizing and substantially improves Rule Sources and large-rule-set management without changing rule-engine semantics. Official is the single maintainer-managed remote rule source, Community and Custom remain separate trust channels, and the future Wormhole Observatory boundary remains local-first, privacy-preserving and review-only by design. Automated validation and the RC2 release workflow are green, and the RC2 ZIP/XPI pair is verified. Stable 1.20.0 promotion now remains gated only by the explicit hands-on desktop/Firefox Android checks plus the final changelog/promotion/publication steps above.
