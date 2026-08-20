@@ -37,6 +37,29 @@ test("official and community catalogs are remote while source channels use compa
     expect(importJs).not.toContain("browser.runtime.getURL(preset.path)");
 });
 
+
+test("remote catalogs separate standard and advanced presentation without changing trust channels", () => {
+    expect(optionsJs).toContain('`${channel}-advanced-rule-list`');
+    expect(optionsJs).toContain('`${channel}-advanced-toggle`');
+    expect(optionsJs).toContain("ensureCatalogPresentation");
+    expect(optionsJs).toContain('entry.presentation === "advanced"');
+    expect(optionsJs).toContain("toggleAdvancedPackages");
+    expect(optionsJs).toContain("input.catalogMetadata = entry");
+    expect(optionsJs).toContain('advancedToggle = document.createElement("button")');
+});
+
+test("official update management includes hidden advanced packages", () => {
+    expect(optionsJs).toContain('panel.querySelectorAll("rule-import-input")');
+    expect(optionsJs).toContain('document.querySelectorAll("#official-rule-lists rule-import-input")');
+});
+
+test("package summaries expose behavior scope and material risk before technical details", () => {
+    expect(importJs).toContain('catalogMetadata.id = "catalog-metadata"');
+    expect(importJs).toContain("catalogBehaviorLabel");
+    expect(importJs).toContain("catalogScopeLabel");
+    expect(importJs).toContain('value.risk === "medium" || value.risk === "high"');
+});
+
 test("remote package integrity failures cannot become importable updates", () => {
     expect(importJs).toContain("this.digest = null");
     expect(importJs).toContain('message("integrity_failed"');

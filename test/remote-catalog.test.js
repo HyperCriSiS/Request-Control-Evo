@@ -64,6 +64,7 @@ test("catalog entry ids and source URLs are unique", () => {
     );
 });
 
+
 test("catalog entries require validated presentation metadata", () => {
     const invalid = {
         ...CATALOG,
@@ -107,4 +108,19 @@ test("catalog source contains only current remote identity", () => {
         entry: "privacy-common-params",
         version: "1.0.0",
     });
+});
+
+
+test("presentation reclassification does not alter managed source identity", () => {
+    const advancedEntry = {
+        ...ENTRY,
+        presentation: "advanced",
+        behavior: "provider-override",
+        scope: "cross-site",
+        risk: "high",
+    };
+
+    expect(buildCatalogSource(CATALOG, advancedEntry, ENTRY.url)).toEqual(
+        buildCatalogSource(CATALOG, ENTRY, ENTRY.url)
+    );
 });
