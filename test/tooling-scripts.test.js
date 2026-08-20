@@ -49,3 +49,19 @@ test("build lint resolves the manifest-versioned archive without shell substitut
 
     expect(defaultArchivePath().replaceAll("\\", "/")).toBe(expected);
 });
+
+test("manual dev release dispatch is an RC and cannot publish to Mozilla", async () => {
+    const workflow = await readFile(
+        join(process.cwd(), ".github", "workflows", "release.yml"),
+        "utf8"
+    );
+
+    expect(workflow).toContain('TAG="$VERSION-rc.1"');
+    expect(workflow).toContain('if [[ "$GITHUB_REF_NAME" != "dev" ]]');
+    expect(workflow).toContain("tag_name: ${{ steps.version.outputs.tag }}");
+    expect(workflow).toContain("prerelease: ${{ steps.version.outputs.prerelease }}");
+    expect(workflow).toContain("steps.version.outputs.prerelease == 'false'");
+    expect(workflow).toContain(
+        "GitHub prerelease only; Mozilla signing and publishing intentionally skipped."
+    );
+});

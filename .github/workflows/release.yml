@@ -33,27 +33,49 @@ jobs:
         run: |
           VERSION=$(node -p "require('./manifest.json').version")
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Manifest version '$VERSION' is not a stable SemVer release; skipping release."
+            echo "Manifest version '$VERSION' is not a stable SemVer base version; skipping release."
             echo "release=false" >> "$GITHUB_OUTPUT"
             exit 0
           fi
+
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$GITHUB_REF_NAME" != "master" ]]; then
+            if [[ "$GITHUB_REF_NAME" != "dev" ]]; then
+              echo "Manual prereleases are only allowed from dev; got '$GITHUB_REF_NAME'."
+              exit 1
+            fi
+            TAG="$VERSION-rc.1"
+            PRERELEASE=true
+            RELEASE_NAME="Request Control $VERSION RC 1"
+          else
+            if [[ "$GITHUB_REF_NAME" != "master" ]]; then
+              echo "Stable releases are only allowed from master; got '$GITHUB_REF_NAME'."
+              exit 1
+            fi
+            TAG="$VERSION"
+            PRERELEASE=false
+            RELEASE_NAME="Request Control $VERSION"
+          fi
+
           echo "release=true" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
+          echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
+          echo "release_name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Check existing tag and release
         if: steps.version.outputs.release == 'true'
         id: existing
         env:
           GH_TOKEN: ${{ github.token }}
-          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
           git fetch --tags --force
-          if git rev-parse "refs/tags/$VERSION" >/dev/null 2>&1; then
+          if git rev-parse "refs/tags/$TAG" >/dev/null 2>&1; then
             echo "tag=true" >> "$GITHUB_OUTPUT"
           else
             echo "tag=false" >> "$GITHUB_OUTPUT"
           fi
-          if gh release view "$VERSION" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
             echo "release=true" >> "$GITHUB_OUTPUT"
           else
             echo "release=false" >> "$GITHUB_OUTPUT"
@@ -62,9 +84,10 @@ jobs:
       - name: Checkout existing release tag for recovery
         if: steps.version.outputs.release == 'true' && steps.existing.outputs.tag == 'true' && steps.existing.outputs.release == 'false'
         env:
+          TAG: ${{ steps.version.outputs.tag }}
           VERSION: ${{ steps.version.outputs.version }}
         run: |
-          git checkout --detach "$VERSION"
+          git checkout --detach "$TAG"
           TAG_VERSION=$(node -p "require('./manifest.json').version")
           test "$TAG_VERSION" = "$VERSION"
 
@@ -95,12 +118,12 @@ jobs:
       - name: Create release tag
         if: steps.version.outputs.release == 'true' && steps.existing.outputs.tag == 'false' && steps.existing.outputs.release == 'false'
         env:
-          VERSION: ${{ steps.version.outputs.version }}
+          TAG: ${{ steps.version.outputs.tag }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -a "$VERSION" -m "Request Control $VERSION"
-          git push origin "$VERSION"
+          git tag -a "$TAG" -m "Request Control $TAG"
+          git push origin "$TAG"
 
       - name: Extract release notes
         if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'false'
@@ -127,23 +150,28 @@ jobs:
         if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'false'
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: ${{ steps.version.outputs.version }}
-          name: Request Control ${{ steps.version.outputs.version }}
+          tag_name: ${{ steps.version.outputs.tag }}
+          name: ${{ steps.version.outputs.release_name }}
+          prerelease: ${{ steps.version.outputs.prerelease }}
           files: |
             web-ext-artifacts/*.zip
             web-ext-artifacts/*.xpi
           body_path: release-notes.md
 
       - name: Sign and publish to Mozilla Add-ons
-        if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'false' && env.WEB_EXT_API_KEY != '' && env.WEB_EXT_API_SECRET != ''
+        if: steps.version.outputs.release == 'true' && steps.version.outputs.prerelease == 'false' && steps.existing.outputs.release == 'false' && env.WEB_EXT_API_KEY != '' && env.WEB_EXT_API_SECRET != ''
         run: npm run deploy
         env:
           WEB_EXT_CHANNEL: listed
 
       - name: Note skipped Mozilla signing
-        if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'false' && (env.WEB_EXT_API_KEY == '' || env.WEB_EXT_API_SECRET == '')
+        if: steps.version.outputs.release == 'true' && steps.version.outputs.prerelease == 'false' && steps.existing.outputs.release == 'false' && (env.WEB_EXT_API_KEY == '' || env.WEB_EXT_API_SECRET == '')
         run: echo "Mozilla signing skipped because WEB_EXT_API_KEY/WEB_EXT_API_SECRET are not configured." >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Note prerelease distribution
+        if: steps.version.outputs.release == 'true' && steps.version.outputs.prerelease == 'true' && steps.existing.outputs.release == 'false'
+        run: echo "GitHub prerelease only; Mozilla signing and publishing intentionally skipped." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Note existing release
         if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'true'
-        run: echo "Release ${{ steps.version.outputs.version }} already exists; nothing to publish." >> "$GITHUB_STEP_SUMMARY"
+        run: echo "Release ${{ steps.version.outputs.tag }} already exists; nothing to publish." >> "$GITHUB_STEP_SUMMARY"

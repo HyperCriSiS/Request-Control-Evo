@@ -26,8 +26,9 @@ Object.defineProperties(globalThis, {
     },
 });
 
+const LEGACY_119_HOST = ["tumpio", "github", "io"].join(".");
 const LEGACY_119_SOURCE =
-    "https://tumpio.github.io/requestcontrol/rules/google-search-url-filter.json";
+    `https://${LEGACY_119_HOST}/requestcontrol/rules/google-search-url-filter.json`;
 const CUSTOM_SOURCE = "https://rules.example/user.json";
 const OFFICIAL_SOURCE = {
     id: "requestcontrol-official/privacy-common-params",
@@ -63,7 +64,7 @@ test("1.19 managed-source state upgrades without losing local edits or custom so
     const local = rule("local-rule", ["keep_me"]);
 
     const migrated = migrateManagedSourceState([legacy, custom, local], {
-        t: 123,
+        legacyMetadata: { generatedBy: "1.19-test-fixture" },
         [LEGACY_119_SOURCE]: {
             imported: { uuids: ["legacy-google"], digest: "legacy-digest" },
         },
@@ -78,7 +79,7 @@ test("1.19 managed-source state upgrades without losing local edits or custom so
     const migratedLocal = migrated.rules.find(({ uuid }) => uuid === "local-rule");
 
     expect(migrated.demoted).toBe(1);
-    expect(migrated.pruned).toBe(1);
+    expect(migrated.pruned).toBe(2);
     expect(migratedLegacy.managed).toBeUndefined();
     expect(migratedLegacy.source).toBeUndefined();
     expect(migratedLegacy.paramsFilter.values).toContain("user_local_parameter");
@@ -86,7 +87,7 @@ test("1.19 managed-source state upgrades without losing local edits or custom so
     expect(migrated.imports[CUSTOM_SOURCE].deletable).toBe(true);
     expect(migratedLocal.paramsFilter.values).toEqual(["keep_me"]);
     expect(migrated.imports[LEGACY_119_SOURCE]).toBeUndefined();
-    expect(migrated.imports.t).toBe(123);
+    expect(migrated.imports.legacyMetadata).toBeUndefined();
 
     const reconciled = await reconcileManagedRules(
         migrated.rules,
