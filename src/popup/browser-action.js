@@ -2,10 +2,19 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+const REFERRER_MODES = new Set(["browser", "balanced", "same-origin", "no-referrer"]);
+let currentReferrerHost = null;
+
 document.addEventListener("DOMContentLoaded", async () => {
-    const { disabled } = await browser.storage.local.get("disabled");
+    const settings = await browser.storage.local.get([
+        "disabled",
+        "referrerProtectionMode",
+        "referrerProtectionExceptions",
+    ]);
+    const { disabled } = settings;
 
     updateDisabled(disabled === true);
+    await setupReferrerControls(settings);
 
     for (const copyButton of document.getElementsByClassName("copyButton")) {
         copyButton.addEventListener("click", copyText);
@@ -22,6 +31,81 @@ document.addEventListener("DOMContentLoaded", async () => {
         getRecords();
     }
 });
+
+async function setupReferrerControls(settings) {
+    const modeSelect = document.getElementById("referrerMode");
+    const mode = REFERRER_MODES.has(settings.referrerProtectionMode)
+        ? settings.referrerProtectionMode
+        : "browser";
+    modeSelect.value = mode;
+    modeSelect.addEventListener("change", setReferrerMode);
+
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    currentReferrerHost = hostnameForReferrerException(tabs[0]?.url || "");
+    const exceptions = normalizeExceptionHosts(settings.referrerProtectionExceptions);
+    renderReferrerHostException(exceptions);
+    document.getElementById("toggleReferrerHost").addEventListener("click", toggleReferrerHost);
+}
+
+async function setReferrerMode(event) {
+    const mode = REFERRER_MODES.has(event.currentTarget.value) ? event.currentTarget.value : "browser";
+    await browser.storage.local.set({ referrerProtectionMode: mode });
+}
+
+async function toggleReferrerHost() {
+    if (!currentReferrerHost) {
+        return;
+    }
+    const stored = await browser.storage.local.get("referrerProtectionExceptions");
+    const exceptions = new Set(normalizeExceptionHosts(stored.referrerProtectionExceptions));
+    if (exceptions.has(currentReferrerHost)) {
+        exceptions.delete(currentReferrerHost);
+    } else {
+        exceptions.add(currentReferrerHost);
+    }
+    const next = [...exceptions].sort();
+    await browser.storage.local.set({ referrerProtectionExceptions: next });
+    renderReferrerHostException(next);
+}
+
+function renderReferrerHostException(exceptions) {
+    const row = document.getElementById("referrerHostRow");
+    const host = document.getElementById("referrerHost");
+    const button = document.getElementById("toggleReferrerHost");
+    if (!currentReferrerHost) {
+        host.textContent = "";
+        row.classList.add("hidden");
+        return;
+    }
+
+    host.textContent = currentReferrerHost;
+    document.getElementById("referrerHostScope").textContent = currentReferrerHost;
+    row.classList.remove("hidden");
+    const isException = exceptions.includes(currentReferrerHost);
+    const label = browser.i18n.getMessage(isException ? "remove" : "whitelist");
+    button.textContent = label;
+    button.title = `${label}: ${currentReferrerHost}`;
+    button.setAttribute("aria-pressed", String(isException));
+}
+
+function normalizeExceptionHosts(values) {
+    if (!Array.isArray(values)) {
+        return [];
+    }
+    return [...new Set(values.filter((value) => typeof value === "string").map((value) => value.trim().toLowerCase()).filter(Boolean))].sort();
+}
+
+function hostnameForReferrerException(value) {
+    try {
+        const url = new URL(value);
+        if (url.protocol !== "http:" && url.protocol !== "https:") {
+            return null;
+        }
+        return url.hostname.replace(/\.$/, "").toLowerCase() || null;
+    } catch {
+        return null;
+    }
+}
 
 async function getRecords() {
     const records = await browser.runtime.sendMessage(null);
