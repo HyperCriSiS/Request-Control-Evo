@@ -10,7 +10,6 @@ const ruleImportJs = fs.readFileSync(new URL("../src/options/rule-import-input.j
 const modalCss = fs.readFileSync(new URL("../src/options/modal-dialog.css", import.meta.url), "utf8");
 const popupCss = fs.readFileSync(new URL("../src/popup/browser-action.css", import.meta.url), "utf8");
 const inspectorCss = fs.readFileSync(new URL("../src/inspector/inspector.css", import.meta.url), "utf8");
-const analyzerCss = fs.readFileSync(new URL("../src/analyzer/analyzer.css", import.meta.url), "utf8");
 
 test("mobile rule selection remains reachable instead of being hidden", () => {
     expect(ruleInputCss).toContain(".editing .rule-select");
@@ -24,10 +23,15 @@ test("Android-sized touch targets are provided across interactive surfaces", () 
     expect(commonCss).toContain("min-height: 2.75rem");
     expect(popupCss).toContain("min-height: 2.75rem");
     expect(inspectorCss).toContain("min-height: 2.75rem");
-    expect(analyzerCss).toContain("min-height: 2.75rem");
     expect(ruleImportCss).toContain(".selection-toggle");
     expect(ruleImportCss).toContain("max-height: 50dvh");
     expect(ruleImportJs).toContain("selection-toolbar");
+});
+
+test("standalone URL Analyzer surface stays folded into Inspector", () => {
+    expect(fs.existsSync(new URL("../src/analyzer/analyzer.html", import.meta.url))).toBe(false);
+    expect(fs.existsSync(new URL("../src/analyzer/analyzer.css", import.meta.url))).toBe(false);
+    expect(inspectorCss).toContain("min-height: 2.75rem");
 });
 
 test("Firefox popup keeps an intrinsic desktop width without provisional viewport collapse", () => {

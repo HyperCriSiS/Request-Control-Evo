@@ -10,11 +10,13 @@ const commonCss = fs.readFileSync(new URL("../src/options/common.css", import.me
 test("popup controls and request entries use native button semantics", () => {
     const popup = new DOMParser().parseFromString(popupHtml, "text/html");
 
-    for (const id of ["showRules", "inspectCurrent", "analyzeCurrent", "toggleActive"]) {
+    for (const id of ["showRules", "inspectCurrent", "toggleActive"]) {
         const control = popup.getElementById(id);
         expect(control.tagName).toBe("BUTTON");
         expect(control.type).toBe("button");
     }
+
+    expect(popup.getElementById("analyzeCurrent")).toBeNull();
 
     const inspectButton = popup.getElementById("inspectCurrent");
     expect(inspectButton.dataset.i18nTitle).toBe("inspection_title");
