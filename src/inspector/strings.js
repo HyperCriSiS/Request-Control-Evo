@@ -95,6 +95,9 @@ export const INSPECTION_FALLBACK_MESSAGES = Object.freeze({
     inspection_referrer_allowed: "Referer allowed for this host",
     inspection_referrer_badge_trimmed: "Referer trimmed",
     inspection_referrer_badge_removed: "Referer removed",
+    inspection_compatibility_active: "Breakage check is watching Request Control changes for related errors during the first 30 seconds.",
+    inspection_compatibility_suspects: "Breakage check found $1 plausible Request Control-related issue(s).",
+    inspection_rule_breakage_hint: "This exact request was changed by a rule and then failed. The matched rule may be involved.",
 });
 
 export function getInspectionMessage(key, substitutions = []) {
