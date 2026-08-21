@@ -2,6 +2,9 @@ import { jest } from "@jest/globals";
 import {
     applyReferrerProtection,
     effectiveReferrerProtectionMode,
+    isReferrerProtectionException,
+    normalizeReferrerExceptionHost,
+    normalizeReferrerProtectionExceptions,
     ReferrerProtection,
 } from "../src/main/referrer-protection.js";
 
@@ -90,6 +93,27 @@ test("restrictive modes remove duplicate and malformed Referer headers", () => {
     expect(malformed.requestHeaders).toHaveLength(1);
 });
 
+test("referrer exceptions normalize to exact HTTP(S) hostnames", () => {
+    expect(normalizeReferrerExceptionHost("HTTPS://Example.COM:8443/path")).toBe("example.com");
+    expect(normalizeReferrerExceptionHost(" sub.example.com. ")).toBe("sub.example.com");
+    expect(normalizeReferrerExceptionHost("file:///tmp/example")).toBeNull();
+    expect(normalizeReferrerProtectionExceptions(["EXAMPLE.com", "example.com", "bad value"])).toEqual([
+        "example.com",
+    ]);
+});
+
+test("host exceptions bypass protection only for the exact target host", () => {
+    const protectedRequest = details("https://source.test/private", "https://target.test/resource");
+    expect(isReferrerProtectionException(protectedRequest, ["target.test"])).toBe(true);
+    expect(applyReferrerProtection(protectedRequest, "no-referrer", ["target.test"])).toBeUndefined();
+
+    const subdomainRequest = details("https://source.test/private", "https://sub.target.test/resource");
+    expect(isReferrerProtectionException(subdomainRequest, ["target.test"])).toBe(false);
+    expect(referrerValue(applyReferrerProtection(subdomainRequest, "balanced", ["target.test"]))).toBe(
+        "https://source.test/"
+    );
+});
+
 test("browser-default mode registers no header listener and switching back removes it", () => {
     const listeners = new Set();
     const onBeforeSendHeaders = {
@@ -101,11 +125,12 @@ test("browser-default mode registers no header listener and switching back remov
     protection.configure("browser");
     expect(onBeforeSendHeaders.addListener).not.toHaveBeenCalled();
 
-    protection.configure("balanced");
+    protection.configure("balanced", ["allowed.test"]);
     expect(onBeforeSendHeaders.addListener).toHaveBeenCalledTimes(1);
     expect(listeners.size).toBe(1);
+    expect(protection.onBeforeSendHeaders(details("https://source.test/path", "https://allowed.test/a"))).toBeUndefined();
 
-    protection.configure("same-origin");
+    protection.configure("same-origin", []);
     expect(onBeforeSendHeaders.addListener).toHaveBeenCalledTimes(1);
 
     protection.configure("browser");
