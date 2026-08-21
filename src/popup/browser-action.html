@@ -37,6 +37,28 @@
                 </button>
                 <button id="toggleActive" class="btn" type="button"></button>
             </div>
+            <section id="referrerControl" class="referrer-control" aria-labelledby="referrerControlTitle">
+                <div class="referrer-control-head">
+                    <div class="referrer-control-copy">
+                        <strong id="referrerControlTitle" data-i18n="referrer_title"></strong>
+                        <span id="referrerHost" class="referrer-host"></span>
+                    </div>
+                    <label class="referrer-mode-field">
+                        <span class="visually-hidden" data-i18n="referrer_mode"></span>
+                        <select id="referrerMode" data-i18n-title="referrer_mode">
+                            <option value="browser" data-i18n="referrer_browser"></option>
+                            <option value="balanced" data-i18n="referrer_balanced"></option>
+                            <option value="same-origin" data-i18n="referrer_same_origin"></option>
+                            <option value="no-referrer" data-i18n="referrer_none"></option>
+                        </select>
+                    </label>
+                </div>
+                <div id="referrerHostRow" class="referrer-host-row hidden">
+                    <span class="referrer-scope"><span data-i18n="host"></span>: <span id="referrerHostScope"></span></span>
+                    <button id="toggleReferrerHost" class="btn referrer-host-button" type="button"></button>
+                </div>
+                <p class="referrer-note" data-i18n="referrer_note"></p>
+            </section>
         </div>
         <div id="details" class="hidden">
             <div class="text-shortcut">
