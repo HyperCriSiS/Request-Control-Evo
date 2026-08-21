@@ -2,7 +2,7 @@
 
 This file is the binding source of truth for the active development/release line. Detailed historical notes may remain under `docs/`, but current priorities, release gates and architectural boundaries live here.
 
-**Status:** the post-RC 1.20.0 automated hardening block is green on `dev` through Build #401 (`2fbae7f4`). `1.20.0-rc.4` is the current hands-on test candidate, published from that exact green commit via Release workflow #12. Stable `1.20.0` remains blocked until RC4 passes real Firefox/Waterfox desktop and Firefox Android hands-on checks.
+**Status:** `1.20.0-rc.4` remains the current hands-on test candidate, published from green commit `2fbae7f4` via Release workflow #12. Post-RC documentation is green through Build #402 (`808cec9f`). The Official package maintenance audit is complete in `requestcontrol-rules` at `15366dcd` with Validate rules #94 green. Stable `1.20.0` remains blocked until RC4 passes real Firefox/Waterfox desktop and Firefox Android hands-on checks.
 
 ## Project goal
 
@@ -176,7 +176,7 @@ Product decision: the former **Compatibility Guardian** is not a separate user-f
 - [x] Add presentation metadata for Standard/Advanced, behavior scope and risk without changing managed identity.
 - [x] Identify `Common Images` as unexpectedly complex/high-risk and `Search Engine Escape` as a provider override rather than ordinary privacy cleanup.
 - [x] Keep specialist firewall/low-bandwidth/provider-override/high-risk packages in Advanced presentation.
-- [ ] Finish per-package behavior/description/overlap/maintenance review and record required rename/merge/split/demotion decisions.
+- [x] Finish per-package behavior/description/overlap/maintenance review and record required rename/merge/split/demotion decisions. Final audit is recorded in `requestcontrol-rules` at `15366dcd`; Validate rules #94 is green. No merge is justified today; `privacy-common-images` is the first future split candidate, and three misleading display labels were corrected without changing package IDs/native UUIDs.
 - [ ] Ensure Imports categories and post-import Rules organization share the same mental model wherever practical.
 - [ ] Do not preserve confusing package boundaries solely for compatibility; use an explicit migration strategy when managed identity would otherwise break.
 
