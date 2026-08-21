@@ -2,7 +2,7 @@
 
 This file is the binding source of truth for the active development/release line. Detailed historical notes may remain under `docs/`, but current priorities, release gates and architectural boundaries live here.
 
-**Status:** `1.20.0-rc.4` remains the current hands-on test candidate, published from green commit `2fbae7f4` via Release workflow #12. Post-RC documentation is green through Build #402 (`808cec9f`). The Official package maintenance audit is complete in `requestcontrol-rules` at `15366dcd` with Validate rules #94 green. Stable `1.20.0` remains blocked until RC4 passes real Firefox/Waterfox desktop and Firefox Android hands-on checks.
+**Status:** `1.20.0-rc.4` remains an immutable published milestone from green commit `2fbae7f4` via Release workflow #12. Development has advanced beyond RC4: the Official package audit is complete in `requestcontrol-rules` at `15366dcd` (Validate rules #94 green), and Imports/Rules behavior grouping is green on `6e0b6e6f` (Build #404). A fresh RC is required before hands-on validation of the current `dev` candidate; stable `1.20.0` remains blocked on real Firefox/Waterfox desktop and Firefox Android checks.
 
 ## Project goal
 
@@ -177,7 +177,7 @@ Product decision: the former **Compatibility Guardian** is not a separate user-f
 - [x] Identify `Common Images` as unexpectedly complex/high-risk and `Search Engine Escape` as a provider override rather than ordinary privacy cleanup.
 - [x] Keep specialist firewall/low-bandwidth/provider-override/high-risk packages in Advanced presentation.
 - [x] Finish per-package behavior/description/overlap/maintenance review and record required rename/merge/split/demotion decisions. Final audit is recorded in `requestcontrol-rules` at `15366dcd`; Validate rules #94 is green. No merge is justified today; `privacy-common-images` is the first future split candidate, and three misleading display labels were corrected without changing package IDs/native UUIDs.
-- [ ] Ensure Imports categories and post-import Rules organization share the same mental model wherever practical.
+- [x] Ensure Imports categories and post-import Rules organization share the same mental model wherever practical. Managed imports now retain catalog behavior metadata and Rules can group by the same **URL Cleanup → Redirect → Request Transform → Block / Allow → Privacy / Special** hierarchy; local/custom rules remain separate and named user groups/runtime order are unchanged. Build #404 is green on `6e0b6e6f`.
 - [ ] Do not preserve confusing package boundaries solely for compatibility; use an explicit migration strategy when managed identity would otherwise break.
 
 ## Source-curation follow-up
