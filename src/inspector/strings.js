@@ -87,6 +87,14 @@ export const INSPECTION_FALLBACK_MESSAGES = Object.freeze({
     inspection_export_diagnostic: "Export support diagnostic",
     inspection_diagnostic_saved: "Support diagnostic exported",
     inspection_diagnostic_failed: "Could not export diagnostic",
+    inspection_referrer_changed: "Referer protection changed this request",
+    inspection_referrer_trimmed: "Cross-site Referer was reduced before the request to $1.",
+    inspection_referrer_removed: "Referer was removed before the request to $1.",
+    inspection_referrer_breakage_hint: "This request also failed. Referer protection may be involved.",
+    inspection_referrer_allow_host: "Allow Referer for this host",
+    inspection_referrer_allowed: "Referer allowed for this host",
+    inspection_referrer_badge_trimmed: "Referer trimmed",
+    inspection_referrer_badge_removed: "Referer removed",
 });
 
 export function getInspectionMessage(key, substitutions = []) {
