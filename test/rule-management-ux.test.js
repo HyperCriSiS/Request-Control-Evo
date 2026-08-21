@@ -4,12 +4,14 @@ const optionsHtml = fs.readFileSync(new URL("../src/options/options.html", impor
 const optionsJs = fs.readFileSync(new URL("../src/options/options.js", import.meta.url), "utf8");
 const optionsCss = fs.readFileSync(new URL("../src/options/options.css", import.meta.url), "utf8");
 const ruleListJs = fs.readFileSync(new URL("../src/options/rule-list.js", import.meta.url), "utf8");
+const ruleManagementUiJs = fs.readFileSync(new URL("../src/options/rule-management-ui.js", import.meta.url), "utf8");
 
 test("large rule collections expose persistent search, filters, grouping and sorting", () => {
     expect(optionsHtml).toContain('id="ruleSearch"');
     expect(optionsHtml).toContain('id="ruleStatusFilter"');
     expect(optionsHtml).toContain('id="ruleSourceFilter"');
     expect(optionsHtml).toContain('id="ruleGroupBy"');
+    expect(ruleManagementUiJs).toContain('option.value = "behavior"');
     expect(optionsHtml).toContain('id="ruleSort"');
     expect(optionsHtml).toContain('<option value="manual"');
     expect(optionsJs).toContain('const RULE_VIEW_SETTINGS_KEY = "ruleViewSettings"');

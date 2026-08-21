@@ -107,11 +107,16 @@ test("catalog source contains only current remote identity", () => {
         catalog: "requestcontrol-official",
         entry: "privacy-common-params",
         version: "1.0.0",
+        name: "Tracking parameters",
+        behavior: "url-cleanup",
+        presentation: "standard",
+        scope: "global",
+        risk: "medium",
     });
 });
 
 
-test("presentation reclassification does not alter managed source identity", () => {
+test("presentation metadata does not alter managed source identity fields", () => {
     const advancedEntry = {
         ...ENTRY,
         presentation: "advanced",
@@ -120,7 +125,15 @@ test("presentation reclassification does not alter managed source identity", () 
         risk: "high",
     };
 
-    expect(buildCatalogSource(CATALOG, advancedEntry, ENTRY.url)).toEqual(
-        buildCatalogSource(CATALOG, ENTRY, ENTRY.url)
-    );
+    const standard = buildCatalogSource(CATALOG, ENTRY, ENTRY.url);
+    const advanced = buildCatalogSource(CATALOG, advancedEntry, ENTRY.url);
+    for (const key of ["id", "url", "catalog", "entry", "version"]) {
+        expect(advanced[key]).toBe(standard[key]);
+    }
+    expect(advanced).toMatchObject({
+        behavior: "provider-override",
+        presentation: "advanced",
+        scope: "cross-site",
+        risk: "high",
+    });
 });

@@ -2,7 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { filterRuleInputs, getRuleSourceKind, groupRuleInputs } from "./rule-grouping.js";
+import { catalogCategoryLabel } from "./catalog-groups.js";
+import { filterRuleInputs, getRuleBehaviorCategory, getRuleSourceKind, groupRuleInputs } from "./rule-grouping.js";
 import "./rule-management-ui.js";
 import { newRuleInput } from "./source-scope-editor.js";
 
@@ -227,6 +228,12 @@ class RuleList extends HTMLElement {
             };
             return browser.i18n.getMessage(keys[group]) || group || "Local";
         }
+        if (this.view.groupBy === "behavior") {
+            if (group === "local-custom") {
+                return browser.i18n.getMessage("rule_group_local_custom") || "Local / custom";
+            }
+            return catalogCategoryLabel(group, (key) => browser.i18n.getMessage(key));
+        }
         return group || browser.i18n.getMessage("ungrouped") || "Ungrouped";
     }
 
@@ -286,6 +293,9 @@ class RuleList extends HTMLElement {
         }
         if (this.view.groupBy === "group") {
             return input.rule?.group || "";
+        }
+        if (this.view.groupBy === "behavior") {
+            return getRuleBehaviorCategory(input.rule);
         }
         return "";
     }

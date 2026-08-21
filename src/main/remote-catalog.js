@@ -106,5 +106,10 @@ export function buildCatalogSource(catalog, entry, sourceUrl) {
         catalog: catalog.catalog,
         entry: entry.id,
         version: entry.version || catalog.version,
+        name: entry.name || undefined,
+        behavior: entry.behavior || undefined,
+        presentation: entry.presentation || undefined,
+        scope: entry.scope || undefined,
+        risk: entry.risk || undefined,
     };
 }

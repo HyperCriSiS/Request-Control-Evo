@@ -39,6 +39,7 @@ async function initializeRuleManagementUi() {
         [QUICK_ACTION_SELECTION_KEY]: [],
         [RULE_GROUPS_KEY]: [],
         [RULE_GROUP_FILTER_KEY]: "all",
+        ruleViewSettings: {},
     });
 
     groups = normalizeGroups([
@@ -49,6 +50,7 @@ async function initializeRuleManagementUi() {
 
     injectStyles();
     hideLegacyQuickActionToggle();
+    ensureBehaviorGroupOption(stored.ruleViewSettings?.groupBy);
     createGroupControls();
     createQuickActionControls(stored[QUICK_ACTION_SELECTION_KEY]);
     decorateRuleRows();
@@ -127,6 +129,24 @@ function injectStyles() {
 function hideLegacyQuickActionToggle() {
     const input = document.getElementById("showRuleQuickActions");
     if (input) input.tabIndex = -1;
+}
+
+
+function ensureBehaviorGroupOption(preferredGroupBy = "") {
+    const groupBy = document.getElementById("ruleGroupBy");
+    if (!groupBy) return;
+
+    let option = Array.from(groupBy.options).find((item) => item.value === "behavior");
+    if (!option) {
+        option = document.createElement("option");
+        option.value = "behavior";
+        option.textContent = message("rule_group_behavior", "Behavior");
+        const source = Array.from(groupBy.options).find((item) => item.value === "source");
+        groupBy.insertBefore(option, source || null);
+    }
+    if (preferredGroupBy === "behavior") {
+        groupBy.value = "behavior";
+    }
 }
 
 function createGroupControls() {
