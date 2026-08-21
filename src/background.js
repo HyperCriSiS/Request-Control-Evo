@@ -68,7 +68,8 @@ async function bootstrap() {
 function init(options, generation = initGeneration) {
     configureReferrerProtection(
         effectiveReferrerProtectionMode(options.referrerProtectionMode || "browser", options.disabled),
-        options.referrerProtectionExceptions || []
+        options.referrerProtectionExceptions || [],
+        onReferrerProtectionEffect
     );
     if (options.disabled) {
         browser.tabs.onRemoved.removeListener(onTabRemoved);
@@ -301,6 +302,11 @@ function onRuntimeMessage(message) {
         default:
             return Promise.resolve({ error: "unknown-action" });
     }
+}
+
+function onReferrerProtectionEffect(request, diagnostic) {
+    inspections.markDiagnostic(request.tabId, request.requestId, diagnostic);
+    guardian.recordReferrerEffect(request, diagnostic);
 }
 
 function ensureInspectionListeners() {
