@@ -2,7 +2,7 @@
 
 This file is the binding source of truth for the active development/release line. Detailed historical notes may remain under `docs/`, but current priorities, release gates and architectural boundaries live here.
 
-**Status:** `1.20.0-rc.4` remains an immutable published milestone from green commit `2fbae7f4` via Release workflow #12. Development has advanced beyond RC4: the Official package audit is complete in `requestcontrol-rules` at `15366dcd` (Validate rules #94 green), and Imports/Rules behavior grouping is green on `6e0b6e6f` (Build #404). A fresh RC is required before hands-on validation of the current `dev` candidate; stable `1.20.0` remains blocked on real Firefox/Waterfox desktop and Firefox Android checks.
+**Status:** `1.20.0-rc.4` remains an immutable published milestone from green commit `2fbae7f4` via Release workflow #12, but it is **superseded as a hands-on candidate** by the post-RC4 structure/usability findings below. Current `dev` has advanced beyond RC4 and must be simplified before another prerelease. Stable `1.20.0` remains blocked on the new structure-reset gate plus real Firefox/Waterfox desktop and Firefox Android checks.
 
 ## Project goal
 
@@ -74,7 +74,7 @@ Request Control Evo should remain a request-manipulation/privacy tool rather tha
 
 ## Current post-RC functional hardening
 
-Work in dependency order: functional correctness first, then Referer/Breakage Check integration, then Imports information architecture/layout. RC3 remains an immutable milestone; RC4 is the fresh prerelease from the green post-RC candidate and is now the hands-on test target.
+The functional hardening below is a completed historical gate. RC4 remains immutable, but later hands-on review exposed a second-order information-architecture problem. The **Post-RC4 structure reset** is now the active release gate and supersedes RC4 as a test target.
 
 ### 1. Inspector regression
 
@@ -84,9 +84,9 @@ Work in dependency order: functional correctness first, then Referer/Breakage Ch
 - [x] Add integration-style regression coverage for isolated optional diagnostics and the Inspector lifecycle.
 - Validation: Inspector/Breakage Check hardening is included in the fully green Build #398 and remains green in Build #400. Physical browser verification remains part of the fresh-RC hands-on gate.
 
-### 2. URL Analyzer correctness/usefulness
+### 2. URL Analyzer functional recovery
 
-- [x] Enumerate URL parameters structurally instead of relying on a tiny static allowlist.
+- [x] Restore structural query-parameter analysis instead of relying on a tiny static allowlist.
 - [x] Distinguish high-confidence tracking cleanup from ambiguous review-only candidates.
 - [x] Detect nested redirect targets but only suggest unwrapping when existing safety checks accept it.
 - [x] Never imply ambiguous functional/referral parameters are safe to remove.
@@ -165,10 +165,67 @@ Product decision: the former **Compatibility Guardian** is not a separate user-f
 ### 10. Fresh prerelease and hands-on gates
 
 - [x] Publish a fresh `1.20.0-rc.N` from the final green post-RC hardening candidate; `1.20.0-rc.4` was published from `2fbae7f4` without retagging an older RC.
-- [ ] Firefox/Waterfox desktop smoke: popup, Inspector/Breakage Check, URL Analyzer, Referer mode/host whitelist, Imports, Official updates, selective editing and local-rule preservation.
+- [ ] Firefox/Waterfox desktop smoke: popup, Inspector/Breakage Check including integrated URL analysis, Referer mode/host whitelist, Imports, Official updates, selective editing and local-rule preservation.
 - [ ] Firefox Android hands-on: popup, Referer controls, large real-world import package, expand/collapse, sparse selection, repeated taps, update reconciliation, touch/scroll and localized control sizing.
 - [ ] Only after those checks pass may the candidate be promoted to `master` for stable `1.20.0`.
 - [ ] Replace the changelog `Unreleased` marker only when stable promotion is approved.
+
+## Post-RC4 structure reset — active 1.20 release gate
+
+Hands-on review found that several individually reasonable additions now overlap and make the product harder to understand. Fix the model before adding more surface area. Work in the order below; **do not publish another RC until this whole automated gate is green**.
+
+### 1. Inspector owns request/URL analysis
+
+- [ ] Remove the standalone URL Analyzer entry point/page from user-facing navigation.
+- [ ] Preserve the reusable URL-analysis engine, but surface useful parameter/redirect findings contextually inside the Inspector for the selected request/navigation.
+- [ ] Keep ambiguous parameters review-only and keep redirect safety checks unchanged.
+- [ ] Keep the Adaptive Parameter Intelligence experiment under the Inspector architecture; it remains non-blocking and local-only.
+- [ ] Remove the visible **Local inspection only** banner; local/explicit/bounded inspection remains a privacy invariant rather than permanent UI chrome.
+- [ ] Remove the Inspector support-diagnostic export surface and dead export-only UI code. Keep internal diagnostics needed for runtime/source explanations.
+
+### 2. Re-establish one clear Rules information model
+
+- [ ] Treat **Rule Type** as fixed system structure: Filter / Redirect / Secure / Block / Whitelist. These are not user groups.
+- [ ] Keep **Group** as the one first-class user-owned organization primitive, including create/assign/filter.
+- [ ] Remove imported behavior categories from the user-group concept. If behavior/category remains useful, expose it as a separate read-only category filter/metadata dimension, not another kind of Group.
+- [ ] Treat the legacy single-value **Tag** UI as redundant with Groups: remove it from normal UI while preserving existing tag data and migrating it safely into Group only when no explicit Group exists. Never silently discard legacy organization metadata.
+- [ ] Make the fixed Rule Type sections consistently visible/understandable, including empty-state behavior, so a Redirect section can never be mistaken for a stored Group.
+- [ ] Verify upgrade state from 1.19/RC builds: existing groups, legacy tags, managed-source metadata and runtime rule order must survive unchanged except for the explicit non-destructive tag→group fallback.
+
+### 3. Repair selected-rule action navigation
+
+- [ ] Add an explicit Back/Close affordance to the mobile selected-rules action sheet.
+- [ ] Support Escape/backdrop dismissal without triggering an action.
+- [ ] Stop relying on any click inside the toolbar to close it; action execution and navigation dismissal must be separate.
+- [ ] Add regression coverage for select → open actions → cancel/back → return to rule list.
+
+### 4. Simplify Rule Import rows again
+
+- [ ] Remove the per-package GitHub/community-review button from the Rule Import row. Community contribution/review remains available only from the dedicated contribution flow where context is explicit.
+- [ ] Compact package rows around **name → short purpose → material scope/risk → primary action**; do not repeat behavior already communicated by the enclosing category.
+- [ ] Re-align package actions/metadata for narrow and desktop layouts after removing the extra link/button.
+
+### 5. Full Official package audit — second pass against actual rules
+
+- [ ] Re-read all 19 Official package payloads, not only catalog metadata. Verify name, purpose, native actions, behavior category, scope, risk, overlap and practical breakage potential.
+- [ ] Re-evaluate **Block Beacon/Ping** explicitly. If Beacon and Ping have materially different compatibility risk, prefer a clean split/rename through the managed-package migration contract instead of hiding the difference behind one misleading risk label.
+- [ ] Re-check the packages most likely to be misleading or overly broad: Common Parameters, Common Redirectors, Common Images, Google, YouTube, Search Engine Escape, First-Party Firewall and Text-first/Low-bandwidth.
+- [ ] Apply low-risk display/category/risk corrections directly; use the managed-package migration contract for any split/rename/merge that changes package identity.
+- [ ] Validate the rules repository after every catalog/package change and keep native UUID continuity where rules remain semantically the same.
+
+### 6. Rules checkbox/string alignment pass
+
+- [ ] Normalize per-rule checkbox visual size and hit target independently from Import checkboxes.
+- [ ] Align checkbox, rule title/string baseline, select-all control and group/type headers on one stable grid.
+- [ ] Verify localized long strings, narrow Firefox Android layout and coarse-pointer sizing.
+- [ ] Add regression coverage that catches accidental checkbox-size or row-alignment drift.
+
+### 7. New automated/prerelease gate
+
+- [ ] Full audit/test/lint/build/build-lint/checker green on the final structure-reset candidate.
+- [ ] Re-check current GitHub security alerts on that exact candidate.
+- [ ] Publish a **new** prerelease only after the structure reset is green. RC4 remains immutable and superseded; do not retag or mutate it.
+- [ ] Hands-on desktop/Android testing must use that new prerelease, not RC4.
 
 ## Ruleset information architecture / catalog audit
 
@@ -177,7 +234,7 @@ Product decision: the former **Compatibility Guardian** is not a separate user-f
 - [x] Identify `Common Images` as unexpectedly complex/high-risk and `Search Engine Escape` as a provider override rather than ordinary privacy cleanup.
 - [x] Keep specialist firewall/low-bandwidth/provider-override/high-risk packages in Advanced presentation.
 - [x] Finish per-package behavior/description/overlap/maintenance review and record required rename/merge/split/demotion decisions. Final audit is recorded in `requestcontrol-rules` at `15366dcd`; Validate rules #94 is green. No merge is justified today; `privacy-common-images` is the first future split candidate, and three misleading display labels were corrected without changing package IDs/native UUIDs.
-- [x] Ensure Imports categories and post-import Rules organization share the same mental model wherever practical. Managed imports now retain catalog behavior metadata and Rules can group by the same **URL Cleanup → Redirect → Request Transform → Block / Allow → Privacy / Special** hierarchy; local/custom rules remain separate and named user groups/runtime order are unchanged. Build #404 is green on `6e0b6e6f`.
+- [x] Preserve behavior metadata on managed rules for search/diagnostics. Build #404 is green on `6e0b6e6f`. **Superseded UI decision:** behavior categories must no longer appear as another kind of user Group; the active Post-RC4 structure-reset gate separates system type, user Group and read-only behavior metadata.
 - [ ] Do not preserve confusing package boundaries solely for compatibility; use an explicit migration strategy when managed identity would otherwise break.
 
 ## Source-curation follow-up
