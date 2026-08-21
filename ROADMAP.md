@@ -2,7 +2,7 @@
 
 This file is the binding source of truth for the active development/release line. Detailed historical notes may remain under `docs/`, but current priorities, release gates and architectural boundaries live here.
 
-**Status:** the post-RC 1.20.0 automated hardening block is green on `dev` through Build #400 (`a451193d`). `1.20.0-rc.3` remains an immutable milestone but is no longer the final candidate. A fresh prerelease is the next release gate; stable `1.20.0` remains blocked until that candidate passes real Firefox/Waterfox desktop and Firefox Android hands-on checks.
+**Status:** the post-RC 1.20.0 automated hardening block is green on `dev` through Build #401 (`2fbae7f4`). `1.20.0-rc.4` is the current hands-on test candidate, published from that exact green commit via Release workflow #12. Stable `1.20.0` remains blocked until RC4 passes real Firefox/Waterfox desktop and Firefox Android hands-on checks.
 
 ## Project goal
 
@@ -55,6 +55,8 @@ Request Control Evo should remain a request-manipulation/privacy tool rather tha
 - [x] `1.20.0-rc.2` published from `b8b7d4c701e34c9330167088b82af623667a25a6`; Release workflow #10 passed.
 - [x] `1.20.0-rc.3` published from `5c63d94c9813bdb93365940d47a57b8ed8f72f7c`; Release workflow #11 passed.
 - [x] RC3 ZIP/XPI pair verified byte-identical at 239,572 bytes with SHA-256 `102dce73240287a5dbb463d9a6279d9f41485ef083f8b7d1c05248b51a1e7c36`.
+- [x] `1.20.0-rc.4` published from `2fbae7f4a00440c8397a70330486239d9eb3a716`; Release workflow #12 passed.
+- [x] RC4 ZIP/XPI pair verified byte-identical at 249,397 bytes with SHA-256 `acf7d933fd2349679f6f1eb0782a53b3b66e8d949c480951f52f26a6eb4bb24f`.
 - [x] Prerelease sequencing on `dev` automatically advances `rc.2`, `rc.3`, ... while stable publication remains restricted to `master`.
 
 ### RC usability work already completed
@@ -72,7 +74,7 @@ Request Control Evo should remain a request-manipulation/privacy tool rather tha
 
 ## Current post-RC functional hardening
 
-Work in dependency order: functional correctness first, then Referer/Breakage Check integration, then Imports information architecture/layout. RC3 remains immutable; a fresh prerelease is required from the green post-RC candidate.
+Work in dependency order: functional correctness first, then Referer/Breakage Check integration, then Imports information architecture/layout. RC3 remains an immutable milestone; RC4 is the fresh prerelease from the green post-RC candidate and is now the hands-on test target.
 
 ### 1. Inspector regression
 
@@ -157,12 +159,12 @@ Product decision: the former **Compatibility Guardian** is not a separate user-f
 - [x] Referer exact-host/popup/exception tests green.
 - [x] Imports category-ordering tests green, including explicit behavior→category mapping coverage.
 - [x] Localized control sizing/alignment regressions green.
-- [x] Full audit/test/lint/build/build-lint/checker workflow green on post-RC hardening commit `a451193d` — Build #400.
+- [x] Full audit/test/lint/build/build-lint/checker workflow green on post-RC hardening commit `a451193d` — Build #400; roadmap/release-gate sync remains green on `2fbae7f4` — Build #401.
 - [x] Re-check current GitHub security state before the next RC: open code-scanning alerts = 0, open Dependabot alerts = 0, open secret-scanning alerts = 0, triage repository security advisories = 0.
 
 ### 10. Fresh prerelease and hands-on gates
 
-- [ ] Publish a fresh `1.20.0-rc.N` from the final green post-RC hardening candidate; do not retag an older RC.
+- [x] Publish a fresh `1.20.0-rc.N` from the final green post-RC hardening candidate; `1.20.0-rc.4` was published from `2fbae7f4` without retagging an older RC.
 - [ ] Firefox/Waterfox desktop smoke: popup, Inspector/Breakage Check, URL Analyzer, Referer mode/host whitelist, Imports, Official updates, selective editing and local-rule preservation.
 - [ ] Firefox Android hands-on: popup, Referer controls, large real-world import package, expand/collapse, sparse selection, repeated taps, update reconciliation, touch/scroll and localized control sizing.
 - [ ] Only after those checks pass may the candidate be promoted to `master` for stable `1.20.0`.
