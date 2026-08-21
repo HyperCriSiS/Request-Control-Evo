@@ -11,7 +11,7 @@ test("large rule collections expose persistent search, filters, grouping and sor
     expect(optionsHtml).toContain('id="ruleStatusFilter"');
     expect(optionsHtml).toContain('id="ruleSourceFilter"');
     expect(optionsHtml).toContain('id="ruleGroupBy"');
-    expect(ruleManagementUiJs).toContain('option.value = "behavior"');
+    expect(ruleManagementUiJs).toContain('option.value === "behavior"');
     expect(optionsHtml).toContain('id="ruleSort"');
     expect(optionsHtml).toContain('<option value="manual"');
     expect(optionsJs).toContain('const RULE_VIEW_SETTINGS_KEY = "ruleViewSettings"');
@@ -40,4 +40,14 @@ test("drag and drop persists only display order and leaves execution rule storag
     const handler = optionsJs.slice(handlerStart, handlerEnd);
     expect(handler).toContain("RULE_UI_ORDER_KEY");
     expect(handler).not.toContain('set({ rules:');
+});
+
+test("mobile selected-rule actions provide explicit close, Escape and separate action dismissal", () => {
+    expect(ruleManagementUiJs).toContain("setupMobileSelectedActions()");
+    expect(ruleManagementUiJs).toContain('className = "btn rc-mobile-toolbar-close"');
+    expect(ruleManagementUiJs).toContain('event.key !== "Escape"');
+    expect(ruleManagementUiJs).toContain('toolbar.querySelectorAll(".btn-selected-action")');
+    expect(ruleManagementUiJs).toContain("event.stopPropagation()");
+    expect(ruleManagementUiJs).toContain("closeMobileSelectedActions(toolbar, trigger)");
+    expect(ruleManagementUiJs).toContain("trigger.focus()");
 });
