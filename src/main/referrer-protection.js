@@ -130,18 +130,46 @@ export function applyReferrerProtection(details, mode, exceptions = []) {
     return changed ? { requestHeaders: protectedHeaders } : undefined;
 }
 
+export function describeReferrerProtectionEffect(details, result, mode) {
+    if (!result?.requestHeaders || !details?.requestHeaders) {
+        return null;
+    }
+    const before = details.requestHeaders.filter((header) => header.name.toLowerCase() === "referer");
+    if (before.length === 0) {
+        return null;
+    }
+    const after = result.requestHeaders.filter((header) => header.name.toLowerCase() === "referer");
+    let targetHost = "";
+    try {
+        targetHost = new URL(details.url).hostname.replace(/\.$/, "").toLowerCase();
+    } catch {
+        return null;
+    }
+    if (!targetHost) {
+        return null;
+    }
+    return {
+        kind: "referrer-protection",
+        effect: after.length === 0 ? "removed" : "trimmed",
+        mode,
+        targetHost,
+    };
+}
+
 export class ReferrerProtection {
     constructor(webRequest = null) {
         this.webRequest = webRequest;
         this.currentMode = "browser";
         this.exceptionHosts = new Set();
+        this.onEffect = null;
         this.listening = false;
         this.onBeforeSendHeaders = this.onBeforeSendHeaders.bind(this);
     }
 
-    configure(mode, exceptions = []) {
+    configure(mode, exceptions = [], onEffect = null) {
         this.currentMode = effectiveReferrerProtectionMode(mode);
         this.exceptionHosts = new Set(normalizeReferrerProtectionExceptions(exceptions));
+        this.onEffect = typeof onEffect === "function" ? onEffect : null;
         const webRequest = this.getWebRequest();
 
         if (this.currentMode === "browser") {
@@ -164,7 +192,18 @@ export class ReferrerProtection {
     }
 
     onBeforeSendHeaders(details) {
-        return applyReferrerProtection(details, this.currentMode, this.exceptionHosts);
+        const result = applyReferrerProtection(details, this.currentMode, this.exceptionHosts);
+        if (result && this.onEffect) {
+            const diagnostic = describeReferrerProtectionEffect(details, result, this.currentMode);
+            if (diagnostic) {
+                try {
+                    this.onEffect(details, diagnostic);
+                } catch {
+                    // Diagnostics must never affect the request path.
+                }
+            }
+        }
+        return result;
     }
 
     getWebRequest() {
@@ -178,9 +217,9 @@ export class ReferrerProtection {
 
 let defaultProtection;
 
-export function configureReferrerProtection(mode, exceptions = []) {
+export function configureReferrerProtection(mode, exceptions = [], onEffect = null) {
     if (!defaultProtection) {
         defaultProtection = new ReferrerProtection();
     }
-    return defaultProtection.configure(mode, exceptions);
+    return defaultProtection.configure(mode, exceptions, onEffect);
 }
