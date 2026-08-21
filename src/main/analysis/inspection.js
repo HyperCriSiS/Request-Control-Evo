@@ -2,28 +2,19 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { getRegistrableDomain } from "../matchers.js";
+import { libTld } from "../url.js";
 
-const TRACKING_HOST_HINTS = [
-    /(^|\.)analytics([.-]|$)/i,
-    /(^|\.)telemetry([.-]|$)/i,
-    /(^|\.)metrics?([.-]|$)/i,
-    /(^|\.)tracking([.-]|$)/i,
-    /(^|\.)tracker([.-]|$)/i,
-    /(^|\.)pixel([.-]|$)/i,
-    /(^|\.)collect(or)?([.-]|$)/i,
-    /(^|\.)stats?([.-]|$)/i,
-    /(^|\.)beacon([.-]|$)/i,
-];
+const TRACKING_HOST_TOKEN = /(^|[.-])(analytics?|beacons?|metrics?|pixels?|telemetry|track(?:er|ing)?)([.-]|$)/i;
+const AD_HOST_TOKEN = /(^|[.-])(adservice|adsystem|doubleclick)([.-]|$)/i;
 
-export const INSPECTION_RULE_SCOPES = [
+export const INSPECTION_RULE_SCOPES = Object.freeze([
     "exact-request",
     "host",
     "host-type",
     "site-host",
     "site-host-type",
     "third-party-host",
-];
+]);
 
 export function classifyInspectionRequest(pageUrl, requestUrl) {
     const page = parseUrl(pageUrl);
@@ -31,50 +22,56 @@ export function classifyInspectionRequest(pageUrl, requestUrl) {
     if (!request) {
         return {
             hostname: "",
-            domain: "",
             firstParty: false,
             thirdParty: false,
             trackingHint: false,
         };
     }
 
-    const pageDomain = page ? getRegistrableDomain(page.hostname) : "";
-    const requestDomain = getRegistrableDomain(request.hostname);
-    const firstParty = Boolean(pageDomain && requestDomain && pageDomain === requestDomain);
+    const pageDomain = page ? libTld.getDomain(page.href) : null;
+    const requestDomain = libTld.getDomain(request.href);
+    const sameDomain = page
+        ? pageDomain && requestDomain
+            ? pageDomain === requestDomain
+            : page.hostname === request.hostname
+        : false;
 
     return {
         hostname: request.hostname,
-        domain: requestDomain,
-        firstParty,
-        thirdParty: Boolean(pageDomain && requestDomain && !firstParty),
+        firstParty: sameDomain,
+        thirdParty: page !== null && !sameDomain,
         trackingHint: hasTrackingHint(request.hostname),
     };
 }
 
 export function hasTrackingHint(hostname) {
-    return TRACKING_HOST_HINTS.some((pattern) => pattern.test(String(hostname || "")));
+    return TRACKING_HOST_TOKEN.test(hostname) || AD_HOST_TOKEN.test(hostname);
 }
 
-export function summarizeInspection(session = {}) {
-    const requests = session.requests || [];
+export function summarizeInspection(session) {
+    const requests = session?.requests || [];
     const summary = {
         total: requests.length,
         firstParty: 0,
         thirdParty: 0,
         trackingHints: 0,
         affected: 0,
-        dropped: Number(session.dropped || 0),
-        types: {},
+        dropped: session?.dropped || 0,
         domains: [],
+        types: {},
     };
     const domains = new Map();
     const trackingDomains = new Set();
 
     for (const request of requests) {
-        const classification = request.classification || classifyInspectionRequest(session.pageUrl, request.url);
-        summary.firstParty += classification.firstParty ? 1 : 0;
-        summary.thirdParty += classification.thirdParty ? 1 : 0;
-        if (classification.trackingHint) {
+        const classification = request.classification || classifyInspectionRequest(session?.pageUrl, request.url);
+        if (classification.firstParty) {
+            summary.firstParty += 1;
+        }
+        if (classification.thirdParty) {
+            summary.thirdParty += 1;
+        }
+        if (classification.trackingHint && classification.hostname) {
             trackingDomains.add(classification.hostname);
         }
         const affected = Boolean(request.effect || request.diagnostics?.length);
