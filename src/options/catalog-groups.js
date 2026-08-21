@@ -68,3 +68,57 @@ export function renderCatalogCategoryGroups(root, packages, getMessage = () => "
         root.append(group);
     }
 }
+
+export function placeCatalogPackage(root, input, entry, getMessage = () => "") {
+    if (!root || !input || !entry) {
+        return;
+    }
+
+    const category = catalogCategoryForEntry(entry);
+    let group = Array.from(root.children).find(
+        (child) => child.classList?.contains("imports-category-group") && child.dataset.category === category
+    );
+
+    if (!group) {
+        group = createCatalogCategoryGroup(category, getMessage);
+        const rank = CATALOG_CATEGORY_ORDER.indexOf(category);
+        const before = Array.from(root.children).find((child) => {
+            const childRank = CATALOG_CATEGORY_ORDER.indexOf(child.dataset?.category);
+            return childRank !== -1 && childRank > rank;
+        });
+        root.insertBefore(group, before || null);
+    }
+
+    const packageList = group.querySelector(".imports-category-packages");
+    if (input.parentElement !== packageList) {
+        packageList.append(input);
+    }
+    updateCategoryCount(group);
+}
+
+function createCatalogCategoryGroup(category, getMessage) {
+    const group = document.createElement("li");
+    group.className = "imports-category-group";
+    group.dataset.category = category;
+
+    const heading = document.createElement("div");
+    heading.className = "imports-category-heading";
+    const label = document.createElement("strong");
+    label.textContent = catalogCategoryLabel(category, getMessage);
+    const count = document.createElement("span");
+    count.className = "badge badge-light imports-category-count";
+    heading.append(label, count);
+
+    const packageList = document.createElement("div");
+    packageList.className = "imports-category-packages";
+    group.append(heading, packageList);
+    return group;
+}
+
+function updateCategoryCount(group) {
+    const count = group.querySelector(".imports-category-count");
+    const packageList = group.querySelector(".imports-category-packages");
+    if (count && packageList) {
+        count.textContent = String(Array.from(packageList.children).filter((child) => child.localName === "rule-import-input").length);
+    }
+}

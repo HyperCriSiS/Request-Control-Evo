@@ -17,11 +17,7 @@
     gap: 0.35rem;
     padding: 0.5rem 0.1rem;
     color: var(--text-color);
-    border-bottom: 1px solid var(--border-color);
-}
-
-.import-row:last-child {
-    border-bottom: 0;
+    border-bottom: 1px solid var(--import-last-row-border, var(--border-color));
 }
 
 .import-heading,
@@ -60,7 +56,10 @@
 
 .import-actions .btn,
 .source-link {
+    flex: 0 0 2.15rem;
+    width: 2.15rem;
     min-width: 2.15rem;
+    height: 2.15rem;
     min-height: 2.15rem;
     padding: 0.3rem;
     display: inline-flex;
@@ -101,39 +100,55 @@
 }
 
 .catalog-metadata {
+    flex: 1 1 12rem;
     gap: 0.22rem;
 }
 
 .catalog-badge {
     display: inline-flex;
     align-items: center;
-    min-height: 1.45rem;
-    padding: 0.12rem 0.38rem;
-    border: 1px solid var(--border-color);
-    border-radius: 999px;
-    background: var(--surface-subtle);
+    min-height: 1.25rem;
+    padding: 0;
     color: var(--text-muted);
-    font-size: 0.68rem;
-    font-weight: 650;
-    line-height: 1.15;
+    font-size: 0.72rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.catalog-badge + .catalog-badge::before {
+    content: "·";
+    margin-right: 0.22rem;
+    color: var(--text-muted);
+}
+
+.catalog-badge-behavior {
+    display: none;
+}
+
+.catalog-badge-behavior + .catalog-badge::before {
+    content: none;
 }
 
 .catalog-badge-risk-medium {
-    border-style: dashed;
     color: var(--text-color);
 }
 
 .catalog-badge-risk-high {
-    border-color: var(--danger-color);
     color: var(--danger-color);
     font-weight: 720;
 }
 
 .selection-toggle {
+    flex: 0 1 auto;
+    width: auto;
+    max-width: 100%;
     min-height: 2.15rem;
-    padding: 0.3rem 0.55rem;
+    padding: 0.3rem 0.6rem;
     color: var(--primary-color);
     font-weight: 650;
+    line-height: 1.25;
+    text-align: left;
+    white-space: normal;
 }
 
 .selection-toggle::after {
@@ -147,7 +162,7 @@
 }
 
 .import-types {
-    gap: 0.2rem;
+    display: none !important;
 }
 
 .import-type-badge {
@@ -205,8 +220,13 @@
 }
 
 .selection-action {
+    flex: 0 1 auto;
+    width: auto;
+    max-width: 100%;
     min-height: 2.2rem;
-    padding-inline: 0.55rem;
+    padding: 0.35rem 0.6rem;
+    line-height: 1.25;
+    white-space: normal;
 }
 
 .selection-list {
@@ -257,11 +277,12 @@
 }
 
 .selection-rule label {
-    display: flex;
-    align-items: flex-start;
-    gap: 0.5rem;
+    display: grid;
+    grid-template-columns: 1.25rem minmax(0, 1fr);
+    align-items: start;
+    column-gap: 0.65rem;
     min-height: 2.4rem;
-    padding: 0.4rem 0.5rem;
+    padding: 0.45rem 0.55rem;
     cursor: pointer;
 }
 
@@ -270,8 +291,10 @@
 }
 
 .selection-rule input[type="checkbox"] {
-    flex: 0 0 auto;
-    margin-top: 0.15rem;
+    width: 1rem;
+    height: 1rem;
+    margin: 0.18rem 0 0;
+    justify-self: center;
 }
 
 .selection-rule-text {
@@ -314,7 +337,14 @@
     }
 
     .import-actions .btn,
-    .source-link,
+    .source-link {
+        flex-basis: 2.75rem;
+        width: 2.75rem;
+        min-width: 2.75rem;
+        height: 2.75rem;
+        min-height: 2.75rem;
+    }
+
     .rating-link,
     .selection-toggle,
     .selection-action {
@@ -328,7 +358,9 @@
 
     .selection-action {
         width: 100%;
+        min-width: 0;
         justify-content: center;
+        text-align: center;
     }
 
     .selection-list {

@@ -3,6 +3,10 @@ import fs from "node:fs";
 const optionsHtml = fs.readFileSync(new URL("../src/options/options.html", import.meta.url), "utf8");
 const optionsJs = fs.readFileSync(new URL("../src/options/options.js", import.meta.url), "utf8");
 const importJs = fs.readFileSync(new URL("../src/options/rule-import-input.js", import.meta.url), "utf8");
+const importCss = fs.readFileSync(new URL("../src/options/rule-import-input.css", import.meta.url), "utf8");
+const catalogGroupsJs = fs.readFileSync(new URL("../src/options/catalog-groups.js", import.meta.url), "utf8");
+const importSourceJs = fs.readFileSync(new URL("../src/options/import-source.js", import.meta.url), "utf8");
+const importsCatalogCss = fs.readFileSync(new URL("../src/options/imports-catalog.css", import.meta.url), "utf8");
 
 test("imports are split into official, community and advanced custom channels", () => {
     expect(optionsHtml).toContain('id="official-rule-lists"');
@@ -46,6 +50,33 @@ test("remote catalogs separate standard and advanced presentation without changi
     expect(optionsJs).toContain("toggleAdvancedPackages");
     expect(optionsJs).toContain("input.catalogMetadata = entry");
     expect(optionsJs).toContain('advancedToggle = document.createElement("button")');
+});
+
+test("remote catalog packages are ordered into behavior categories inside each presentation tier", () => {
+    expect(importSourceJs).toContain('import { placeCatalogPackage } from "./catalog-groups.js"');
+    expect(importSourceJs).toContain('parent?.classList.contains("imports-package-list")');
+    expect(importSourceJs).toContain("placeCatalogPackage(parent, input, input.catalogEntry");
+    expect(importSourceJs).toContain("MutationObserver");
+    expect(catalogGroupsJs).toContain('"url-cleanup"');
+    expect(catalogGroupsJs).toContain('"redirect"');
+    expect(catalogGroupsJs).toContain('"request-transform"');
+    expect(catalogGroupsJs).toContain('"block-allow"');
+    expect(catalogGroupsJs).toContain('"privacy-special"');
+    expect(catalogGroupsJs).toContain("CATALOG_CATEGORY_ORDER.indexOf");
+    expect(catalogGroupsJs).toContain("placeCatalogPackage");
+});
+
+test("import controls size by role and checkbox rows use a stable alignment grid", () => {
+    expect(importsCatalogCss).toContain(".imports-category-group");
+    expect(importsCatalogCss).toContain(".imports-category-heading");
+    expect(importsCatalogCss).toContain("min-width: max-content");
+    expect(importsCatalogCss).toContain("white-space: normal");
+    expect(importCss).toContain("grid-template-columns: 1.25rem minmax(0, 1fr)");
+    expect(importCss).toContain("column-gap: 0.65rem");
+    expect(importCss).toContain("width: 2.15rem");
+    expect(importCss).toContain("width: auto");
+    expect(importCss).toContain("white-space: normal");
+    expect(importCss).toContain("display: none !important");
 });
 
 test("official update management includes hidden advanced packages", () => {

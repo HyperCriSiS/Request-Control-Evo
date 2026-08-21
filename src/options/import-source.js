@@ -2,6 +2,8 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { placeCatalogPackage } from "./catalog-groups.js";
+
 const ALLOWED_IMPORT_PROTOCOLS = new Set([
     "http:",
     "https:",
@@ -26,4 +28,41 @@ export function normalizeImportSource(value) {
     } catch {
         return null;
     }
+}
+
+if (typeof document !== "undefined" && typeof browser !== "undefined") {
+    installCatalogPresentation();
+}
+
+function installCatalogPresentation() {
+    ensureCatalogStylesheet();
+
+    const place = (input) => {
+        const parent = input?.parentElement;
+        if (input?.catalogEntry && parent?.classList.contains("imports-package-list")) {
+            placeCatalogPackage(parent, input, input.catalogEntry, (key) => browser.i18n.getMessage(key));
+        }
+    };
+
+    document.querySelectorAll(".imports-package-list > rule-import-input").forEach(place);
+
+    const observer = new MutationObserver((records) => {
+        for (const record of records) {
+            for (const node of record.addedNodes) {
+                if (!(node instanceof Element)) continue;
+                if (node.localName === "rule-import-input") place(node);
+                node.querySelectorAll?.(".imports-package-list > rule-import-input").forEach(place);
+            }
+        }
+    });
+    observer.observe(document.documentElement, { childList: true, subtree: true });
+}
+
+function ensureCatalogStylesheet() {
+    if (document.getElementById("request-control-imports-catalog-styles")) return;
+    const link = document.createElement("link");
+    link.id = "request-control-imports-catalog-styles";
+    link.rel = "stylesheet";
+    link.href = new URL("./imports-catalog.css", import.meta.url).href;
+    document.head.append(link);
 }
