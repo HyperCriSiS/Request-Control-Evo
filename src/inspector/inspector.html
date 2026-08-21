@@ -10,6 +10,7 @@
         <link rel="stylesheet" href="inspector.css" />
         <script defer type="module" src="localize.js"></script>
         <script defer type="module" src="inspector.js"></script>
+        <script defer type="module" src="compatibility.js"></script>
     </head>
     <body>
         <header class="page-header">
@@ -31,6 +32,7 @@
                 <div>
                     <strong id="status" data-i18n="inspection_ready"></strong>
                     <p id="status-detail" data-i18n="inspection_ready_detail"></p>
+                    <p id="compatibility-status" class="compatibility-status hidden"></p>
                 </div>
                 <span id="recording-dot" class="recording-dot" aria-hidden="true"></span>
             </section>
@@ -106,6 +108,7 @@
                     </div>
                     <button id="detail-referrer-allow" class="button" type="button" data-i18n="inspection_referrer_allow_host"></button>
                 </div>
+                <p id="detail-compatibility-warning" class="warning compatibility-warning hidden" data-i18n="inspection_rule_breakage_hint"></p>
 
                 <div class="rule-actions">
                     <div>
