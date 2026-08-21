@@ -48,6 +48,7 @@ export class CompatibilityGuardian {
             errors: [],
             httpFailures: [],
             referrerEffects: [],
+            ruleEffects: [],
             timer: null,
         };
         session.timer = this.setTimer(() => this.stop(tabId), MAX_GUARDIAN_SESSION_MS);
@@ -101,6 +102,7 @@ export class CompatibilityGuardian {
         session.errors.push({
             type: details.type,
             url: details.url,
+            requestId: details.requestId || null,
             error: details.error || "request-error",
             timeStamp: details.timeStamp || this.now(),
         });
@@ -114,7 +116,31 @@ export class CompatibilityGuardian {
         session.httpFailures.push({
             type: details.type,
             url: details.url,
+            requestId: details.requestId || null,
             statusCode: details.statusCode,
+            timeStamp: details.timeStamp || this.now(),
+        });
+    }
+
+    recordRuleEffect(details, effect) {
+        const session = this.sessions.get(details?.tabId);
+        if (
+            !session ||
+            session.ruleEffects.length >= MAX_GUARDIAN_EVENTS ||
+            !details?.requestId ||
+            !effect?.action ||
+            !effect?.rule?.uuid
+        ) {
+            return;
+        }
+        session.ruleEffects.push({
+            requestId: details.requestId,
+            targetHost: safeHostname(effect.target || details.url),
+            action: effect.action,
+            rule: {
+                uuid: effect.rule.uuid,
+                title: effect.rule.title || effect.rule.tag || effect.rule.uuid,
+            },
             timeStamp: details.timeStamp || this.now(),
         });
     }
@@ -145,6 +171,7 @@ export class CompatibilityGuardian {
         const clientFailures = session.httpFailures.length - serverFailures;
         const score = Math.min(100, mainFrameErrors * 50 + subresourceErrors * 8 + serverFailures * 6 + clientFailures * 2);
         const referrerSuspects = correlateReferrerBreakage(session);
+        const ruleSuspects = correlateRuleBreakage(session);
         return {
             active,
             tabId: session.tabId,
@@ -158,8 +185,10 @@ export class CompatibilityGuardian {
                 clientFailures,
                 referrerModified: session.referrerEffects.length,
                 referrerRemoved: session.referrerEffects.filter((item) => item.effect === "removed").length,
+                ruleModified: session.ruleEffects.length,
             },
             referrerSuspects,
+            ruleSuspects,
             recent: [...session.errors, ...session.httpFailures]
                 .sort((a, b) => b.timeStamp - a.timeStamp)
                 .slice(0, 20),
@@ -173,6 +202,32 @@ export class CompatibilityGuardian {
         }
         return webRequest;
     }
+}
+
+function correlateRuleBreakage(session) {
+    const failuresByRequest = new Map();
+    for (const item of [...session.errors, ...session.httpFailures]) {
+        if (!item.requestId) {
+            continue;
+        }
+        const failures = failuresByRequest.get(item.requestId) || [];
+        failures.push(item);
+        failuresByRequest.set(item.requestId, failures);
+    }
+
+    return session.ruleEffects
+        .map((item) => {
+            const failures = failuresByRequest.get(item.requestId) || [];
+            return {
+                requestId: item.requestId,
+                targetHost: item.targetHost,
+                action: item.action,
+                rule: { ...item.rule },
+                failures: failures.length,
+            };
+        })
+        .filter((item) => item.failures > 0)
+        .sort((a, b) => b.failures - a.failures || a.rule.title.localeCompare(b.rule.title));
 }
 
 function correlateReferrerBreakage(session) {
