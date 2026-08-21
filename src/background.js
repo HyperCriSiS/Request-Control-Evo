@@ -7,6 +7,7 @@ import { RequestController } from "./main/control.js";
 import { migrateManagedSourceState } from "./main/catalog.js";
 import { InspectionSessionLimiter } from "./main/inspection/session-limiter.js";
 import { InspectionStore } from "./main/inspection/store.js";
+import { migrateLegacyTagsToGroups } from "./options/legacy-metadata.js";
 import { guardian } from "./main/guardian.js";
 import { NavigationAdapter } from "./main/navigation.js";
 import {
@@ -48,16 +49,17 @@ browser.tabs.onRemoved.addListener(onInspectionTabRemoved);
 
 async function bootstrap() {
     let options = await browser.storage.local.get(storageKeys);
-    const migration = migrateManagedSourceState(options.rules || [], options.imports || {});
-    if (migration.changed) {
+    const managedMigration = migrateManagedSourceState(options.rules || [], options.imports || {});
+    const legacyMetadataMigration = migrateLegacyTagsToGroups(managedMigration.rules);
+    if (managedMigration.changed || legacyMetadataMigration.changed) {
         await browser.storage.local.set({
-            rules: migration.rules,
-            imports: migration.imports,
+            rules: legacyMetadataMigration.rules,
+            imports: managedMigration.imports,
         });
         options = {
             ...options,
-            rules: migration.rules,
-            imports: migration.imports,
+            rules: legacyMetadataMigration.rules,
+            imports: managedMigration.imports,
         };
     }
     browser.storage.onChanged.addListener(onOptionsChanged);

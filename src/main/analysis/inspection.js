@@ -2,19 +2,28 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { libTld } from "../url.js";
+import { getRegistrableDomain } from "../matchers.js";
 
-const TRACKING_HOST_TOKEN = /(^|[.-])(analytics?|beacons?|metrics?|pixels?|telemetry|track(?:er|ing)?)([.-]|$)/i;
-const AD_HOST_TOKEN = /(^|[.-])(adservice|adsystem|doubleclick)([.-]|$)/i;
+const TRACKING_HOST_HINTS = [
+    /(^|\.)analytics([.-]|$)/i,
+    /(^|\.)telemetry([.-]|$)/i,
+    /(^|\.)metrics?([.-]|$)/i,
+    /(^|\.)tracking([.-]|$)/i,
+    /(^|\.)tracker([.-]|$)/i,
+    /(^|\.)pixel([.-]|$)/i,
+    /(^|\.)collect(or)?([.-]|$)/i,
+    /(^|\.)stats?([.-]|$)/i,
+    /(^|\.)beacon([.-]|$)/i,
+];
 
-export const INSPECTION_RULE_SCOPES = Object.freeze([
+export const INSPECTION_RULE_SCOPES = [
     "exact-request",
     "host",
     "host-type",
     "site-host",
     "site-host-type",
     "third-party-host",
-]);
+];
 
 export function classifyInspectionRequest(pageUrl, requestUrl) {
     const page = parseUrl(pageUrl);
@@ -22,56 +31,50 @@ export function classifyInspectionRequest(pageUrl, requestUrl) {
     if (!request) {
         return {
             hostname: "",
+            domain: "",
             firstParty: false,
             thirdParty: false,
             trackingHint: false,
         };
     }
 
-    const pageDomain = page ? libTld.getDomain(page.href) : null;
-    const requestDomain = libTld.getDomain(request.href);
-    const sameDomain = page
-        ? pageDomain && requestDomain
-            ? pageDomain === requestDomain
-            : page.hostname === request.hostname
-        : false;
+    const pageDomain = page ? getRegistrableDomain(page.hostname) : "";
+    const requestDomain = getRegistrableDomain(request.hostname);
+    const firstParty = Boolean(pageDomain && requestDomain && pageDomain === requestDomain);
 
     return {
         hostname: request.hostname,
-        firstParty: sameDomain,
-        thirdParty: page !== null && !sameDomain,
+        domain: requestDomain,
+        firstParty,
+        thirdParty: Boolean(pageDomain && requestDomain && !firstParty),
         trackingHint: hasTrackingHint(request.hostname),
     };
 }
 
 export function hasTrackingHint(hostname) {
-    return TRACKING_HOST_TOKEN.test(hostname) || AD_HOST_TOKEN.test(hostname);
+    return TRACKING_HOST_HINTS.some((pattern) => pattern.test(String(hostname || "")));
 }
 
-export function summarizeInspection(session) {
-    const requests = session?.requests || [];
+export function summarizeInspection(session = {}) {
+    const requests = session.requests || [];
     const summary = {
         total: requests.length,
         firstParty: 0,
         thirdParty: 0,
         trackingHints: 0,
         affected: 0,
-        dropped: session?.dropped || 0,
-        domains: [],
+        dropped: Number(session.dropped || 0),
         types: {},
+        domains: [],
     };
     const domains = new Map();
     const trackingDomains = new Set();
 
     for (const request of requests) {
-        const classification = request.classification || classifyInspectionRequest(session?.pageUrl, request.url);
-        if (classification.firstParty) {
-            summary.firstParty += 1;
-        }
-        if (classification.thirdParty) {
-            summary.thirdParty += 1;
-        }
-        if (classification.trackingHint && classification.hostname) {
+        const classification = request.classification || classifyInspectionRequest(session.pageUrl, request.url);
+        summary.firstParty += classification.firstParty ? 1 : 0;
+        summary.thirdParty += classification.thirdParty ? 1 : 0;
+        if (classification.trackingHint) {
             trackingDomains.add(classification.hostname);
         }
         const affected = Boolean(request.effect || request.diagnostics?.length);
@@ -130,8 +133,6 @@ export function buildInspectionBlockRule({ pageUrl, request, scope }, uuid) {
         active: false,
         title: `Inspection draft: ${target.hostname}`,
         description: describeScope(scope, target.hostname, request.type),
-        tag: "inspection",
-        group: "Inspection",
     };
 
     switch (scope) {

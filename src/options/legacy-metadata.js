@@ -12,3 +12,33 @@ export function decodeLegacyMetadata(value) {
         return value;
     }
 }
+
+export function migrateLegacyTagsToGroups(rules = []) {
+    if (!Array.isArray(rules)) {
+        return { rules: [], changed: false };
+    }
+
+    let changed = false;
+    const migrated = rules.map((rule) => {
+        if (!rule || typeof rule !== "object") {
+            return rule;
+        }
+
+        const explicitGroup = String(rule.group || "").trim();
+        const legacyTag = decodeLegacyMetadata(rule.tag).trim();
+        if (explicitGroup || !legacyTag) {
+            return rule;
+        }
+
+        changed = true;
+        return {
+            ...rule,
+            group: legacyTag,
+        };
+    });
+
+    return {
+        rules: changed ? migrated : rules,
+        changed,
+    };
+}
