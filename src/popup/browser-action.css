@@ -338,3 +338,125 @@ pre {
         display: none;
     }
 }
+
+.referrer-control {
+    display: grid;
+    gap: 0.45rem;
+    padding: 0.55rem;
+    border-top: 1px solid var(--border);
+    background: var(--background);
+}
+
+.referrer-control-head {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(9rem, auto);
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.referrer-control-copy {
+    min-width: 0;
+    display: grid;
+    gap: 0.1rem;
+}
+
+.referrer-host {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--muted);
+    font-size: 0.75rem;
+}
+
+.referrer-mode-field {
+    min-width: 0;
+}
+
+#referrerMode {
+    width: 100%;
+    min-height: 2.25rem;
+    box-sizing: border-box;
+    padding: 0.35rem 1.7rem 0.35rem 0.5rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    background: var(--surface);
+    font: inherit;
+}
+
+.referrer-host-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+}
+
+.referrer-scope,
+.referrer-note {
+    color: var(--muted);
+    font-size: 0.72rem;
+}
+
+.referrer-note {
+    margin: 0;
+}
+
+.referrer-host-button {
+    flex: 0 1 auto;
+    min-height: 2.25rem;
+    max-width: 70%;
+    padding: 0.4rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    background: var(--surface);
+    font: inherit;
+    line-height: 1.25;
+    white-space: normal;
+}
+
+.referrer-host-button:hover,
+#referrerMode:hover {
+    background: var(--surface-hover);
+    cursor: pointer;
+}
+
+.referrer-host-button:focus,
+#referrerMode:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.visually-hidden {
+    position: absolute !important;
+    width: 1px !important;
+    height: 1px !important;
+    padding: 0 !important;
+    margin: -1px !important;
+    overflow: hidden !important;
+    clip: rect(0, 0, 0, 0) !important;
+    white-space: nowrap !important;
+    border: 0 !important;
+}
+
+@media (hover: none) and (pointer: coarse) and (max-width: 28rem) {
+    .referrer-control-head {
+        grid-template-columns: 1fr;
+    }
+
+    #referrerMode,
+    .referrer-host-button {
+        min-height: 2.75rem;
+    }
+
+    .referrer-host-row {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .referrer-host-button {
+        max-width: none;
+        width: 100%;
+    }
+}
