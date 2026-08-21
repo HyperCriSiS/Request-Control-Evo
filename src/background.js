@@ -177,6 +177,7 @@ function notify(rule, request, target = null) {
         },
     };
     inspections.markEffect(request.tabId, request.requestId, effect);
+    guardian.recordRuleEffect(request, effect);
 
     const count = records.add(request.tabId, {
         action: rule.constructor.action,
