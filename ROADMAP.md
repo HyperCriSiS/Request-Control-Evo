@@ -76,11 +76,11 @@ Work in dependency order: functional correctness first, then Referer/Guardian in
 
 ### 1. Inspector regression
 
-- [ ] Reproduce/locate the apparent post-1.19 Inspector break across the full start → reload/capture → get/render → stop/cleanup lifecycle.
+- [x] Reproduce/locate the apparent post-1.19 Inspector break across the full start → reload/capture → get/render → stop/cleanup lifecycle. Root cause: post-1.19 Rule Source diagnostics could prevent the Inspector entry module from loading.
 - [ ] Keep the 10-minute inspection limiter intact.
-- [ ] Ensure the post-1.19 Rule Source diagnostic can never break core Inspector loading/polling/rendering.
+- [x] Ensure the post-1.19 Rule Source diagnostic can never break core Inspector loading/polling/rendering; diagnostics are now loaded defensively and cannot gate the core Inspector.
 - [ ] Add integration-style regression coverage.
-- Implementation note: defensive Inspector changes landed after RC3; completion remains pending authoritative green CI and hands-on verification.
+- Implementation note: defensive Inspector changes landed after RC3 in `d5ba709a`; RC3 still contains the broken Inspector path. Completion remains pending authoritative green CI, hands-on verification and a fresh prerelease.
 
 ### 2. URL Analyzer correctness/usefulness
 
@@ -115,11 +115,17 @@ This is a research trial and **does not gate 1.20 stable**.
 
 ### 5. Referer + Inspector / Guardian breakage diagnostics
 
-- [ ] During an explicit Inspection/Guardian session, record whether Referer protection actually trimmed or removed a request header.
-- [ ] Surface that evidence only when it is relevant to the inspected page/request.
+Product decision: **Guardian is not a separate user-facing mode.** Its compatibility logic belongs inside the explicit Inspector workflow as an on-demand diagnostic layer. The user should not have to discover or understand a second diagnostic feature.
+
+- [ ] Start/stop Guardian compatibility observation automatically with an explicit Inspector session; keep it bounded and on-demand only.
+- [ ] During the session, record whether Referer protection actually trimmed or removed a request header and correlate those interventions with request/HTTP failures.
+- [ ] Add a compact Inspector compatibility summary that explains what was observed (no issue / possible breakage / strong suspect) instead of exposing an unexplained numeric score.
+- [ ] Surface evidence only when it is relevant to the inspected page/request; keep the compatibility section hidden when there is no actionable signal.
+- [ ] Wire the existing Inspector Referer diagnostic UI to real request diagnostics; the current HTML shell alone is not considered implemented.
 - [ ] Offer a deliberate **allow Referer for this exact host** action when Referer modification is a plausible breakage source.
 - [ ] Never silently disable Referer protection or auto-whitelist a site.
 - [ ] Any future breakage-aware automation remains recommendation-only and evidence-based.
+- Current-state note: Guardian core collection/scoring exists and has unit coverage, but its message API has no complete user-facing workflow, so it currently appears functionless in normal use.
 
 ### 6. Imports behavior hierarchy
 
