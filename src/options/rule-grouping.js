@@ -2,7 +2,7 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
-import { CATALOG_CATEGORY_ORDER, catalogCategoryForEntry } from "./catalog-groups.js";
+import { catalogCategoryForEntry } from "./catalog-groups.js";
 
 const SOURCE_ORDER = ["official", "community", "custom", "local"];
 const BEHAVIOR_GROUP_FALLBACK = "local-custom";
@@ -24,7 +24,6 @@ export function getRuleSourceKind(rule) {
     return "custom";
 }
 
-
 export function getRuleBehaviorCategory(rule) {
     const behavior = rule?.source?.behavior;
     if (!behavior) {
@@ -38,6 +37,7 @@ export function filterRuleInputs(inputs, view = {}) {
     const status = view.status || "all";
     const source = view.source || "all";
     const group = view.group || "all";
+    const category = view.category || "all";
 
     return inputs.filter((input) => {
         const rule = input.rule || {};
@@ -48,6 +48,9 @@ export function filterRuleInputs(inputs, view = {}) {
             return false;
         }
         if (source !== "all" && getRuleSourceKind(rule) !== source) {
+            return false;
+        }
+        if (category !== "all" && getRuleBehaviorCategory(rule) !== category) {
             return false;
         }
         const ruleGroup = String(rule.group || "").trim();
@@ -120,8 +123,8 @@ export function groupRuleInputs(inputs, view = {}) {
         return groupByName(sorted, (input) => getRuleSourceKind(input.rule), compareSource);
     }
 
-    if (groupBy === "behavior") {
-        return groupByName(sorted, (input) => getRuleBehaviorCategory(input.rule), compareBehaviorGroups);
+    if (groupBy !== "group") {
+        return [{ name: null, inputs: sorted }];
     }
 
     const hasNamedGroup = sorted.some((input) => Boolean(input.rule?.group));
@@ -160,17 +163,6 @@ function compareSource(a, b) {
     const bi = SOURCE_ORDER.indexOf(b);
     if (ai !== bi) {
         return (ai === -1 ? SOURCE_ORDER.length : ai) - (bi === -1 ? SOURCE_ORDER.length : bi);
-    }
-    return compareText(a, b);
-}
-
-
-function compareBehaviorGroups(a, b) {
-    const ai = CATALOG_CATEGORY_ORDER.indexOf(a);
-    const bi = CATALOG_CATEGORY_ORDER.indexOf(b);
-    if (ai !== bi) {
-        return (ai === -1 ? CATALOG_CATEGORY_ORDER.length : ai) -
-            (bi === -1 ? CATALOG_CATEGORY_ORDER.length : bi);
     }
     return compareText(a, b);
 }

@@ -106,25 +106,19 @@ test("manual sorting uses the separate UI order map rather than execution storag
     expect(original.map((item) => item.rule.uuid)).toEqual(["first", "second"]);
 });
 
-
-test("behavior grouping mirrors the Imports behavior hierarchy for managed rules", () => {
-    const groups = groupRuleInputs([
+test("behavior metadata filters managed rules without becoming a user grouping primitive", () => {
+    const inputs = [
         input("Local", undefined, { uuid: "l" }),
-        input("Special", undefined, { uuid: "s", source: { behavior: "special-mode" } }),
         input("Redirect", undefined, { uuid: "r", source: { behavior: "direct-link" } }),
         input("Cleanup", undefined, { uuid: "u", source: { behavior: "url-cleanup" } }),
-        input("Block", undefined, { uuid: "b", source: { behavior: "request-blocking" } }),
-        input("Transform", undefined, { uuid: "t", source: { behavior: "media-quality" } }),
-    ], { groupBy: "behavior", sort: "title" });
+    ];
 
-    expect(groups.map(({ name }) => name)).toEqual([
-        "url-cleanup",
-        "redirect",
-        "request-transform",
-        "block-allow",
-        "privacy-special",
-        "local-custom",
-    ]);
+    expect(filterRuleInputs(inputs, { category: "redirect" }).map((item) => item.rule.uuid)).toEqual(["r"]);
+    expect(filterRuleInputs(inputs, { category: "local-custom" }).map((item) => item.rule.uuid)).toEqual(["l"]);
     expect(getRuleBehaviorCategory({ source: { behavior: "site-cleanup" } })).toBe("url-cleanup");
     expect(getRuleBehaviorCategory({})).toBe("local-custom");
+
+    expect(groupRuleInputs(inputs, { groupBy: "behavior", sort: "title" })).toEqual([
+        { name: null, inputs: expect.any(Array) },
+    ]);
 });

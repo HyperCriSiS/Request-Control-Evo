@@ -2,12 +2,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { CATALOG_CATEGORY_ORDER, catalogCategoryLabel } from "./catalog-groups.js";
+
 const QUICK_ACTION_SELECTION_KEY = "ruleQuickActionSelection";
 const RULE_GROUPS_KEY = "ruleGroups";
 const RULE_GROUP_FILTER_KEY = "ruleGroupFilter";
+const RULE_CATEGORY_FILTER_KEY = "ruleCategoryFilter";
 const QUICK_COMMANDS = ["test", "export", "share", "delete"];
 
 let selectedGroup = "all";
+let selectedCategory = "all";
 let groups = [];
 
 if (typeof document !== "undefined" && typeof browser !== "undefined") {
@@ -39,6 +43,7 @@ async function initializeRuleManagementUi() {
         [QUICK_ACTION_SELECTION_KEY]: [],
         [RULE_GROUPS_KEY]: [],
         [RULE_GROUP_FILTER_KEY]: "all",
+        [RULE_CATEGORY_FILTER_KEY]: "all",
         ruleViewSettings: {},
     });
 
@@ -47,15 +52,18 @@ async function initializeRuleManagementUi() {
         ...groupsFromRules(stored.rules || []),
     ]);
     selectedGroup = normalizeGroupFilter(stored[RULE_GROUP_FILTER_KEY]);
+    selectedCategory = normalizeCategoryFilter(stored[RULE_CATEGORY_FILTER_KEY]);
 
     injectStyles();
     hideLegacyQuickActionToggle();
-    ensureBehaviorGroupOption(stored.ruleViewSettings?.groupBy);
+    await normalizeLegacyBehaviorGrouping(stored.ruleViewSettings || {});
+    createCategoryControl();
     createGroupControls();
     createQuickActionControls(stored[QUICK_ACTION_SELECTION_KEY]);
     decorateRuleRows();
     observeRuleRows();
     applyGroupFilter();
+    applyCategoryFilter();
 
     document.addEventListener("rule-created", onRulesChanged);
     document.addEventListener("rule-changed", onRulesChanged);
@@ -71,6 +79,7 @@ function patchRuleListView() {
         return originalSetView.call(this, {
             ...view,
             group: selectedGroup,
+            category: selectedCategory,
         });
     };
     RuleList.prototype.__requestControlGroupFilterPatched = true;
@@ -116,8 +125,10 @@ function injectStyles() {
         rule-input.disabled .rule-header-buttons .btn-activate { opacity: .72; }
         @media (max-width: 35em) {
             .rc-rule-group-control,
+            .rc-rule-category-filter,
             .rc-quick-config { grid-column: 1 / -1; width: 100%; }
             .rc-rule-group-control select { flex: 1 1 auto; max-width: none; min-height: 2.75rem; }
+            .rc-rule-category-filter { min-height: 2.75rem; }
             .rc-command-icon { min-width: 2.75rem; min-height: 2.75rem; }
             .rc-quick-config > button { width: 100%; min-height: 2.75rem; }
             .rc-quick-menu { left: 0; right: 0; }
@@ -131,22 +142,74 @@ function hideLegacyQuickActionToggle() {
     if (input) input.tabIndex = -1;
 }
 
-
-function ensureBehaviorGroupOption(preferredGroupBy = "") {
+async function normalizeLegacyBehaviorGrouping(settings = {}) {
     const groupBy = document.getElementById("ruleGroupBy");
     if (!groupBy) return;
 
-    let option = Array.from(groupBy.options).find((item) => item.value === "behavior");
-    if (!option) {
-        option = document.createElement("option");
-        option.value = "behavior";
-        option.textContent = message("rule_group_behavior", "Behavior");
-        const source = Array.from(groupBy.options).find((item) => item.value === "source");
-        groupBy.insertBefore(option, source || null);
+    Array.from(groupBy.options)
+        .filter((option) => option.value === "behavior")
+        .forEach((option) => option.remove());
+
+    if (settings.groupBy === "behavior") {
+        const normalized = { ...settings, groupBy: "group" };
+        groupBy.value = "group";
+        await browser.storage.local.set({ ruleViewSettings: normalized });
     }
-    if (preferredGroupBy === "behavior") {
-        groupBy.value = "behavior";
+}
+
+function normalizeCategoryFilter(value) {
+    const category = String(value || "all");
+    if (category === "all" || category === "local-custom" || CATALOG_CATEGORY_ORDER.includes(category)) {
+        return category;
     }
+    return "all";
+}
+
+function createCategoryControl() {
+    const commandbar = document.querySelector(".rules-commandbar");
+    const groupBy = document.getElementById("ruleGroupBy");
+    if (!commandbar || !groupBy || document.getElementById("ruleCategoryFilter")) return;
+
+    const select = document.createElement("select");
+    select.id = "ruleCategoryFilter";
+    select.className = "rules-view-select rc-rule-category-filter";
+    select.title = message("imports_category_heading", "Category");
+
+    const all = document.createElement("option");
+    all.value = "all";
+    all.textContent = message("all", "All categories");
+
+    const local = document.createElement("option");
+    local.value = "local-custom";
+    local.textContent = message("rule_group_local_custom", "Local / custom");
+
+    const categories = CATALOG_CATEGORY_ORDER.map((category) => {
+        const option = document.createElement("option");
+        option.value = category;
+        option.textContent = catalogCategoryLabel(category, (key) => browser.i18n.getMessage(key));
+        return option;
+    });
+
+    select.replaceChildren(all, local, ...categories);
+    select.value = Array.from(select.options).some((option) => option.value === selectedCategory)
+        ? selectedCategory
+        : "all";
+    selectedCategory = select.value;
+    select.addEventListener("change", async () => {
+        selectedCategory = normalizeCategoryFilter(select.value);
+        await browser.storage.local.set({ [RULE_CATEGORY_FILTER_KEY]: selectedCategory });
+        applyCategoryFilter();
+    });
+
+    groupBy.before(select);
+}
+
+function applyCategoryFilter() {
+    document.querySelectorAll("rule-list").forEach((list) => {
+        if (typeof list.setView === "function") {
+            list.setView({ ...list.view, category: selectedCategory });
+        }
+    });
 }
 
 function createGroupControls() {
