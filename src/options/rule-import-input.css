@@ -24,8 +24,7 @@
 .import-actions,
 .import-meta,
 .import-types,
-.catalog-metadata,
-.rating {
+.catalog-metadata {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -178,20 +177,12 @@
     font-weight: 600;
 }
 
-.source-link,
-.rating-link {
+.source-link {
     color: var(--primary-color);
     text-decoration: none;
 }
 
-.rating-link {
-    display: inline-flex;
-    align-items: center;
-    min-height: 2.15rem;
-}
-
-.source-link:hover,
-.rating-link:hover {
+.source-link:hover {
     text-decoration: underline;
 }
 
@@ -362,7 +353,6 @@
         min-height: 2.75rem;
     }
 
-    .rating-link,
     .selection-toggle,
     .selection-action {
         min-height: 2.75rem;
