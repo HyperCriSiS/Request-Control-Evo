@@ -105,14 +105,6 @@ test("GitHub sharing lives with selected rules and requires explicit review", ()
     expect(optionsJs).toContain("share_rules_preview");
 });
 
-test("import rows keep community review out of per-package actions", () => {
-    expect(importJs).not.toContain('rating.id = "rating"');
-    expect(importJs).not.toContain('ratingLink.id = "rating-link"');
-    expect(importJs).not.toContain("set communityReview");
-    expect(optionsJs).not.toContain("input.communityReview");
-    expect(importCss).not.toContain(".rating-link");
-});
-
 test("import integrity status has a real template target", () => {
     expect(optionsHtml).toContain('id="integrity"');
     expect(importJs).toContain('getElementById("integrity")');
@@ -132,6 +124,22 @@ test("rule packages use one compact inline selector grouped by native rule actio
     expect(importJs).toContain('import_selected_count');
     expect(importJs).toContain('get rules()');
     expect(importJs).toContain('return this.selectedRules;');
+});
+
+
+test("Rule Import rows remove package-level community review from the rendered row", () => {
+    expect(importSourceJs).toContain("simplifyPackageRow(input)");
+    expect(importSourceJs).toContain('root.getElementById("rating")?.remove()');
+    expect(optionsHtml).toContain('id="shareSelectedRulesGitHub"');
+});
+
+test("Rule Import rows separate status metadata from the primary action cluster", () => {
+    expect(importSourceJs).toContain('status.className = "import-status"');
+    expect(importSourceJs).toContain('["count", "imported", "update", "integrity", "error"]');
+    expect(importCss).toContain("align-self: start");
+    expect(importCss).toContain("row-gap: 0.25rem");
+    expect(importCss).toContain("flex: 1 1 10rem");
+    expect(importCss).toContain(".import-status");
 });
 
 test("managed imports preserve their selected UUIDs during package updates", () => {

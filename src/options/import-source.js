@@ -41,6 +41,7 @@ function installCatalogPresentation() {
         const parent = input?.parentElement;
         if (input?.catalogEntry && parent?.classList.contains("imports-package-list")) {
             placeCatalogPackage(parent, input, input.catalogEntry, (key) => browser.i18n.getMessage(key));
+            simplifyPackageRow(input);
         }
     };
 
@@ -65,4 +66,29 @@ function ensureCatalogStylesheet() {
     link.rel = "stylesheet";
     link.href = new URL("./imports-catalog.css", import.meta.url).href;
     document.head.append(link);
+}
+
+function simplifyPackageRow(input) {
+    const root = input?.shadowRoot;
+    if (!root) return;
+
+    // Community review/rating belongs to the dedicated contribution flow, not to each import row.
+    root.getElementById("rating")?.remove();
+
+    const meta = root.querySelector(".import-meta");
+    const actions = root.querySelector(".import-actions");
+    if (!meta || !actions) return;
+
+    let status = root.querySelector(".import-status");
+    if (!status) {
+        status = document.createElement("span");
+        status.className = "import-status";
+        const selectionToggle = root.getElementById("selection-toggle");
+        meta.insertBefore(status, selectionToggle || null);
+    }
+
+    for (const id of ["count", "imported", "update", "integrity", "error"]) {
+        const element = root.getElementById(id);
+        if (element && element.parentElement !== status) status.append(element);
+    }
 }

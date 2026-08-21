@@ -24,7 +24,8 @@
 .import-actions,
 .import-meta,
 .import-types,
-.catalog-metadata {
+.catalog-metadata,
+.rating {
     display: flex;
     align-items: center;
     flex-wrap: wrap;
@@ -33,6 +34,7 @@
 
 .import-heading {
     gap: 0.55rem;
+    align-items: start;
 }
 
 .import-copy {
@@ -51,6 +53,7 @@
 .import-actions {
     flex: 0 1 auto;
     justify-content: flex-end;
+    align-self: start;
 }
 
 .import-actions .btn,
@@ -93,14 +96,20 @@
 }
 
 .import-meta {
-    min-height: 2rem;
+    min-height: 1.75rem;
     color: var(--text-muted);
     font-size: 0.76rem;
+    row-gap: 0.25rem;
 }
 
 .catalog-metadata {
-    flex: 1 1 12rem;
+    flex: 1 1 10rem;
     gap: 0.22rem;
+}
+
+.import-status {
+    flex: 0 1 auto;
+    gap: 0.25rem;
 }
 
 .catalog-badge {
@@ -141,8 +150,8 @@
     flex: 0 1 auto;
     width: auto;
     max-width: 100%;
-    min-height: 2.15rem;
-    padding: 0.3rem 0.6rem;
+    min-height: 2rem;
+    padding: 0.25rem 0.55rem;
     color: var(--primary-color);
     font-weight: 650;
     line-height: 1.25;
@@ -169,12 +178,20 @@
     font-weight: 600;
 }
 
-.source-link {
+.source-link,
+.rating-link {
     color: var(--primary-color);
     text-decoration: none;
 }
 
-.source-link:hover {
+.rating-link {
+    display: inline-flex;
+    align-items: center;
+    min-height: 2.15rem;
+}
+
+.source-link:hover,
+.rating-link:hover {
     text-decoration: underline;
 }
 
@@ -317,14 +334,23 @@
 
 @media (max-width: 35em) {
     .import-heading,
-    .import-actions,
     .import-meta {
         width: 100%;
         justify-content: flex-start;
     }
 
+    .import-heading {
+        align-items: stretch;
+    }
+
     .import-copy {
         flex-basis: 100%;
+    }
+
+    .import-actions {
+        width: auto;
+        max-width: 100%;
+        justify-content: flex-start;
     }
 
     .import-actions .btn,
@@ -336,6 +362,7 @@
         min-height: 2.75rem;
     }
 
+    .rating-link,
     .selection-toggle,
     .selection-action {
         min-height: 2.75rem;
