@@ -34,7 +34,13 @@ const navigation = new NavigationAdapter({
     replaceHistory: replaceHistoryState,
     onInvalidRule: () => notifier.error(),
 });
-const storageKeys = ["rules", "imports", "disabled", "referrerProtectionMode"];
+const storageKeys = [
+    "rules",
+    "imports",
+    "disabled",
+    "referrerProtectionMode",
+    "referrerProtectionExceptions",
+];
 
 bootstrap();
 browser.runtime.onMessage.addListener(onRuntimeMessage);
@@ -61,7 +67,8 @@ async function bootstrap() {
 
 function init(options, generation = initGeneration) {
     configureReferrerProtection(
-        effectiveReferrerProtectionMode(options.referrerProtectionMode || "browser", options.disabled)
+        effectiveReferrerProtectionMode(options.referrerProtectionMode || "browser", options.disabled),
+        options.referrerProtectionExceptions || []
     );
     if (options.disabled) {
         browser.tabs.onRemoved.removeListener(onTabRemoved);
@@ -98,7 +105,8 @@ function onOptionsChanged(changes) {
     if (
         !("rules" in changes) &&
         !("disabled" in changes) &&
-        !("referrerProtectionMode" in changes)
+        !("referrerProtectionMode" in changes) &&
+        !("referrerProtectionExceptions" in changes)
     ) {
         return;
     }
