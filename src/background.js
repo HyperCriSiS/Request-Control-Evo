@@ -285,6 +285,7 @@ function onRuntimeMessage(message) {
                 title: message.title || "",
             });
             inspectionLimiter.start(tabId);
+            guardian.start(tabId);
             ensureInspectionListeners();
             return Promise.resolve(inspections.snapshot(tabId));
         case "get":
