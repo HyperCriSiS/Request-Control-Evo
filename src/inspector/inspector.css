@@ -585,3 +585,46 @@ input[type="search"]:hover {
         grid-column: auto;
     }
 }
+
+/* Optional compatibility diagnostics. Kept separate from the Inspector core. */
+.compatibility-status {
+    margin: 0.35rem 0 0;
+    color: var(--muted);
+    font-size: 0.82rem;
+}
+
+.referrer-diagnostic {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 0.9rem;
+    margin: 0.9rem;
+    padding: 0.8rem 0.9rem;
+    border: 1px solid var(--border);
+    border-radius: 0.6rem;
+    background: var(--surface-secondary);
+}
+
+.referrer-diagnostic p {
+    margin: 0.25rem 0 0;
+    color: var(--muted);
+}
+
+.referrer-diagnostic .warning,
+.compatibility-warning {
+    margin-left: 0;
+}
+
+.compatibility-warning {
+    margin-right: 0.9rem;
+}
+
+@media (max-width: 42rem) {
+    .referrer-diagnostic {
+        flex-direction: column;
+    }
+
+    .referrer-diagnostic .button {
+        width: 100%;
+    }
+}
