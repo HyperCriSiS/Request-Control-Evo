@@ -55,6 +55,7 @@ async function initializeRuleManagementUi() {
     selectedCategory = normalizeCategoryFilter(stored[RULE_CATEGORY_FILTER_KEY]);
 
     injectStyles();
+    setupMobileSelectedActions();
     hideLegacyQuickActionToggle();
     await normalizeLegacyBehaviorGrouping(stored.ruleViewSettings || {});
     createCategoryControl();
@@ -123,6 +124,18 @@ function injectStyles() {
         .rule-header-buttons .btn-edit::before { content: "✎"; }
         .rule-header-buttons .btn-activate::before { content: "⏻"; }
         rule-input.disabled .rule-header-buttons .btn-activate { opacity: .72; }
+        .mobile-toolbar .rc-mobile-toolbar-close { display: none; }
+        @media (max-width: 42em) {
+            .mobile-toolbar.show .rc-mobile-toolbar-close {
+                display: inline-flex;
+                align-items: center;
+                justify-content: center;
+                order: -1;
+                min-height: 3rem;
+                margin-top: .45rem !important;
+                border: 1px solid currentColor;
+            }
+        }
         @media (max-width: 35em) {
             .rc-rule-group-control,
             .rc-rule-category-filter,
@@ -135,6 +148,50 @@ function injectStyles() {
         }
     `;
     document.head.append(style);
+}
+
+function setupMobileSelectedActions() {
+    const toolbar = document.querySelector(".mobile-toolbar");
+    const trigger = document.getElementById("selectedRules");
+    if (!toolbar || !trigger || toolbar.dataset.navigationReady === "true") return;
+
+    toolbar.dataset.navigationReady = "true";
+    toolbar.setAttribute("role", "dialog");
+    toolbar.setAttribute("aria-modal", "true");
+    toolbar.setAttribute("aria-label", message("rule_quick_actions", "Selected rule actions"));
+
+    const closeButton = document.createElement("button");
+    closeButton.type = "button";
+    closeButton.className = "btn rc-mobile-toolbar-close";
+    closeButton.textContent = message("done", "Done");
+    closeButton.addEventListener("click", (event) => {
+        event.stopPropagation();
+        closeMobileSelectedActions(toolbar, trigger);
+    });
+    toolbar.append(closeButton);
+
+    document.addEventListener("keydown", (event) => {
+        if (event.key !== "Escape" || !toolbar.classList.contains("show")) return;
+        event.preventDefault();
+        closeMobileSelectedActions(toolbar, trigger);
+    });
+
+    // options.js historically closes the sheet for every bubbled toolbar click.
+    // Register after its DOMContentLoaded handlers so action execution stays intact
+    // while the action click no longer doubles as navigation dismissal.
+    setTimeout(() => {
+        toolbar.querySelectorAll(".btn-selected-action").forEach((button) => {
+            button.addEventListener("click", (event) => {
+                event.stopPropagation();
+                toolbar.classList.remove("show");
+            });
+        });
+    }, 0);
+}
+
+function closeMobileSelectedActions(toolbar, trigger) {
+    toolbar.classList.remove("show");
+    trigger.focus();
 }
 
 function hideLegacyQuickActionToggle() {
