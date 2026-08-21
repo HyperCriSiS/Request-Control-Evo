@@ -2,7 +2,7 @@
 
 This file is the binding source of truth for the active development/release line. Detailed historical notes may remain under `docs/`, but current priorities, release gates and architectural boundaries live here.
 
-**Status:** post-RC 1.20.0 functional hardening is active on `dev`. `1.20.0-rc.3` remains an immutable tested milestone but is no longer the final candidate. Stable `1.20.0` stays blocked until the automated hardening block is green and the remaining hands-on Firefox desktop/Android checks pass.
+**Status:** the post-RC 1.20.0 automated hardening block is green on `dev` through Build #400 (`a451193d`). `1.20.0-rc.3` remains an immutable milestone but is no longer the final candidate. A fresh prerelease is the next release gate; stable `1.20.0` remains blocked until that candidate passes real Firefox/Waterfox desktop and Firefox Android hands-on checks.
 
 ## Project goal
 
@@ -72,24 +72,24 @@ Request Control Evo should remain a request-manipulation/privacy tool rather tha
 
 ## Current post-RC functional hardening
 
-Work in dependency order: functional correctness first, then Referer/Guardian integration, then Imports information architecture/layout. RC3 must not be retagged; a fresh prerelease is required after this block is green.
+Work in dependency order: functional correctness first, then Referer/Breakage Check integration, then Imports information architecture/layout. RC3 remains immutable; a fresh prerelease is required from the green post-RC candidate.
 
 ### 1. Inspector regression
 
 - [x] Reproduce/locate the apparent post-1.19 Inspector break across the full start → reload/capture → get/render → stop/cleanup lifecycle. Root cause: post-1.19 Rule Source diagnostics could prevent the Inspector entry module from loading.
-- [ ] Keep the 10-minute inspection limiter intact.
-- [x] Ensure the post-1.19 Rule Source diagnostic can never break core Inspector loading/polling/rendering; diagnostics are now loaded defensively and cannot gate the core Inspector.
-- [ ] Add integration-style regression coverage.
-- Implementation note: defensive Inspector changes landed after RC3 in `d5ba709a`; RC3 still contains the broken Inspector path. Completion remains pending authoritative green CI, hands-on verification and a fresh prerelease.
+- [x] Keep the 10-minute inspection limiter intact. `MAX_INSPECTION_SESSION_MS` remains `10 * 60 * 1000` and limiter regression coverage is green.
+- [x] Ensure post-1.19 Rule Source diagnostics can never gate core Inspector loading/polling/rendering.
+- [x] Add integration-style regression coverage for isolated optional diagnostics and the Inspector lifecycle.
+- Validation: Inspector/Breakage Check hardening is included in the fully green Build #398 and remains green in Build #400. Physical browser verification remains part of the fresh-RC hands-on gate.
 
 ### 2. URL Analyzer correctness/usefulness
 
-- [ ] Enumerate URL parameters structurally instead of relying on a tiny static allowlist.
-- [ ] Distinguish high-confidence tracking cleanup from ambiguous review-only candidates.
-- [ ] Detect nested redirect targets but only suggest unwrapping when existing safety checks accept it.
-- [ ] Never imply ambiguous functional parameters are safe to remove.
-- [ ] Keep Referer/Guardian controls out of the Analyzer surface.
-- Implementation note: the deterministic Analyzer rewrite landed after RC3; completion remains pending authoritative green CI and hands-on verification.
+- [x] Enumerate URL parameters structurally instead of relying on a tiny static allowlist.
+- [x] Distinguish high-confidence tracking cleanup from ambiguous review-only candidates.
+- [x] Detect nested redirect targets but only suggest unwrapping when existing safety checks accept it.
+- [x] Never imply ambiguous functional/referral parameters are safe to remove.
+- [x] Keep Referer/Breakage Check controls out of the Analyzer surface.
+- Validation: deterministic analyzer regression coverage is green in Build #400. Hands-on usability remains part of the fresh-RC desktop gate.
 
 ### 3. Adaptive Parameter Intelligence experiment — non-blocking
 
@@ -106,71 +106,64 @@ This is a research trial and **does not gate 1.20 stable**.
 
 ### 4. Referer protection as a first-class privacy feature
 
-- [ ] Keep **Browser default** as the conservative default and extension-global disable as an effective browser-default override.
-- [ ] Expose the global Referer mode directly in the browser-action popup.
-- [ ] Support a one-click **exact-host** exception/whitelist from the popup; no implicit parent-domain/subdomain widening.
-- [ ] Preserve same-origin, cross-origin, HTTPS→HTTP downgrade and malformed-header behavior.
-- [ ] Keep the UI compact and allow localized text buttons to grow/wrap instead of forcing icon-sized dimensions.
-- Implementation note: exact-host engine support and popup controls landed on `dev` in commits `c446dda2`, `08cede6b`, `864decc6`, `a6b363d3`, `94bfcbbf`; completion remains pending tests/CI.
+- [x] Keep **Browser default** as the conservative default and extension-global disable as an effective browser-default override.
+- [x] Expose the global Referer mode directly in the browser-action popup.
+- [x] Support a one-click **exact-host** exception/whitelist from the popup; no implicit parent-domain/subdomain widening.
+- [x] Preserve same-origin, cross-origin, HTTPS→HTTP downgrade and malformed-header behavior.
+- [x] Keep the UI compact and allow localized text controls to grow/wrap instead of forcing icon-sized dimensions.
+- Validation: Referer engine, exact-host and popup regressions are green in Build #400. Physical desktop/Android interaction remains open.
 
-### 5. Referer + Inspector / Guardian breakage diagnostics
+### 5. Referer + Inspector breakage diagnostics
 
-Product decision: **Guardian is not a separate user-facing mode.** Its compatibility logic belongs inside the explicit Inspector workflow as an on-demand diagnostic layer. The user should not have to discover or understand a second diagnostic feature.
+Product decision: the former **Compatibility Guardian** is not a separate user-facing mode. Its compatibility logic is the Inspector's bounded **Breakage Check**. The user should not have to discover or understand a second diagnostic feature.
 
-- [ ] Start/stop Guardian compatibility observation automatically with an explicit Inspector session; keep it bounded and on-demand only.
-- [ ] During the session, record whether Referer protection actually trimmed or removed a request header and correlate those interventions with request/HTTP failures.
-- [ ] Add a compact Inspector compatibility summary that explains what was observed (no issue / possible breakage / strong suspect) instead of exposing an unexplained numeric score.
-- [ ] Surface evidence only when it is relevant to the inspected page/request; keep the compatibility section hidden when there is no actionable signal.
-- [ ] Wire the existing Inspector Referer diagnostic UI to real request diagnostics; the current HTML shell alone is not considered implemented.
-- [ ] Offer a deliberate **allow Referer for this exact host** action when Referer modification is a plausible breakage source.
-- [ ] Never silently disable Referer protection or auto-whitelist a site.
-- [ ] Any future breakage-aware automation remains recommendation-only and evidence-based.
-- Current-state note: Guardian core collection/scoring exists and has unit coverage, but its message API has no complete user-facing workflow, so it currently appears functionless in normal use.
+- [x] Start/stop breakage observation automatically with an explicit Inspector session; keep it bounded and on-demand only.
+- [x] During the session, record whether Referer protection actually trimmed or removed a request header and correlate those interventions with request/HTTP failures without storing Referer values.
+- [x] Correlate rule effects with the same affected request rather than treating unrelated page errors as evidence.
+- [x] Add a compact Inspector compatibility summary that explains observed evidence instead of exposing an unexplained score.
+- [x] Surface evidence only when relevant; keep optional diagnostics isolated so they cannot break the core Inspector.
+- [x] Offer a deliberate **allow Referer for this exact host** action when Referer modification is a plausible breakage source.
+- [x] Never silently disable Referer protection or auto-whitelist a site.
+- [x] Keep any future breakage-aware automation recommendation-only and evidence-based.
+- Validation: evidence correlation, isolated Inspector diagnostics and lifecycle tests are green through Build #400.
 
 ### 6. Imports behavior hierarchy
 
-Inside each trust channel (**Official / Community / Custom**) and Standard/Advanced tier, organize packages by understandable top-level behavior instead of one long flat list.
-
-Target categories:
-
-- **URL Cleanup**
-- **Redirect**
-- **Request Transform**
-- **Block / Allow**
-- **Privacy / Special**
-
-Package review may still group contained rules by native action.
+- [x] Inside each trust channel (**Official / Community / Custom**) retain provenance/trust as the outer model and Standard/Advanced as the presentation tier.
+- [x] Organize remote catalog packages into the stable behavior order **URL Cleanup → Redirect → Request Transform → Block / Allow → Privacy / Special**.
+- [x] Keep package-contained native actions (**Filter / Redirect / Secure / Block / Whitelist**) inside the package selector rather than confusing them with package-level behavior categories.
+- [x] Keep unknown future package behaviors conservative by falling back to **Privacy / Special** until explicitly classified.
 
 ### 7. Imports visual-density cleanup
 
-- [ ] Stable row hierarchy: **name → short purpose → behavior/risk → actions**.
-- [ ] Keep version/digest/integrity details visually secondary unless action is required.
-- [ ] Reduce competing badges and nested disclosure layers.
-- [ ] Re-evaluate package summaries so users can distinguish packages by behavior, scope and risk before expanding technical details.
-- [ ] Preserve lazy checkbox materialization for large packages.
+- [x] Use a stable row hierarchy: **name → short purpose → scope/risk → actions**; package behavior is expressed by the enclosing category instead of a duplicate badge.
+- [x] Keep version/digest/integrity details visually secondary unless action is required.
+- [x] Reduce competing pills/badges and nested disclosure layers; collapsed package rows no longer repeat native-action badges.
+- [x] Keep scope and material risk visible enough to distinguish packages before expanding technical details.
+- [x] Preserve lazy checkbox materialization for large packages.
 
 ### 8. Control sizing/alignment audit
 
-- [ ] Text buttons size to localized strings and may wrap/expand.
-- [ ] Icon-only buttons remain square.
-- [ ] Checkbox hit targets, label alignment and gaps use one consistent layout system.
-- [ ] Long labels must not clip or overlap controls.
-- [ ] Validate desktop and narrow/coarse-pointer CSS paths.
+- [x] Text buttons size to localized strings and may wrap/expand.
+- [x] Icon-only package controls remain square.
+- [x] Checkbox hit targets, label alignment and gaps use a consistent grid.
+- [x] Long labels wrap instead of clipping or overlapping controls.
+- [x] Cover both desktop and narrow/coarse-pointer CSS paths; mobile touch targets remain enlarged.
 
 ### 9. Automated validation gate
 
-- [ ] Targeted Inspector regression tests green.
-- [ ] URL Analyzer tests green.
-- [ ] Referer exact-host/popup/exception tests green.
-- [ ] Imports category-ordering tests green.
-- [ ] Localized control sizing/alignment regressions green.
-- [ ] Full audit/test/lint/build/build-lint/checker workflow green on the final `dev` candidate.
-- [ ] Re-check current code scanning, Dependabot, secret scanning and repository security advisories before publishing the next RC.
+- [x] Targeted Inspector regression tests green.
+- [x] URL Analyzer tests green.
+- [x] Referer exact-host/popup/exception tests green.
+- [x] Imports category-ordering tests green, including explicit behavior→category mapping coverage.
+- [x] Localized control sizing/alignment regressions green.
+- [x] Full audit/test/lint/build/build-lint/checker workflow green on post-RC hardening commit `a451193d` — Build #400.
+- [x] Re-check current GitHub security state before the next RC: open code-scanning alerts = 0, open Dependabot alerts = 0, open secret-scanning alerts = 0, triage repository security advisories = 0.
 
 ### 10. Fresh prerelease and hands-on gates
 
-- [ ] Publish a fresh `1.20.0-rc.N` only after the full automated hardening gate is green.
-- [ ] Firefox/Waterfox desktop smoke: popup, Inspector, URL Analyzer, Referer mode/host whitelist, Imports, Official updates, selective editing and local-rule preservation.
+- [ ] Publish a fresh `1.20.0-rc.N` from the final green post-RC hardening candidate; do not retag an older RC.
+- [ ] Firefox/Waterfox desktop smoke: popup, Inspector/Breakage Check, URL Analyzer, Referer mode/host whitelist, Imports, Official updates, selective editing and local-rule preservation.
 - [ ] Firefox Android hands-on: popup, Referer controls, large real-world import package, expand/collapse, sparse selection, repeated taps, update reconciliation, touch/scroll and localized control sizing.
 - [ ] Only after those checks pass may the candidate be promoted to `master` for stable `1.20.0`.
 - [ ] Replace the changelog `Unreleased` marker only when stable promotion is approved.
