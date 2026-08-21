@@ -18,8 +18,56 @@ export function effectiveReferrerProtectionMode(mode, disabled = false) {
     return VALID_MODES.has(mode) ? mode : "browser";
 }
 
-export function applyReferrerProtection(details, mode) {
-    if (mode === "browser") {
+export function normalizeReferrerExceptionHost(value) {
+    if (typeof value !== "string") {
+        return null;
+    }
+
+    const candidate = value.trim();
+    if (!candidate) {
+        return null;
+    }
+
+    try {
+        const url = new URL(candidate.includes("://") ? candidate : `https://${candidate}`);
+        if (url.protocol !== "http:" && url.protocol !== "https:") {
+            return null;
+        }
+        const hostname = url.hostname.replace(/\.$/, "").toLowerCase();
+        return hostname || null;
+    } catch {
+        return null;
+    }
+}
+
+export function normalizeReferrerProtectionExceptions(values = []) {
+    if (!Array.isArray(values)) {
+        return [];
+    }
+    return [...new Set(values.map(normalizeReferrerExceptionHost).filter(Boolean))].sort();
+}
+
+export function isReferrerProtectionException(details, exceptions = []) {
+    let target;
+    try {
+        target = new URL(details?.url || "");
+    } catch {
+        return false;
+    }
+
+    const hostname = target.hostname.replace(/\.$/, "").toLowerCase();
+    if (!hostname) {
+        return false;
+    }
+
+    if (exceptions instanceof Set) {
+        return exceptions.has(hostname);
+    }
+    return normalizeReferrerProtectionExceptions(exceptions).includes(hostname);
+}
+
+export function applyReferrerProtection(details, mode, exceptions = []) {
+    if (mode === "browser" || isReferrerProtectionException(details, exceptions)) {
         return undefined;
     }
 
@@ -66,7 +114,7 @@ export function applyReferrerProtection(details, mode) {
         }
         if (
             mode === "same-origin" ||
-            (mode === "balanced" && (source.protocol === "https:" && target.protocol === "http:")) ||
+            (mode === "balanced" && source.protocol === "https:" && target.protocol === "http:") ||
             (mode === "balanced" && source.origin === "null")
         ) {
             changed = true;
@@ -86,12 +134,14 @@ export class ReferrerProtection {
     constructor(webRequest = null) {
         this.webRequest = webRequest;
         this.currentMode = "browser";
+        this.exceptionHosts = new Set();
         this.listening = false;
         this.onBeforeSendHeaders = this.onBeforeSendHeaders.bind(this);
     }
 
-    configure(mode) {
+    configure(mode, exceptions = []) {
         this.currentMode = effectiveReferrerProtectionMode(mode);
+        this.exceptionHosts = new Set(normalizeReferrerProtectionExceptions(exceptions));
         const webRequest = this.getWebRequest();
 
         if (this.currentMode === "browser") {
@@ -114,7 +164,7 @@ export class ReferrerProtection {
     }
 
     onBeforeSendHeaders(details) {
-        return applyReferrerProtection(details, this.currentMode);
+        return applyReferrerProtection(details, this.currentMode, this.exceptionHosts);
     }
 
     getWebRequest() {
@@ -128,9 +178,9 @@ export class ReferrerProtection {
 
 let defaultProtection;
 
-export function configureReferrerProtection(mode) {
+export function configureReferrerProtection(mode, exceptions = []) {
     if (!defaultProtection) {
         defaultProtection = new ReferrerProtection();
     }
-    return defaultProtection.configure(mode);
+    return defaultProtection.configure(mode, exceptions);
 }
