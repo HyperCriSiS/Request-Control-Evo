@@ -23,7 +23,6 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     document.getElementById("showRules").addEventListener("click", openOptionsPage);
     document.getElementById("inspectCurrent").addEventListener("click", openInspector);
-    document.getElementById("analyzeCurrent").addEventListener("click", openAnalyzer);
     document.getElementById("toggleActive").addEventListener("click", toggleActive);
     document.getElementById("editLink").addEventListener("click", editRule);
 
@@ -175,18 +174,6 @@ async function openInspector() {
     }
     const inspectorUrl = browser.runtime.getURL(`src/inspector/inspector.html?tabId=${encodeURIComponent(tab.id)}`);
     await browser.tabs.create({ url: inspectorUrl });
-    window.close();
-}
-
-async function openAnalyzer() {
-    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-    const tab = tabs[0];
-    const currentUrl = tab?.url || "";
-    const tabId = typeof tab?.id === "number" ? tab.id : "";
-    const analyzerUrl = browser.runtime.getURL(
-        `src/analyzer/analyzer.html?url=${encodeURIComponent(currentUrl)}&tabId=${encodeURIComponent(tabId)}`
-    );
-    await browser.tabs.create({ url: analyzerUrl });
     window.close();
 }
 

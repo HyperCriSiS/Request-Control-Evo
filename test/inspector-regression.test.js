@@ -50,3 +50,9 @@ test("rule breakage warning uses the Guardian exact request correlation", () => 
     expect(compatibility).toContain("ruleSuspects");
     expect(compatibility).toContain("referrerSuspects");
 });
+
+test("Inspector keeps privacy as an invariant instead of permanent banner/export chrome", () => {
+    expect(inspectorHtml).not.toContain("inspection_local_only");
+    expect(inspectorHtml).not.toContain("export-support-diagnostic");
+    expect(inspectorHtml).toContain('id="dropped"');
+});
