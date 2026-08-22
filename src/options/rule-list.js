@@ -29,8 +29,16 @@ class RuleList extends HTMLElement {
         this.draggedInput = null;
         this.dragPosition = "before";
         this.querySelector("#icon").src = this.getAttribute("icon");
-        this.querySelector("#title").textContent = browser.i18n.getMessage(this.getAttribute("text"));
-        const kind = this.querySelector("#kind");
+        const title = this.querySelector("#title");
+        title.textContent = browser.i18n.getMessage(this.getAttribute("text"));
+        title.classList.add("rule-type-title");
+        let kind = this.querySelector("#kind");
+        if (!kind) {
+            kind = document.createElement("span");
+            kind.id = "kind";
+            kind.className = "rule-type-kind";
+            title.before(kind);
+        }
         kind.textContent = browser.i18n.getMessage("rule_type_label") || "Rule type";
         kind.classList.toggle("d-none", !this.isFixedRuleType);
         this.querySelector("#collapse").addEventListener("click", () => this.collapse());
