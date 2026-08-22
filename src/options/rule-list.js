@@ -41,8 +41,15 @@ class RuleList extends HTMLElement {
         }
         kind.textContent = browser.i18n.getMessage("rule_type_label") || "Rule type";
         kind.classList.toggle("d-none", !this.isFixedRuleType);
+        const selectAll = this.querySelector("#select-all");
+        if (!selectAll.parentElement.classList.contains("rule-select-all")) {
+            const selectAllTarget = document.createElement("label");
+            selectAllTarget.className = "rule-select rule-select-all";
+            selectAll.before(selectAllTarget);
+            selectAllTarget.append(selectAll);
+        }
         this.querySelector("#collapse").addEventListener("click", () => this.collapse());
-        this.querySelector("#select-all").addEventListener("change", (e) => this.onSelectAll(e));
+        selectAll.addEventListener("change", (e) => this.onSelectAll(e));
 
         this.list.addEventListener("dragstart", (e) => this.onDragStart(e));
         this.list.addEventListener("dragover", (e) => this.onDragOver(e));
