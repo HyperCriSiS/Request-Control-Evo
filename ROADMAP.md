@@ -16,7 +16,7 @@ Request Control Evo is a request-manipulation/privacy tool, not a generic ad-blo
 - Extension releases are required for engine/schema/browser-API/UI behavior changes.
 - No remote executable code, credentials, browsing-history uploads or hidden automatic rule updates.
 - Physical Firefox/Waterfox desktop and Firefox Android gates may never be marked complete without real hands-on testing.
-- `CHANGELOG.md` remains `Unreleased` until stable approval. Its 1.20 notes still need the post-RC4 structure-reset changes added before stable or any later RC.
+- `CHANGELOG.md` remains `Unreleased` until stable approval. Its 1.20 notes include the post-RC4 structure reset and must stay synchronized if a later RC changes release behavior.
 
 ## Runtime architecture invariants
 
@@ -124,7 +124,7 @@ Use **RC5**, not RC4.
 
 - [ ] Firefox/Waterfox desktop: popup sizing; Inspector start/reload/capture/render/stop; integrated URL findings; Breakage Check; Referer mode/exact-host exception; fixed Type vs Group/category model; long Rules strings/checkbox alignment; Imports; Official updates; selective editing; local-rule preservation.
 - [ ] Firefox Android: popup; Referer controls; Inspector navigation; large real-world package; expand/collapse; sparse selection; repeated taps; update reconciliation; scrolling/touch targets; localized strings; Rules selection/action sheet.
-- [ ] Add the post-RC4 structure-reset changes to the 1.20 `Unreleased` changelog before stable or any later prerelease.
+- [x] Add the post-RC4 structure-reset changes to the 1.20 `Unreleased` changelog before stable or any later prerelease.
 - [ ] Promote to `master` only after desktop + Android hands-on gates pass and the user explicitly approves stable promotion.
 - [ ] Replace changelog `Unreleased` only at approved stable promotion.
 
