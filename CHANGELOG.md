@@ -7,13 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ## [1.20.0] - Unreleased
-- Simplify Imports and Community presentation while keeping Official, Community and Custom as explicit, separate trust channels.
+- Consolidate page analysis in Inspector: remove the standalone URL Analyzer, surface tracking-parameter and redirect findings contextually, fold Compatibility Guardian into the bounded Breakage Check, keep the 10-minute Inspection limiter, and isolate optional diagnostics so they cannot block core capture/rendering.
+- Add popup Referer protection controls with conservative browser-default behavior, deliberate exact-host exceptions and privacy-minimized breakage correlation that never stores Referer values.
+- Clarify the Rules information model: fixed Rule Type sections (Filter / Redirect / Secure / Block / Whitelist), user-owned Groups, and read-only behavior/category metadata are now separate concepts; retire the Legacy Tag UI while preserving stored tag metadata and safe tag-to-Group fallback for upgrades.
+- Improve Rules usability with persistent fixed-Type empty states, independent search/status/source/category/group filtering, configurable Test/Export/Share/Delete Quick Actions, compact Edit/Enable-Disable controls, explicit mobile selected-rule close/back behavior, stable checkbox-selection columns, wrapped long strings and coarse-pointer hit targets.
+- Simplify Imports while keeping Official, Community and Custom as explicit trust channels, Standard / Advanced presentation, behavior categories, compact package rows and the dedicated selected-rules contribution flow instead of per-package GitHub/community-review actions.
 - Move the maintainer-managed Official corpus fully to the versioned remote catalog with schema/channel validation, SHA-256 verification, per-package update detection, Update all, offline-safe local retention and conflict preservation for locally modified managed rules.
-- Add expandable selective package imports with Select all, Select none, Invert and Reset controls; persist selections by stable rule UUID so upstream package growth never silently enables newly published rules.
-- Add compact privacy-minimized package/source diagnostics and support export data while keeping behavioral analysis bounded to explicit Inspection/Guardian sessions and Wormhole Observatory transport disabled.
+- Keep selective package imports expandable with Select all, Select none, Invert and Reset controls; persist selections by stable rule UUID so upstream package growth never silently enables newly published rules.
+- Audit all 19 Official package payloads against their real native actions and risk: narrow the existing Beacon/Ping UUID to Ping-only, add Beacon as a separate disabled-by-default rule, narrow Common Parameters to well-known tracking parameters, move broader referral/share cleanup to a disabled rule, move Common Redirectors to Advanced, and correct misleading provider metadata without changing package IDs or silently broadening existing managed installs.
 - Remove legacy managed-source aliases and packaged Official rule copies; obsolete managed identities are pruned while their installed rules are preserved as ordinary local rules.
 - Harden Firefox Android large-package imports by avoiding full checkbox-list resynchronization on individual taps, caching selection counts and deferring checkbox DOM creation until an expanded package selector is actually opened.
-- Refine large-rule-set management with individually configurable per-rule Quick Actions, compact Edit/Enable-Disable icon controls, and top-level named-group creation plus group filtering.
+- Keep Wormhole Observatory transport disabled; inspection and breakage analysis remain local, explicit and bounded.
 
 ## [1.19.0] - Aug. 18, 2026
 - Add the on-demand Compatibility Guardian for bounded per-tab diagnostics, including lifecycle cleanup and local scoring without continuous browsing surveillance.
@@ -135,7 +139,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add support for skipping redirection url filtering within same domain. #29
 
 ## [1.10.1] - August 4, 2018
-- Fix excludes/includes with Any URL. #77
+- Fix excludes/includes pattern with Any URL. #77
 
 ## [1.10.0] - July 29, 2018
 - Add keywords to decode and encode captured patterns for redirect rule #6
@@ -177,7 +181,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Locale: ES Spanish, thanks to @strel at Github!
 
 ## [1.8.6] - Nov. 26, 2017
-- Fix Redirect to static url.
+- Fix redirect to static url.
 - Fix combining parameter expansion with redirect instructions.
 - Add unit tests.
 
@@ -199,9 +203,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.8.1] - July 22, 2017
 - Fix save rule on title/description change.
 - Fix any-url host input required validation.
-- Add description for default rules.
-- Load default rules from file ("/options/default-rules.json").
-- Strip paramsTrim pattern from exported rules.
+- Update default rules.
 
 ## [1.8.0] - July 19, 2017
 - Rules are now auto saved on change.
@@ -258,46 +260,3 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add support for pattern capturing (parameter expansion) to redirect based on the original request.
 - Add support for parameter instructions to redirect based on the original request.
 - Change help page to open in a new page.
-- Update help and add attributions to the MDN documents.
-- Fix missing title for options page.
-
-## [1.3.0] - March 27, 2017
-- Add whitelist rules support.
-- Add <all_urls> pattern support for creating global rules.
-- Change option page to open in new tab.
-- Fix input validation that allowed incorrect rule saving.
-
-## [1.2.3] - March 15, 2017
-- Add toggleable edit mode for rules.
-- Change tracking URL parameters input option to use one line tags-input.
-- Fix to include WebExtension permission for all urls.
-- Fix to include applications key with add-on id in manifest.json.
-
-## [1.2.2] - October 30, 2016
-- Add support for rule based control with actions (filter, block, redirect).
-- Add support for request types.
-- Add page action for providing user feedback of handled requests.
-- Add help page.
-- Add "ng" to the TLDs of pre-defined rule for Google.
-- Fix subdomain top-level domain confusion.
-- Change TLDs from global list to rule based manual list.
-- Change add-on name from JustRedirect! to Request Control.
-- Change license from MIT to MPL-2.0.
-- Enhance options usability to improve rule creation and match pattern definition (uses Bootstrap CSS).
-
-## [1.1.0] - October 1, 2016
-- Add match pattern for Google search to prevent outgoing search link tracking.
-- Add support for creating match patterns for matching different sub domains (e.g. www.google.*).
-- Add match pattern validation.
-- Add icon for the add-on.
-- Fix to prevent enter key from deleting values on inputs.
-- Fix updating redirection listeners on options change.
-- Fix adding history entries for redirection origin urls.
-
-## [1.0.2] - September 24, 2016
-- Add out.reddit.com redirection url pattern.
-- Add outgoing.prod.mozaws.net pattern.
-- Fix query parameter filtering.
-
-## [1.0] - September 23, 2016
-- Initial release
