@@ -142,7 +142,7 @@ test("1.19 and RC organization metadata upgrades without changing rule order or 
     ];
 
     const beforeOrder = rules.map(({ uuid }) => uuid);
-    const managedSource = structuredClone(rules[0].source);
+    const managedSource = { ...rules[0].source };
     const migration = migrateLegacyTagsToGroups(rules);
 
     expect(migration.changed).toBe(true);
