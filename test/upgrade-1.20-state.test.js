@@ -10,6 +10,7 @@ import {
     initialSelectedRuleUuids,
     selectedRules,
 } from "../src/options/import-selection.js";
+import { migrateLegacyTagsToGroups } from "../src/options/legacy-metadata.js";
 
 Object.defineProperties(globalThis, {
     crypto: {
@@ -115,4 +116,41 @@ test("1.19 installed UUID state never opts into rules added by a 1.20 package", 
         "one",
         "two",
     ]);
+});
+
+test("1.19 and RC organization metadata upgrades without changing rule order or managed identity", () => {
+    const rules = [
+        {
+            uuid: "explicit-group",
+            action: "redirect",
+            group: "Navigation",
+            tag: "Legacy%20tag",
+            source: {
+                catalog: "requestcontrol-official",
+                id: "requestcontrol-official/privacy-common-params",
+                entry: "privacy-common-params",
+                version: "1.0.0",
+                behavior: "url-cleanup",
+            },
+        },
+        {
+            uuid: "legacy-tag-only",
+            action: "filter",
+            tag: "Privacy%20rules",
+        },
+        { uuid: "plain", action: "block" },
+    ];
+
+    const beforeOrder = rules.map(({ uuid }) => uuid);
+    const managedSource = structuredClone(rules[0].source);
+    const migration = migrateLegacyTagsToGroups(rules);
+
+    expect(migration.changed).toBe(true);
+    expect(migration.rules.map(({ uuid }) => uuid)).toEqual(beforeOrder);
+    expect(migration.rules[0].group).toBe("Navigation");
+    expect(migration.rules[0].tag).toBe("Legacy%20tag");
+    expect(migration.rules[0].source).toEqual(managedSource);
+    expect(migration.rules[1].group).toBe("Privacy rules");
+    expect(migration.rules[1].tag).toBe("Privacy%20rules");
+    expect(migration.rules[2]).toBe(rules[2]);
 });

@@ -32,6 +32,25 @@ rule-list .header:not(.d-none) {
     padding: 0.35rem 0.75rem;
     font-size: 0.9rem;
     background: var(--surface-subtle);
+    border-left: 3px solid var(--primary-color);
+}
+
+rule-list .rule-type-kind {
+    flex: 0 0 auto;
+    padding: 0.15rem 0.35rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+rule-list .rule-type-title {
+    min-width: 0;
+    font-weight: 700;
 }
 
 rule-list .header > * {
@@ -63,8 +82,8 @@ rule-list .rule-group-header {
     align-items: center;
     gap: 0.45rem;
     min-height: 2.2rem;
-    padding: 0.25rem 0.75rem;
-    background: var(--surface-subtle);
+    padding: 0.25rem 0.75rem 0.25rem 2.45rem;
+    background: var(--surface-color);
     border-top: 1px solid var(--border-color);
     border-bottom: 1px solid var(--border-color);
 }
@@ -102,6 +121,13 @@ rule-list .group-hidden {
     display: none;
 }
 
+rule-list .rule-list-empty-state {
+    padding: 0.65rem 0.85rem 0.65rem 2.45rem;
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
 @media (max-width: 35em) {
     rule-list .select-all {
         display: flex;
@@ -126,17 +152,13 @@ rule-list .group-hidden {
 
     rule-list .rule-group-header {
         min-height: 2.75rem;
-        padding-left: 0.55rem;
+        padding-left: 2.1rem;
         padding-right: 0.55rem;
     }
 
     rule-list .rule-group-toggle {
         min-height: 2.75rem;
     }
-}
-
-rule-list.view-empty {
-    display: none !important;
 }
 
 rule-list .view-hidden {

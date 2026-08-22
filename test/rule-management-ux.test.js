@@ -4,6 +4,7 @@ const optionsHtml = fs.readFileSync(new URL("../src/options/options.html", impor
 const optionsJs = fs.readFileSync(new URL("../src/options/options.js", import.meta.url), "utf8");
 const optionsCss = fs.readFileSync(new URL("../src/options/options.css", import.meta.url), "utf8");
 const ruleListJs = fs.readFileSync(new URL("../src/options/rule-list.js", import.meta.url), "utf8");
+const ruleListCss = fs.readFileSync(new URL("../src/options/rule-list.css", import.meta.url), "utf8");
 const ruleManagementUiJs = fs.readFileSync(new URL("../src/options/rule-management-ui.js", import.meta.url), "utf8");
 
 test("large rule collections expose persistent search, filters, grouping and sorting", () => {
@@ -50,4 +51,16 @@ test("mobile selected-rule actions provide explicit close, Escape and separate a
     expect(ruleManagementUiJs).toContain("event.stopPropagation()");
     expect(ruleManagementUiJs).toContain("closeMobileSelectedActions(toolbar, trigger)");
     expect(ruleManagementUiJs).toContain("trigger.focus()");
+});
+
+test("fixed rule types remain visible and distinct from user groups even when empty", () => {
+    expect(ruleListJs).toContain('const FIXED_RULE_TYPES = new Set(["filter", "redirect", "secure", "block", "whitelist"])');
+    expect(ruleListJs).toContain("get isFixedRuleType()");
+    expect(ruleListJs).toContain("renderEmptyState(false)");
+    expect(ruleListJs).toContain("renderEmptyState(true)");
+    expect(ruleListJs).toContain('kind.className = "rule-type-kind"');
+    expect(ruleListJs).toContain('title.classList.add("rule-type-title")');
+    expect(ruleListCss).toContain("rule-list .rule-type-kind");
+    expect(ruleListCss).toContain("rule-list .rule-list-empty-state");
+    expect(ruleListCss).not.toContain("rule-list.view-empty {\n    display: none !important;");
 });
