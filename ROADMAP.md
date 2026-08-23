@@ -128,16 +128,18 @@ Use **RC5**, not RC4.
 - [ ] Promote to `master` only after desktop + Android hands-on gates pass and the user explicitly approves stable promotion.
 - [ ] Replace changelog `Unreleased` only at approved stable promotion.
 
-## Adaptive Parameter Intelligence experiment — non-blocking
+## Adaptive Parameter Intelligence experiment — dormant prototype complete
 
-This does **not** gate 1.20 stable and belongs under Inspector architecture.
+This does **not** gate 1.20 stable and belongs under Inspector architecture. The prototype remains deliberately unconnected to runtime/Inspector storage until a later labelled evaluation justifies integration.
 
-- [ ] Prototype local-only learning for unknown URL parameters.
-- [ ] Persist only parameter names and bounded aggregate metadata; never full browsing URLs/raw parameter values.
-- [ ] Score using multiple signals such as cross-site occurrence, identifier/high-entropy characteristics, propagation and explicit Inspector verification.
-- [ ] Keep uncertain candidates review-only; never silently remove unknown parameters.
-- [ ] Never upload observations or auto-promote learned candidates into Official rules.
-- [ ] Define precision/false-positive, privacy/storage and performance thresholds; abandon/redesign if unacceptable.
+- [x] Prototype local-only learning for unknown URL parameters.
+- [x] Persistable snapshots contain only parameter names and bounded aggregate metadata; never full browsing URLs, host/site identities or raw parameter values.
+- [x] Score using multiple signals: repeated/cross-site occurrence, identifier/high-entropy characteristics, propagation and explicit tracking/functional verification.
+- [x] Keep all learned candidates review-only (`autoSuggest: false`); never silently remove unknown parameters.
+- [x] No observation upload, network transport or auto-promotion into Official rules; dormant-boundary regression proves no background/Inspector wiring.
+- [x] Precision/false-positive, privacy/storage and performance thresholds defined in `docs/adaptive-parameter-intelligence.md`; abandon/redesign rather than weaken boundaries if they fail.
+- [x] Prototype implementation/regressions green in Build #440 on `c76ec3c2e376fc9c477e63a46eb80c506795b945`.
+- [ ] Before any Inspector integration, evaluate against a manually labelled parameter corpus and proceed only if the documented thresholds pass.
 
 ## Source-curation follow-up — non-blocking
 
