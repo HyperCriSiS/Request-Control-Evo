@@ -107,7 +107,11 @@ After that hardening, the same public-semantics corpus yields:
 - 70% tracking recall;
 - `autoSuggest: false` for every review candidate.
 
-The public-semantics gate is still not proof of production accuracy. It validates that independently documented functional parameters withstand aggressive synthetic evidence and that several currently unknown campaign-attribution names can still reach review. The prototype remains dormant until a separately reviewed Inspector-only integration is justified.
+The public-semantics gate is still not proof of production accuracy. It validates that independently documented functional parameters withstand aggressive synthetic evidence.
+
+The tracking-side examples produced an additional design decision: when a parameter's tracking/attribution purpose is already unambiguous in stable public vendor documentation, Request Control should not wait to “learn” it. Those names belong in the ordinary conservative static analyzer and, where appropriate, the maintained Official tracking-parameter package. The public tracking cases are therefore calibration controls after promotion, not evidence that adaptive runtime learning should be enabled.
+
+This keeps the adaptive experiment focused on its only potentially unique value: surfacing genuinely unknown parameter names that cannot already be classified safely from maintained static evidence. The prototype remains dormant until a future independently reviewed corpus contains such unknown cases and still passes the same privacy, precision, false-positive and recall thresholds. Normal browsing history must not be collected or uploaded merely to manufacture that corpus.
 
 ## Integration rule
 

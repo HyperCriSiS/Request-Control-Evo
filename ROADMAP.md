@@ -1,6 +1,6 @@
 # Request Control Evo — Roadmap
 
-**Status: 1.20.0-rc.5 is the current hands-on candidate; automated post-RC structure-reset, security and CI gates are green; stable 1.20.0 remains blocked on real Firefox/Waterfox desktop and Firefox Android validation.**
+**Status: 1.20.0-rc.5 remains the current published hands-on baseline; post-RC5 adaptive-evaluation and conservative tracking-parameter curation are green on `dev`; stable 1.20.0 requires a fresh prerelease from the final `dev` state plus real Firefox/Waterfox desktop and Firefox Android validation.**
 
 This file is the binding source of truth for project progress. Do not infer completion from code alone when a gate below explicitly requires physical browser/device testing.
 
@@ -116,10 +116,11 @@ All 19 current Official package payloads were re-read from the canonical rules r
 
 ## Hands-on release gates — blocking
 
-Use **RC5**, not RC4.
+RC5 remains useful for the completed structure/UI reset, but it is no longer eligible as the final Stable promotion candidate because conservative analyzer coverage changed afterwards.
 
-- [ ] Firefox/Waterfox desktop hands-on: popup sizing; Inspector start/reload/capture/render/stop; integrated URL findings; Breakage Check; Referer mode/exact-host exception; fixed Type vs Group/category model; long Rules strings/checkbox alignment; Imports; Official updates; selective editing; local-rule preservation.
-- [ ] Firefox Android hands-on: popup; Referer controls; Inspector navigation; large package; expand/collapse; sparse selection; repeated taps; update reconciliation; scrolling/touch; localized strings; Rules selection/action sheet.
+- [ ] Publish a fresh prerelease from the final validated post-RC5 `dev` state before Stable promotion; avoid RC churn while non-blocking maintenance work is still settling.
+- [ ] Firefox/Waterfox desktop hands-on on the final prerelease: popup sizing; Inspector start/reload/capture/render/stop; integrated URL findings; Breakage Check; Referer mode/exact-host exception; fixed Type vs Group/category model; long Rules strings/checkbox alignment; Imports; Official updates; selective editing; local-rule preservation.
+- [ ] Firefox Android hands-on on the final prerelease: popup; Referer controls; Inspector navigation; large package; expand/collapse; sparse selection; repeated taps; update reconciliation; scrolling/touch; localized strings; Rules selection/action sheet.
 - [ ] Promote to `master` only after desktop + Android hands-on gates pass and the user explicitly approves stable promotion.
 - [ ] Replace changelog `Unreleased` only at approved stable promotion.
 
@@ -136,7 +137,10 @@ This does **not** gate 1.20 stable and belongs under Inspector architecture. The
 - [x] Prototype implementation/regressions green in Build #440 on `c76ec3c2e376fc9c477e63a46eb80c506795b945`.
 - [x] Initial 52-case synthetic manually labelled corpus deliberately includes high-entropy functional/session/auth/state/token/redirect cases; the original score failed at 50% precision / 50% functional false positives, so the experiment was hardened instead of being integrated.
 - [x] Conservative functional-name penalties bring the same corpus to 100% review precision, 0% functional false positives and 80% tracking recall while preserving `autoSuggest: false`; full Build #443 is green on `7c4cda2b0fa037aa47e5c191f6be62fec45caafc`.
-- [ ] Before any Inspector integration, broaden the labelled corpus beyond the synthetic engineering gate using independently reviewed/public parameter semantics and require the documented thresholds to pass again.
+- [x] A second 42-case public-semantics corpus uses independently documented Matomo/Google tracking semantics plus OAuth/PKCE/OIDC/AWS/OData functional counterexamples with synthetic observations only; after exposing and fixing three functional false positives it reaches 100% review precision, 0% functional false positives and 70% tracking recall; full Build #445 is green on `9d2ca73d7558fa0885a467f8bcf041514ed500d1`.
+- [x] Unambiguous publicly documented tracking names discovered during evaluation are promoted to ordinary conservative static detection instead of being treated as something the adaptive learner should discover; analyzer regression Build #446 is green on `bbe614b0e8f7f56dca4dae23c9adb5e7d00ce18f`.
+- [x] Matching Official `privacy-common-params` package advanced to 1.2.0 without changing its package ID or native rule UUIDs; canonical rules validation #97 is green on `01777ca0607c6b08b756f68073bc9724f26858fb`.
+- [ ] Keep the adaptive prototype dormant until a future independently reviewed corpus contains genuinely unknown tracking cases that cannot simply be promoted to static conservative detection and still passes the same privacy/precision/false-positive/recall gates; do not collect or upload normal browsing history to manufacture such a corpus.
 
 ## Source-curation follow-up — non-blocking
 
@@ -144,6 +148,7 @@ This does **not** gate 1.20 stable and belongs under Inspector architecture. The
 - [x] FastForward deterministic URL-only curation active where semantics are lossless.
 - [x] Actually Legitimate URL Shortener Tool deferred due mixed provenance and regex/domain/path-sensitive semantics.
 - [x] AdGuard URL Tracking deferred pending exception handling and explicit license/provenance review.
+- [x] Direct vendor/standards documentation is used to maintain conservative tracking-parameter semantics without copying third-party filter lists or executable source; provenance is recorded in the rules repository.
 - [ ] Expand adapters only where licensing, deterministic semantics and maintenance value justify them.
 
 ## Mobile/selective-import follow-up
@@ -155,4 +160,4 @@ This does **not** gate 1.20 stable and belongs under Inspector architecture. The
 
 ## Completion condition for 1.20.0
 
-Stable `1.20.0` is ready only when RC5 (or a later validated RC if hands-on feedback requires changes) passes real Firefox/Waterfox desktop and Firefox Android testing, the 1.20 changelog accurately reflects the final structure, no current release-blocking security finding exists, and the user explicitly approves stable promotion.
+Stable `1.20.0` is ready only when a fresh prerelease built from the final validated post-RC5 `dev` state passes real Firefox/Waterfox desktop and Firefox Android testing, the 1.20 changelog accurately reflects the final structure, no current release-blocking security finding exists, and the user explicitly approves stable promotion.
