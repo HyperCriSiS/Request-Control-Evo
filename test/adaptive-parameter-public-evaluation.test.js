@@ -84,12 +84,12 @@ test("public-semantics corpus has explicit provenance and only synthetic observa
     }
 });
 
-test("public tracking cases exercise names not already handled by the conservative analyzer list", () => {
+test("public tracking controls are promoted to conservative static detection when semantics are unambiguous", () => {
     const trackingCases = corpus.cases.filter(({label}) => label === "tracking");
     expect(trackingCases).toHaveLength(10);
 
     for (const {name} of trackingCases) {
-        expect(CONSERVATIVE_PARAMETER_PATTERNS.some((pattern) => matchParameterPattern(name, pattern))).toBe(false);
+        expect(CONSERVATIVE_PARAMETER_PATTERNS.some((pattern) => matchParameterPattern(name, pattern))).toBe(true);
     }
 });
 

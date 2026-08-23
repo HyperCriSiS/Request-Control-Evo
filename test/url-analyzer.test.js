@@ -89,7 +89,8 @@ test("suggestParameterActions combines catalog matches and nested URL detection"
 
 test("local analyzer heuristics suggest only unambiguous tracking parameters", () => {
     const result = analyzeUrl(
-        "https://example.com/article?utm_source=news&fbclid=facebook&gclid=google&yclid=yandex" +
+        "https://example.com/article?utm_source=news&fbclid=facebook&gclid=google&gclsrc=aw.ds" +
+        "&msclkid=bing&twclid=x&mc_cid=mailchimp&mtm_campaign=matomo&mtm_kwd=keyword" +
         "&ref_id=needed&referrer=needed&id=42"
     );
 
@@ -97,8 +98,35 @@ test("local analyzer heuristics suggest only unambiguous tracking parameters", (
         "utm_source",
         "fbclid",
         "gclid",
-        "yclid",
+        "gclsrc",
+        "msclkid",
+        "twclid",
+        "mc_cid",
+        "mtm_campaign",
+        "mtm_kwd",
     ]);
+});
+
+test("vendor-documented Matomo campaign parameter names are conservative static tracking matches", () => {
+    const names = [
+        "mtm_campaign",
+        "matomo_campaign",
+        "pk_campaign",
+        "piwik_campaign",
+        "mtm_kwd",
+        "mtm_keyword",
+        "pk_kwd",
+        "piwik_kwd",
+        "pk_keyword",
+        "mtm_source",
+        "mtm_medium",
+        "mtm_content",
+        "mtm_cid",
+    ];
+
+    for (const name of names) {
+        expect(CONSERVATIVE_PARAMETER_PATTERNS.some((pattern) => matchParameterPattern(name, pattern))).toBe(true);
+    }
 });
 
 test("suggestSafeRedirectActions separates structural detection from redirect safety", () => {
