@@ -36,7 +36,8 @@ The prototype combines independent signals instead of trusting parameter-name re
 - identifier/high-entropy values: up to 0.20;
 - observed propagation: up to 0.15;
 - explicit user verification as tracking: up to 0.35;
-- explicit user verification as functional: penalty up to 0.55.
+- explicit user verification as functional: penalty up to 0.55;
+- conservative functional-name hints: penalty up to 0.45 for strong session/auth/state/token/code/redirect-style names and 0.25 for common entity-ID/navigation names.
 
 A candidate can become `review` only after at least 3 observations, at least 2 site observations and a score of at least 0.60. `review` is presentation evidence only: `autoSuggest` is always `false`.
 
@@ -50,9 +51,27 @@ Do not connect the prototype to normal Inspector UI unless a manually labelled e
 - no more than 1% of labelled functional parameters reaching the review threshold;
 - no persisted URL, hostname, raw parameter value or request-body data;
 - serialized learner state remains below 32 KiB at the configured record cap;
-- scoring/aggregation remains linear in the number of query parameters and causes no meaningful Inspector interaction delay.
+- scoring/aggregation remains linear in the number of query parameters and causes no meaningful Inspector interaction delay;
+- at least 50% of the labelled tracking examples still reach review, preventing a vacuous “never flag anything” implementation from passing the safety gate.
 
 If these thresholds cannot be met without storing substantially more browsing-derived data or making aggressive assumptions, abandon or redesign the experiment rather than weakening the privacy/safety boundary.
+
+## Offline labelled-corpus evaluation
+
+`test/fixtures/adaptive-parameter-corpus.json` is a synthetic, manually labelled corpus. It contains no real domains, URLs or browsing records. It deliberately includes high-entropy, cross-site-looking functional names such as session/auth/state/token/code/redirect parameters so the heuristic is tested against realistic false-positive pressure instead of an easy happy-path dataset.
+
+The first run of the original multi-signal score exposed a safety problem: 16 of 32 functional examples reached `review`, producing 50% precision and a 50% functional false-positive rate despite 80% tracking recall. That result fails the documented gate and is why the prototype remains dormant.
+
+The revised scorer adds conservative **functional-name penalties**. These hints never classify a parameter as tracking and never create an action; they only require substantially stronger evidence before names with common functional/security semantics can reach review. On the same 52-case corpus the revised scorer yields:
+
+- 16 true positives, 4 false negatives;
+- 0 false positives, 32 true negatives;
+- 100% review precision;
+- 0% functional false-positive rate;
+- 80% tracking recall;
+- approximately 8 KiB serialized learner state for the 52-case evaluation.
+
+The corpus remains a synthetic engineering gate, not proof of real-world accuracy. Passing it permits further evaluation only; it does **not** permit Inspector integration, background collection or automatic cleanup. A broader manually reviewed corpus is still required before product integration.
 
 ## Integration rule
 

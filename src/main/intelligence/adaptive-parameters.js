@@ -46,6 +46,36 @@ function normalizeParameterName(name) {
     return normalized;
 }
 
+const STRONG_FUNCTIONAL_NAME_PATTERN = /(^|[_-])(session|csrf|xsrf|oauth|auth|state|nonce|token|code|verifier|challenge|password|signature|sig|return|redirect)([_-]|$)/i;
+const ENTITY_ID_NAME_PATTERN = /(^|[_-])(cart|order|product|variant|account|user|document|file)(?:[_-]?id)?(?:[_-]|$)/i;
+const COMMON_FUNCTIONAL_NAMES = new Set([
+    "page",
+    "p",
+    "query",
+    "q",
+    "search",
+    "lang",
+    "locale",
+    "sort",
+    "cursor",
+    "offset",
+    "limit",
+    "theme",
+]);
+
+export function functionalNamePenalty(name) {
+    const normalized = normalizeParameterName(name);
+    if (!normalized) return 0;
+
+    if (STRONG_FUNCTIONAL_NAME_PATTERN.test(normalized)) {
+        return 0.45;
+    }
+    if (ENTITY_ID_NAME_PATTERN.test(normalized) || COMMON_FUNCTIONAL_NAMES.has(normalized.toLowerCase())) {
+        return 0.25;
+    }
+    return 0;
+}
+
 function createRecord(name) {
     return {
         name,
@@ -98,9 +128,11 @@ export function scoreAdaptiveParameter(record) {
     const propagationSignal = (sanitized.propagatedObservations / sanitized.observations) * 0.15;
     const verificationSignal = Math.min(sanitized.verifiedTracking / 2, 1) * 0.35;
     const functionalPenalty = Math.min(sanitized.verifiedFunctional / 2, 1) * 0.55;
+    const namePenalty = functionalNamePenalty(sanitized.name);
 
     return Number(clamp(
-        occurrenceSignal + crossSiteSignal + entropySignal + propagationSignal + verificationSignal - functionalPenalty,
+        occurrenceSignal + crossSiteSignal + entropySignal + propagationSignal + verificationSignal
+            - functionalPenalty - namePenalty,
         0,
         1
     ).toFixed(3));
