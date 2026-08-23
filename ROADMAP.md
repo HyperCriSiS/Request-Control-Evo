@@ -1,6 +1,6 @@
 # Request Control Evo — Roadmap
 
-**Status: 1.20.0-rc.5 remains the current published hands-on baseline; post-RC5 adaptive-evaluation and conservative tracking-parameter curation are green on `dev`; stable 1.20.0 requires a fresh prerelease from the final `dev` state plus real Firefox/Waterfox desktop and Firefox Android validation.**
+**Status: 1.20.0-rc.6 is the current final hands-on candidate from the validated post-RC5 code state; automated build/security/release gates are green; stable 1.20.0 remains blocked on real Firefox/Waterfox desktop and Firefox Android validation plus explicit user approval.**
 
 This file is the binding source of truth for project progress. Do not infer completion from code alone when a gate below explicitly requires physical browser/device testing.
 
@@ -114,11 +114,26 @@ All 19 current Official package payloads were re-read from the canonical rules r
 - [x] Mozilla signing/publishing intentionally skipped for prerelease testing.
 - [x] 1.20 changelog reflects the RC5 structure reset while remaining `Unreleased` until stable approval.
 
+## 1.20.0 RC6 final prerelease gate — complete
+
+- [x] Exact RC6 code candidate: `ed6968deb04012da73fd8088e9012db00644cbda`.
+- [x] Candidate Build #447 green.
+- [x] Current code-scanning alerts: 0.
+- [x] Current Dependabot alerts: 0.
+- [x] Current secret-scanning alerts: 0.
+- [x] Current repository security advisories in triage: 0.
+- [x] Release workflow #14 green.
+- [x] Annotated tag `1.20.0-rc.6` resolves exactly to the candidate commit.
+- [x] Unsigned ZIP/XPI are byte-identical: 252,863 bytes; SHA-256 `20f1b1b572d0b951ef4ea89c96f86c6df32d3e2c38f9784b897c0d3bbec2c93d`.
+- [x] Mozilla signing/publishing intentionally skipped for prerelease testing.
+- [x] Changelog remains `1.20.0 - Unreleased`; the dormant adaptive prototype is not presented as an enabled runtime feature.
+- [x] Later ROADMAP-only synchronization does not change the RC6 extension artifact or candidate code.
+
 ## Hands-on release gates — blocking
 
-RC5 remains useful for the completed structure/UI reset, but it is no longer eligible as the final Stable promotion candidate because conservative analyzer coverage changed afterwards.
+Use **RC6** for final hands-on validation. RC5 remains historical because conservative analyzer coverage changed afterwards.
 
-- [ ] Publish a fresh prerelease from the final validated post-RC5 `dev` state before Stable promotion; avoid RC churn while non-blocking maintenance work is still settling.
+- [x] Publish a fresh prerelease from the final validated post-RC5 code state before Stable promotion.
 - [ ] Firefox/Waterfox desktop hands-on on the final prerelease: popup sizing; Inspector start/reload/capture/render/stop; integrated URL findings; Breakage Check; Referer mode/exact-host exception; fixed Type vs Group/category model; long Rules strings/checkbox alignment; Imports; Official updates; selective editing; local-rule preservation.
 - [ ] Firefox Android hands-on on the final prerelease: popup; Referer controls; Inspector navigation; large package; expand/collapse; sparse selection; repeated taps; update reconciliation; scrolling/touch; localized strings; Rules selection/action sheet.
 - [ ] Promote to `master` only after desktop + Android hands-on gates pass and the user explicitly approves stable promotion.
@@ -160,4 +175,4 @@ This does **not** gate 1.20 stable and belongs under Inspector architecture. The
 
 ## Completion condition for 1.20.0
 
-Stable `1.20.0` is ready only when a fresh prerelease built from the final validated post-RC5 `dev` state passes real Firefox/Waterfox desktop and Firefox Android testing, the 1.20 changelog accurately reflects the final structure, no current release-blocking security finding exists, and the user explicitly approves stable promotion.
+Stable `1.20.0` is ready only when RC6 (or a later prerelease only if hands-on feedback requires code changes) passes real Firefox/Waterfox desktop and Firefox Android testing, the 1.20 changelog accurately reflects the final structure, no current release-blocking security finding exists, and the user explicitly approves stable promotion.
