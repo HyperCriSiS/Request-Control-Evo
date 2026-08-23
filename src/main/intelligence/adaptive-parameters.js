@@ -48,6 +48,34 @@ function normalizeParameterName(name) {
 
 const STRONG_FUNCTIONAL_NAME_PATTERN = /(^|[_-])(session|csrf|xsrf|oauth|auth|state|nonce|token|code|verifier|challenge|password|signature|sig|return|redirect)([_-]|$)/i;
 const ENTITY_ID_NAME_PATTERN = /(^|[_-])(cart|order|product|variant|account|user|document|file)(?:[_-]?id)?(?:[_-]|$)/i;
+const STANDARD_FUNCTIONAL_NAMES = new Set([
+    "response_type",
+    "client_id",
+    "redirect_uri",
+    "scope",
+    "state",
+    "code_verifier",
+    "code_challenge",
+    "code_challenge_method",
+    "nonce",
+    "prompt",
+    "max_age",
+    "ui_locales",
+    "claims_locales",
+    "id_token_hint",
+    "login_hint",
+    "acr_values",
+    "display",
+    "filter",
+    "select",
+    "orderby",
+    "count",
+    "top",
+    "skip",
+    "expand",
+    "search",
+]);
+
 const COMMON_FUNCTIONAL_NAMES = new Set([
     "page",
     "p",
@@ -67,10 +95,14 @@ export function functionalNamePenalty(name) {
     const normalized = normalizeParameterName(name);
     if (!normalized) return 0;
 
-    if (STRONG_FUNCTIONAL_NAME_PATTERN.test(normalized)) {
+    const lowerName = normalized.toLowerCase();
+    if (STRONG_FUNCTIONAL_NAME_PATTERN.test(normalized)
+        || STANDARD_FUNCTIONAL_NAMES.has(lowerName)
+        || lowerName.startsWith("x-amz-")
+        || normalized.startsWith("$")) {
         return 0.45;
     }
-    if (ENTITY_ID_NAME_PATTERN.test(normalized) || COMMON_FUNCTIONAL_NAMES.has(normalized.toLowerCase())) {
+    if (ENTITY_ID_NAME_PATTERN.test(normalized) || COMMON_FUNCTIONAL_NAMES.has(lowerName)) {
         return 0.25;
     }
     return 0;

@@ -71,7 +71,43 @@ The revised scorer adds conservative **functional-name penalties**. These hints 
 - 80% tracking recall;
 - approximately 8 KiB serialized learner state for the 52-case evaluation.
 
-The corpus remains a synthetic engineering gate, not proof of real-world accuracy. Passing it permits further evaluation only; it does **not** permit Inspector integration, background collection or automatic cleanup. A broader manually reviewed corpus is still required before product integration.
+The corpus remains a synthetic engineering gate, not proof of real-world accuracy. Passing it permits further evaluation only; it does **not** permit Inspector integration, background collection or automatic cleanup.
+
+## Public-semantics evaluation
+
+`test/fixtures/adaptive-parameter-public-corpus.json` is the second evaluation gate. Its labels were manually derived from independently published standards/vendor documentation, while every observation count, site key and value used by the test remains synthetic. The fixture stores only parameter names, labels, synthetic profile names and documentation provenance; it contains no captured browsing URLs, hostnames or parameter values.
+
+The current sources are intentionally small and high-authority rather than copied filter lists:
+
+- Matomo campaign tracking documentation for `mtm_*` and compatible campaign prefixes;
+- Google Analytics traffic-source documentation for the Search Ads 360 `gclsrc` attribution parameter;
+- OAuth 2.0 (RFC 6749) and PKCE (RFC 7636) protocol parameters;
+- OpenID Connect Core authorization parameters;
+- Amazon S3 Signature Version 4 query authentication parameters;
+- Microsoft OData system query options.
+
+The source URLs and a short semantic basis are recorded directly in the fixture so each label remains reviewable without importing third-party rule data.
+
+Before adding standard-functional guards, the 42-case public-semantics corpus exposed three false positives under deliberately hostile high-entropy/cross-site profiles: `client_id`, `login_hint` and `X-Amz-Credential`. The result was:
+
+- 7 true positives, 3 false negatives;
+- 3 false positives, 29 true negatives;
+- 70% review precision;
+- 9.375% functional false-positive rate;
+- 70% tracking recall.
+
+That fails the existing safety gate. The scorer therefore was not integrated. Instead, the conservative name guard was extended only for documented protocol/system-query names, the `X-Amz-` signing namespace and OData `$` system-query namespace. These guards can only reduce heuristic confidence; they cannot label anything as tracking or create an action.
+
+After that hardening, the same public-semantics corpus yields:
+
+- 7 true positives, 3 false negatives;
+- 0 false positives, 32 true negatives;
+- 100% review precision;
+- 0% functional false-positive rate;
+- 70% tracking recall;
+- `autoSuggest: false` for every review candidate.
+
+The public-semantics gate is still not proof of production accuracy. It validates that independently documented functional parameters withstand aggressive synthetic evidence and that several currently unknown campaign-attribution names can still reach review. The prototype remains dormant until a separately reviewed Inspector-only integration is justified.
 
 ## Integration rule
 
