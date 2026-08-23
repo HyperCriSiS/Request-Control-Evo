@@ -75,7 +75,7 @@ test("cross-site, entropy, propagation and verification signals can raise a cand
     expect(verified.autoSuggest).toBe(false);
 });
 
-test("explicit functional verification suppresses heuristic review confidence", () => {
+test("explicit functional verification compounds the conservative name safety guard", () => {
     const learner = createAdaptiveParameterLearner();
     for (const siteKey of ["a", "b", "c", "d"]) {
         learner.observe({
@@ -90,7 +90,7 @@ test("explicit functional verification suppresses heuristic review confidence", 
     learner.verify("session_token", "functional");
     const after = learner.verify("session_token", "functional");
 
-    expect(before.classification).toBe("review");
+    expect(before.classification).toBe("insufficient-evidence");
     expect(after.score).toBeLessThan(before.score);
     expect(after.classification).toBe("insufficient-evidence");
     expect(after.autoSuggest).toBe(false);

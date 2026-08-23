@@ -92,7 +92,9 @@ test("evaluation corpus is synthetic and contains no URLs, hosts or raw browsing
 
     expect(corpus.description).toContain("Synthetic");
     expect(serialized).not.toMatch(/https?:\/\//i);
-    expect(serialized).not.toMatch(/\.(com|net|org|de)(?:[\/"']|$)/i);
+    for (const suffix of [".com", ".net", ".org", ".de"]) {
+        expect(serialized).not.toContain(suffix);
+    }
     expect(serialized).not.toContain("rawUrl");
     expect(serialized).not.toContain("hostname");
 });
