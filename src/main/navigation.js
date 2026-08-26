@@ -14,11 +14,12 @@ const PRIORITY = {
 };
 
 export class NavigationAdapter {
-    constructor({ notify, navigate, replaceHistory, onInvalidRule = () => {} }) {
+    constructor({ notify, navigate, replaceHistory, onInvalidRule = () => {}, isRuleSuppressed = () => false }) {
         this.notify = notify;
         this.navigate = navigate;
         this.replaceHistory = replaceHistory;
         this.onInvalidRule = onInvalidRule;
+        this.isRuleSuppressed = isRuleSuppressed;
         this.rules = [];
         this.lastAllowedUrl = new Map();
         this.pendingTargets = new Map();
@@ -63,7 +64,9 @@ export class NavigationAdapter {
             url: details.url,
             timeStamp: details.timeStamp,
         };
-        const matching = this.rules.filter((entry) => entry.matches(request, incognito));
+        const matching = this.rules.filter((entry) =>
+            !this.isRuleSuppressed(entry.rule, request) && entry.matches(request, incognito)
+        );
 
         if (matching.length === 0) {
             this.lastAllowedUrl.set(details.tabId, details.url);
