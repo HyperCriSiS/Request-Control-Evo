@@ -3,11 +3,13 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { SourceMatcher } from "../main/matchers.js";
+import { installFilterRuleUi } from "./filter-rule-ui.js";
 import { newRuleInput as createRuleInput } from "./rule-input.js";
 
 export function newRuleInput(rule) {
     const input = createRuleInput(rule);
     installSourceScopeEditor(input);
+    installFilterRuleUi(input);
     return input;
 }
 
