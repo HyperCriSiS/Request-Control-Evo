@@ -1,6 +1,6 @@
 # Request Control Evo — Roadmap
 
-**Status: 1.20.0-rc.6 is the current final hands-on candidate from the validated post-RC5 code state; automated build/security/release gates are green; stable 1.20.0 remains blocked on real Firefox/Waterfox desktop and Firefox Android validation plus explicit user approval.**
+**Status: RC6 hands-on feedback found release-blocking Inspector, popup and rule-editor UX/functional regressions. RC6 remains historical test evidence only; a later prerelease is required before stable 1.20.0. Stable promotion remains blocked on corrected desktop/Android hands-on validation plus explicit user approval.**
 
 This file is the binding source of truth for project progress. Do not infer completion from code alone when a gate below explicitly requires physical browser/device testing.
 
@@ -129,9 +129,23 @@ All 19 current Official package payloads were re-read from the canonical rules r
 - [x] Changelog remains `1.20.0 - Unreleased`; the dormant adaptive prototype is not presented as an enabled runtime feature.
 - [x] Later ROADMAP-only synchronization does not change the RC6 extension artifact or candidate code.
 
+## RC6 hands-on feedback — blocking before next prerelease
+
+- [ ] Remove the verbose Referer explanatory paragraph from the popup; keep controls self-explanatory and compact.
+- [ ] Add a popup control to disable/re-enable Request Control for the current site without changing the global enabled state.
+- [ ] Add a popup action to suppress the currently matched rule/filter only on the current site without mutating managed Official/Community rule payloads or creating managed-update conflicts.
+- [ ] Repair Inspector based on a real start → reload → request capture → render → stop lifecycle regression; source-presence/string tests alone are not an acceptable release gate.
+- [ ] Audit the Inspector background listener lifecycle against Firefox `webRequest` behavior and ensure capture works independently from Breakage Check/Referer/URL-analysis modules.
+- [ ] Restore complete Filter-rule visibility: action-specific values such as parameter names, invert/trim-all state, redirect filtering and same-domain behavior must be visible and correctly initialized, not reduced to generic checked toggles.
+- [ ] Keep imported/managed filter data lossless while exposing that state in both compact read-only summaries and Edit mode.
+- [ ] Fix the compact Edit icon asset/alignment and ensure Edit/Enable controls are optically centered.
+- [ ] Increase spacing between Filter action controls and rule metadata badges so action state and metadata do not visually collide.
+- [ ] Add desktop/mobile regression coverage for popup site controls, per-rule site suppression, Filter summaries/editor state and compact icon alignment.
+- [ ] Run full build/security gates after the corrections and publish a fresh prerelease only from the exact green candidate.
+
 ## Hands-on release gates — blocking
 
-Use **RC6** for final hands-on validation. RC5 remains historical because conservative analyzer coverage changed afterwards.
+RC6 hands-on validation exposed the blocking issues above. Do **not** use RC6 for final sign-off; use the next prerelease produced after this feedback block is green.
 
 - [x] Publish a fresh prerelease from the final validated post-RC5 code state before Stable promotion.
 - [ ] Firefox/Waterfox desktop hands-on on the final prerelease: popup sizing; Inspector start/reload/capture/render/stop; integrated URL findings; Breakage Check; Referer mode/exact-host exception; fixed Type vs Group/category model; long Rules strings/checkbox alignment; Imports; Official updates; selective editing; local-rule preservation.
@@ -175,4 +189,4 @@ This does **not** gate 1.20 stable and belongs under Inspector architecture. The
 
 ## Completion condition for 1.20.0
 
-Stable `1.20.0` is ready only when RC6 (or a later prerelease only if hands-on feedback requires code changes) passes real Firefox/Waterfox desktop and Firefox Android testing, the 1.20 changelog accurately reflects the final structure, no current release-blocking security finding exists, and the user explicitly approves stable promotion.
+Stable `1.20.0` is ready only when a prerelease newer than RC6 passes the corrected Firefox/Waterfox desktop and Firefox Android hands-on gates, the 1.20 changelog accurately reflects the final structure, no current release-blocking security finding exists, and the user explicitly approves stable promotion.
