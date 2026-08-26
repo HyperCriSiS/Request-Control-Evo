@@ -8,16 +8,32 @@ function functionBody(name, nextName) {
     return background.slice(start, end);
 }
 
-test("main-frame source context advances only on committed or accepted navigation", () => {
+test("main-frame source context advances on committed, bypassed, or accepted navigation", () => {
     const controlListener = functionBody("controlListener", "updateTab");
     const committedNavigation = functionBody("onNavigation", "onHistoryStateUpdated");
     const historyNavigation = functionBody("onHistoryStateUpdated", "replaceHistoryState");
 
     expect(controlListener).not.toContain("topLevelUrls.set");
     expect(committedNavigation).toContain("topLevelUrls.set(details.tabId, details.url)");
-    expect(historyNavigation.indexOf("navigation.handle")).toBeLessThan(
-        historyNavigation.indexOf("topLevelUrls.set")
+
+    const disabledSiteCheck = historyNavigation.indexOf("isSiteDisabledForRequest");
+    const disabledSiteCommit = historyNavigation.indexOf("navigation.commit(details.tabId, details.url)");
+    const handleIndex = historyNavigation.indexOf("const result = await navigation.handle");
+    const acceptedContextUpdate = historyNavigation.indexOf(
+        "topLevelUrls.set(details.tabId, details.url)",
+        handleIndex
     );
+    const replacedContextUpdate = historyNavigation.indexOf(
+        "topLevelUrls.set(details.tabId, result.target)",
+        handleIndex
+    );
+
+    expect(disabledSiteCheck).toBeGreaterThan(-1);
+    expect(disabledSiteCommit).toBeGreaterThan(disabledSiteCheck);
+    expect(disabledSiteCommit).toBeLessThan(handleIndex);
+    expect(handleIndex).toBeGreaterThan(-1);
+    expect(acceptedContextUpdate).toBeGreaterThan(handleIndex);
+    expect(replacedContextUpdate).toBeGreaterThan(handleIndex);
     expect(background).toContain("navigation.commit(tab.id, tab.url)");
 });
 

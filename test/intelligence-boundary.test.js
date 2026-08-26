@@ -4,17 +4,25 @@ function source(path) {
     return fs.readFileSync(path, "utf8");
 }
 
-test("Inspection request listeners are activated only by explicit inspection start", () => {
+test("Inspection request listeners are owned by the explicit capture runtime lifecycle", () => {
     const background = source("src/background.js");
-    const calls = background.match(/ensureInspectionListeners\(\);/g) || [];
-    expect(calls).toHaveLength(1);
+    const runtime = source("src/main/inspection/runtime.js");
 
-    const startCase = background.slice(
-        background.indexOf('case "start":'),
-        background.indexOf('case "get":')
+    expect(background).not.toContain("ensureInspectionListeners");
+    expect(background).toContain("inspectionRuntime.start(tabId");
+
+    const startMethod = runtime.slice(
+        runtime.indexOf("\n    start(tabId"),
+        runtime.indexOf("\n    get(tabId")
     );
-    expect(startCase).toContain("ensureInspectionListeners();");
-    expect(background).toContain("maybeRemoveInspectionListeners();");
+    expect(startMethod).toContain("this.ensureListeners();");
+
+    const constructor = runtime.slice(
+        runtime.indexOf("constructor("),
+        runtime.indexOf("\n    start(tabId")
+    );
+    expect(constructor).not.toContain("this.ensureListeners();");
+    expect(runtime).toContain("this.cleanupListeners();");
 });
 
 test("Guardian listener activation remains inside explicit start lifecycle", () => {

@@ -11,7 +11,7 @@ function event() {
     };
 }
 
-test("Inspection runtime performs a real start -> capture -> finish -> stop lifecycle", () => {
+function runtimeFixture() {
     const before = event();
     const completed = event();
     const failed = event();
@@ -20,6 +20,26 @@ test("Inspection runtime performs a real start -> capture -> finish -> stop life
         store,
         webRequest: { onBeforeRequest: before, onCompleted: completed, onErrorOccurred: failed },
     });
+    return { before, completed, failed, store, runtime };
+}
+
+test("Inspection runtime stays dormant until explicit start and does not duplicate listeners", () => {
+    const { before, completed, failed, runtime } = runtimeFixture();
+
+    expect(before.size).toBe(0);
+    expect(completed.size).toBe(0);
+    expect(failed.size).toBe(0);
+
+    runtime.start(7, { pageUrl: "https://example.test/" });
+    runtime.start(7, { pageUrl: "https://example.test/", title: "Restarted" });
+
+    expect(before.size).toBe(1);
+    expect(completed.size).toBe(1);
+    expect(failed.size).toBe(1);
+});
+
+test("Inspection runtime performs a real start -> capture -> finish -> stop lifecycle", () => {
+    const { before, completed, failed, runtime } = runtimeFixture();
 
     const started = runtime.start(7, { pageUrl: "https://example.test/", title: "Example" });
     expect(started.active).toBe(true);
@@ -47,13 +67,7 @@ test("Inspection runtime performs a real start -> capture -> finish -> stop life
 });
 
 test("Inspection runtime records request errors and keeps listeners while another session is active", () => {
-    const before = event();
-    const completed = event();
-    const failed = event();
-    const runtime = new InspectionCaptureRuntime({
-        store: new InspectionStore(),
-        webRequest: { onBeforeRequest: before, onCompleted: completed, onErrorOccurred: failed },
-    });
+    const { before, failed, runtime } = runtimeFixture();
     runtime.start(1, { pageUrl: "https://one.test/" });
     runtime.start(2, { pageUrl: "https://two.test/" });
     before.emit({ tabId: 2, requestId: "broken", url: "https://two.test/api", type: "xmlhttprequest" });
@@ -63,4 +77,24 @@ test("Inspection runtime records request errors and keeps listeners while anothe
     expect(before.size).toBe(1);
     runtime.stop(2);
     expect(before.size).toBe(0);
+});
+
+test("Inspection runtime expiry, clear, and tab removal release listeners after the final active session", () => {
+    const { before, runtime } = runtimeFixture();
+
+    runtime.start(1, { pageUrl: "https://one.test/" });
+    runtime.start(2, { pageUrl: "https://two.test/" });
+    runtime.expire(1);
+    expect(before.size).toBe(1);
+    expect(runtime.get(1).active).toBe(false);
+
+    runtime.clear(2);
+    expect(before.size).toBe(0);
+    expect(runtime.get(2)).toBeNull();
+
+    runtime.start(3, { pageUrl: "https://three.test/" });
+    expect(before.size).toBe(1);
+    runtime.remove(3);
+    expect(before.size).toBe(0);
+    expect(runtime.get(3)).toBeNull();
 });

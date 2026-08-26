@@ -4,6 +4,7 @@ const inspector = fs.readFileSync(new URL("../src/inspector/inspector.js", impor
 const background = fs.readFileSync(new URL("../src/background.js", import.meta.url), "utf8");
 const compatibility = fs.readFileSync(new URL("../src/inspector/compatibility.js", import.meta.url), "utf8");
 const inspectorHtml = fs.readFileSync(new URL("../src/inspector/inspector.html", import.meta.url), "utf8");
+const inspectionRuntime = fs.readFileSync(new URL("../src/main/inspection/runtime.js", import.meta.url), "utf8");
 
 test("post-1.19 rule-source diagnostics cannot block the Inspector entry module", () => {
     expect(inspector).not.toContain('import { renderRuleSourceDetails } from "./rule-source-details.js"');
@@ -17,13 +18,17 @@ test("Inspector validates background responses and tolerates an empty initial sn
     expect(inspector).toContain('throw new TypeError("Invalid inspection response")');
 });
 
-test("Inspector lifecycle remains start, capture listeners, get, stop and clear", () => {
+test("Inspector background delegates start/get/stop/clear to the isolated capture runtime", () => {
     for (const action of ["start", "get", "stop", "clear"]) {
         expect(background).toContain(`case "${action}"`);
     }
-    expect(background).toContain("ensureInspectionListeners()");
+    expect(background).toContain("inspectionRuntime.start(tabId");
+    expect(background).toContain("inspectionRuntime.get(tabId)");
+    expect(background).toContain("inspectionRuntime.stop(tabId)");
+    expect(background).toContain("inspectionRuntime.clear(tabId)");
     expect(background).toContain("inspectionLimiter.start(tabId)");
-    expect(background).toContain("maybeRemoveInspectionListeners()");
+    expect(inspectionRuntime).toContain("this.ensureListeners();");
+    expect(inspectionRuntime).toContain("this.cleanupListeners();");
 });
 
 test("Compatibility Guardian remains isolated from the Inspector core", () => {
@@ -34,8 +39,14 @@ test("Compatibility Guardian remains isolated from the Inspector core", () => {
     expect(compatibility).toContain("renderCompatibilityStatus");
 });
 
-test("explicit Inspection starts the bounded Breakage Check in background", () => {
-    expect(background).toMatch(/case "start":[\s\S]*guardian\.start\(tabId\)[\s\S]*ensureInspectionListeners\(\)/);
+test("explicit Inspection starts the bounded Breakage Check beside the isolated capture runtime", () => {
+    const startCase = background.slice(
+        background.indexOf('case "start":'),
+        background.indexOf('case "get":')
+    );
+    expect(startCase).toContain("inspectionRuntime.start(tabId");
+    expect(startCase).toContain("inspectionLimiter.start(tabId)");
+    expect(startCase).toContain("guardian.start(tabId)");
     expect(compatibility).toContain("awaitingStartUntil");
 });
 
