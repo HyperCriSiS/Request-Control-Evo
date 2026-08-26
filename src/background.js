@@ -6,10 +6,17 @@ import { ALL_URLS, createRequestFilters } from "./main/api.js";
 import { RequestController } from "./main/control.js";
 import { migrateManagedSourceState } from "./main/catalog.js";
 import { InspectionSessionLimiter } from "./main/inspection/session-limiter.js";
+import { InspectionCaptureRuntime } from "./main/inspection/runtime.js";
 import { InspectionStore } from "./main/inspection/store.js";
 import { migrateLegacyTagsToGroups } from "./options/legacy-metadata.js";
 import { guardian } from "./main/guardian.js";
 import { NavigationAdapter } from "./main/navigation.js";
+import {
+    compileRuleSiteExceptions,
+    isRuleSuppressedForRequest,
+    isSiteDisabledForRequest,
+    normalizeSiteHosts,
+} from "./main/site-exceptions.js";
 import {
     configureReferrerProtection,
     effectiveReferrerProtectionMode,
@@ -19,14 +26,19 @@ import * as records from "./util/records.js";
 
 const listeners = [];
 const inspections = new InspectionStore();
+const inspectionRuntime = new InspectionCaptureRuntime({
+    store: inspections,
+    webRequest: browser.webRequest,
+    allUrls: ALL_URLS,
+});
 const inspectionLimiter = new InspectionSessionLimiter({
     onExpire(tabId) {
-        inspections.stop(tabId);
-        maybeRemoveInspectionListeners();
+        inspectionRuntime.expire(tabId);
     },
 });
 const topLevelUrls = new Map();
-let inspectionListenersActive = false;
+let disabledSiteHosts = new Set();
+let ruleSiteExceptions = new Map();
 let initGeneration = 0;
 const controller = new RequestController(notify, updateTab);
 const navigation = new NavigationAdapter({
@@ -34,6 +46,9 @@ const navigation = new NavigationAdapter({
     navigate: updateTab,
     replaceHistory: replaceHistoryState,
     onInvalidRule: () => notifier.error(),
+    isRuleSuppressed(rule, request) {
+        return isRuleSuppressedForRequest(rule?.uuid, request, request?.url || "", ruleSiteExceptions);
+    },
 });
 const storageKeys = [
     "rules",
@@ -41,6 +56,8 @@ const storageKeys = [
     "disabled",
     "referrerProtectionMode",
     "referrerProtectionExceptions",
+    "disabledSiteHosts",
+    "ruleSiteExceptions",
 ];
 
 bootstrap();
@@ -68,10 +85,13 @@ async function bootstrap() {
 }
 
 function init(options, generation = initGeneration) {
+    disabledSiteHosts = new Set(normalizeSiteHosts(options.disabledSiteHosts));
+    ruleSiteExceptions = compileRuleSiteExceptions(options.ruleSiteExceptions);
     configureReferrerProtection(
         effectiveReferrerProtectionMode(options.referrerProtectionMode || "browser", options.disabled),
         options.referrerProtectionExceptions || [],
-        onReferrerProtectionEffect
+        onReferrerProtectionEffect,
+        (details) => isSiteDisabledForRequest(details, topLevelUrls.get(details.tabId), disabledSiteHosts)
     );
     if (options.disabled) {
         browser.tabs.onRemoved.removeListener(onTabRemoved);
@@ -109,7 +129,9 @@ function onOptionsChanged(changes) {
         !("rules" in changes) &&
         !("disabled" in changes) &&
         !("referrerProtectionMode" in changes) &&
-        !("referrerProtectionExceptions" in changes)
+        !("referrerProtectionExceptions" in changes) &&
+        !("disabledSiteHosts" in changes) &&
+        !("ruleSiteExceptions" in changes)
     ) {
         return;
     }
@@ -150,6 +172,12 @@ function ruleListener(rule, matcher) {
     return (request) => {
         const topLevelUrl = topLevelUrls.get(request.tabId);
         const matchRequest = topLevelUrl ? { ...request, topLevelUrl } : request;
+        if (isSiteDisabledForRequest(matchRequest, topLevelUrl, disabledSiteHosts)) {
+            return;
+        }
+        if (isRuleSuppressedForRequest(rule.uuid, matchRequest, topLevelUrl, ruleSiteExceptions)) {
+            return;
+        }
         if (matcher.test(matchRequest)) {
             controller.mark(request, rule);
         }
@@ -218,6 +246,12 @@ async function onHistoryStateUpdated(details) {
         return;
     }
 
+    if (isSiteDisabledForRequest({ ...details, type: "main_frame" }, details.url, disabledSiteHosts)) {
+        topLevelUrls.set(details.tabId, details.url);
+        navigation.commit(details.tabId, details.url);
+        return;
+    }
+
     let tab;
     try {
         tab = await browser.tabs.get(details.tabId);
@@ -256,9 +290,8 @@ function onTabRemoved(tabId) {
 function onInspectionTabRemoved(tabId) {
     guardian.stop(tabId);
     inspectionLimiter.stop(tabId);
-    inspections.remove(tabId);
+    inspectionRuntime.remove(tabId);
     topLevelUrls.delete(tabId);
-    maybeRemoveInspectionListeners();
 }
 
 function onRuntimeMessage(message) {
@@ -281,28 +314,24 @@ function onRuntimeMessage(message) {
     }
 
     switch (message.action) {
-        case "start":
-            inspections.start(tabId, {
+        case "start": {
+            const snapshot = inspectionRuntime.start(tabId, {
                 pageUrl: message.pageUrl || "",
                 title: message.title || "",
             });
             inspectionLimiter.start(tabId);
             guardian.start(tabId);
-            ensureInspectionListeners();
-            return Promise.resolve(inspections.snapshot(tabId));
+            return Promise.resolve(snapshot);
+        }
         case "get":
-            return Promise.resolve(inspections.snapshot(tabId));
+            return Promise.resolve(inspectionRuntime.get(tabId));
         case "stop": {
             inspectionLimiter.stop(tabId);
-            const snapshot = inspections.stop(tabId);
-            maybeRemoveInspectionListeners();
-            return Promise.resolve(snapshot);
+            return Promise.resolve(inspectionRuntime.stop(tabId));
         }
         case "clear":
             inspectionLimiter.stop(tabId);
-            inspections.remove(tabId);
-            maybeRemoveInspectionListeners();
-            return Promise.resolve(null);
+            return Promise.resolve(inspectionRuntime.clear(tabId));
         default:
             return Promise.resolve({ error: "unknown-action" });
     }
@@ -311,42 +340,4 @@ function onRuntimeMessage(message) {
 function onReferrerProtectionEffect(request, diagnostic) {
     inspections.markDiagnostic(request.tabId, request.requestId, diagnostic);
     guardian.recordReferrerEffect(request, diagnostic);
-}
-
-function ensureInspectionListeners() {
-    if (inspectionListenersActive) {
-        return;
-    }
-    browser.webRequest.onBeforeRequest.addListener(recordInspectionRequest, { urls: [ALL_URLS] });
-    browser.webRequest.onCompleted.addListener(completeInspectionRequest, { urls: [ALL_URLS] });
-    browser.webRequest.onErrorOccurred.addListener(errorInspectionRequest, { urls: [ALL_URLS] });
-    inspectionListenersActive = true;
-}
-
-function maybeRemoveInspectionListeners() {
-    if (!inspectionListenersActive || inspections.hasActive()) {
-        return;
-    }
-    browser.webRequest.onBeforeRequest.removeListener(recordInspectionRequest);
-    browser.webRequest.onCompleted.removeListener(completeInspectionRequest);
-    browser.webRequest.onErrorOccurred.removeListener(errorInspectionRequest);
-    inspectionListenersActive = false;
-}
-
-function recordInspectionRequest(request) {
-    inspections.capture(request);
-}
-
-function completeInspectionRequest(request) {
-    inspections.markFinished(request.tabId, request.requestId, {
-        status: "completed",
-        statusCode: request.statusCode,
-    });
-}
-
-function errorInspectionRequest(request) {
-    inspections.markFinished(request.tabId, request.requestId, {
-        status: "error",
-        error: request.error,
-    });
 }

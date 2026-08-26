@@ -162,14 +162,16 @@ export class ReferrerProtection {
         this.currentMode = "browser";
         this.exceptionHosts = new Set();
         this.onEffect = null;
+        this.shouldBypass = null;
         this.listening = false;
         this.onBeforeSendHeaders = this.onBeforeSendHeaders.bind(this);
     }
 
-    configure(mode, exceptions = [], onEffect = null) {
+    configure(mode, exceptions = [], onEffect = null, shouldBypass = null) {
         this.currentMode = effectiveReferrerProtectionMode(mode);
         this.exceptionHosts = new Set(normalizeReferrerProtectionExceptions(exceptions));
         this.onEffect = typeof onEffect === "function" ? onEffect : null;
+        this.shouldBypass = typeof shouldBypass === "function" ? shouldBypass : null;
         const webRequest = this.getWebRequest();
 
         if (this.currentMode === "browser") {
@@ -192,6 +194,15 @@ export class ReferrerProtection {
     }
 
     onBeforeSendHeaders(details) {
+        if (this.shouldBypass) {
+            try {
+                if (this.shouldBypass(details)) {
+                    return undefined;
+                }
+            } catch {
+                // Site bypass diagnostics/configuration must never affect the request path.
+            }
+        }
         const result = applyReferrerProtection(details, this.currentMode, this.exceptionHosts);
         if (result && this.onEffect) {
             const diagnostic = describeReferrerProtectionEffect(details, result, this.currentMode);
@@ -217,9 +228,9 @@ export class ReferrerProtection {
 
 let defaultProtection;
 
-export function configureReferrerProtection(mode, exceptions = [], onEffect = null) {
+export function configureReferrerProtection(mode, exceptions = [], onEffect = null, shouldBypass = null) {
     if (!defaultProtection) {
         defaultProtection = new ReferrerProtection();
     }
-    return defaultProtection.configure(mode, exceptions, onEffect);
+    return defaultProtection.configure(mode, exceptions, onEffect, shouldBypass);
 }
