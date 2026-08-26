@@ -12,7 +12,7 @@ test("popup exposes first-class referrer mode and exact-host exception controls"
     expect(html).toContain('data-i18n="host"');
     expect(js).toContain('browser.storage.local.set({ referrerProtectionMode: mode })');
     expect(js).toContain('browser.storage.local.set({ referrerProtectionExceptions: next })');
-    expect(js).toContain('url.hostname.replace(/\\.$/, "").toLowerCase()');
+    expect(js).toContain('currentSiteHost = normalizeSiteHost(tabs[0]?.url || "")');
 });
 
 test("background rebuilds referrer protection when mode or host exceptions change", () => {

@@ -28,6 +28,13 @@
                 </button>
                 <button id="toggleActive" class="btn" type="button"></button>
             </div>
+            <section id="siteControl" class="site-control hidden" aria-labelledby="siteControlTitle">
+                <div class="site-control-copy">
+                    <strong id="siteControlTitle" data-i18n="site_control_title"></strong>
+                    <span id="siteHost" class="site-host"></span>
+                </div>
+                <button id="toggleSite" class="btn site-toggle-button" type="button"></button>
+            </section>
             <section id="referrerControl" class="referrer-control" aria-labelledby="referrerControlTitle">
                 <div class="referrer-control-head">
                     <div class="referrer-control-copy">
@@ -48,7 +55,6 @@
                     <span class="referrer-scope"><span data-i18n="host"></span>: <span id="referrerHostScope"></span></span>
                     <button id="toggleReferrerHost" class="btn referrer-host-button" type="button"></button>
                 </div>
-                <p class="referrer-note" data-i18n="referrer_note"></p>
             </section>
         </div>
         <div id="details" class="hidden">
@@ -70,7 +76,10 @@
                 <small data-i18n="new_target"></small>
                 <pre id="target"></pre>
             </div>
-            <a id="editLink" href="" data-i18n="edit_rule"></a>
+            <div class="detail-actions">
+                <a id="editLink" href="" data-i18n="edit_rule"></a>
+                <button id="toggleRuleSite" class="btn rule-site-button hidden" type="button"></button>
+            </div>
         </div>
         <template id="entryTemplate">
             <div class="entry">

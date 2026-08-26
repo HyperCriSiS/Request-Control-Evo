@@ -392,14 +392,9 @@ pre {
     gap: 0.5rem;
 }
 
-.referrer-scope,
-.referrer-note {
+.referrer-scope {
     color: var(--muted);
     font-size: 0.72rem;
-}
-
-.referrer-note {
-    margin: 0;
 }
 
 .referrer-host-button {
@@ -459,4 +454,91 @@ pre {
         max-width: none;
         width: 100%;
     }
+}
+
+.site-control {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.55rem;
+    padding: 0.5rem 0.55rem;
+    border-top: 1px solid var(--border);
+    background: var(--background);
+}
+
+.site-control-copy {
+    min-width: 0;
+    display: grid;
+    gap: 0.1rem;
+}
+
+.site-host {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--muted);
+    font-size: 0.75rem;
+}
+
+.site-toggle-button,
+.rule-site-button {
+    min-height: 2.25rem;
+    padding: 0.4rem 0.65rem;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    background: var(--surface);
+    font: inherit;
+    line-height: 1.25;
+    white-space: normal;
+}
+
+.site-toggle-button:hover,
+.rule-site-button:hover {
+    background: var(--surface-hover);
+    cursor: pointer;
+}
+
+.site-toggle-button.disabled,
+.rule-site-button.disabled {
+    border-color: var(--success);
+}
+
+.site-toggle-button:focus,
+.rule-site-button:focus {
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+.detail-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+@media (hover: none) and (pointer: coarse) and (max-width: 28rem) {
+    .site-control {
+        grid-template-columns: 1fr;
+        align-items: stretch;
+    }
+
+    .site-toggle-button,
+    .rule-site-button {
+        min-height: 2.75rem;
+        width: 100%;
+        touch-action: manipulation;
+    }
+
+    .detail-actions {
+        align-items: stretch;
+        flex-direction: column;
+    }
+}
+
+.site-control.hidden,
+.referrer-host-row.hidden {
+    display: none;
 }
