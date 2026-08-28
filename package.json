@@ -29,7 +29,7 @@
   },
   "dependencies": {
     "@ajusa/lit": "^1.1.0",
-    "tldts-experimental": "^7.4.10"
+    "tldts-experimental": "^7.4.11"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
