@@ -2,8 +2,10 @@ name: Record RC7 release
 
 on:
   push:
-    branches: [dev]
-    paths: [.github/workflows/tmp-record-rc7.yml]
+    branches:
+      - dev
+    paths:
+      - '.github/workflows/tmp-record-rc7.yml'
 
 permissions:
   contents: write
@@ -17,8 +19,9 @@ jobs:
           ref: dev
           fetch-depth: 0
       - name: Record RC7 in ROADMAP
-        shell: python
+        shell: bash
         run: |
+          python <<'PY'
           from pathlib import Path
           path = Path("ROADMAP.md")
           text = path.read_text()
@@ -32,7 +35,7 @@ jobs:
               raise SystemExit("Publish gate anchor missing")
           text = text.replace(publish, "- [x] Publish a fresh prerelease newer than RC6 only from an exact green candidate: `1.20.0-rc.7` from `c87197c17036ac193b86088832041bf05d26a99d`.", 1)
           marker = "## Hands-on release gates — blocking"
-          section = """## 1.20.0 RC7 corrected prerelease gate — complete
+          section = '''## 1.20.0 RC7 corrected prerelease gate — complete
 
 - [x] Exact RC7 candidate: `c87197c17036ac193b86088832041bf05d26a99d`.
 - [x] Pre-release code gate: Build #464 green on the final functional UI code; RC7 Release workflow #15 re-ran tests, lint, build and lint-build successfully on the exact tagged candidate.
@@ -46,12 +49,13 @@ jobs:
 - [x] `CHANGELOG.md` remains `1.20.0 - Unreleased` while documenting the corrected exact-site controls, lossless Filter state and deterministic compact SVG controls.
 - [x] Any later ROADMAP-only synchronization does not change the RC7 extension artifact or tagged candidate.
 
-"""
+'''
           if marker not in text:
               raise SystemExit("Hands-on marker missing")
           if "## 1.20.0 RC7 corrected prerelease gate" not in text:
               text = text.replace(marker, section + marker, 1)
           path.write_text(text)
+          PY
       - name: Commit release record and remove temporary workflow
         shell: bash
         run: |
