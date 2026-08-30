@@ -1,0 +1,70 @@
+name: Sync RC7 feedback docs
+
+on:
+  push:
+    branches: [dev]
+    paths: [.github/workflows/tmp-sync-rc7-docs.yml]
+
+permissions:
+  contents: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: dev
+          fetch-depth: 0
+      - name: Synchronize ROADMAP and changelog
+        shell: python
+        run: |
+          from pathlib import Path
+
+          roadmap = Path("ROADMAP.md")
+          text = roadmap.read_text()
+          text = text.replace(
+              "**Status: RC6 hands-on feedback found release-blocking Inspector, popup and rule-editor UX/functional regressions. RC6 remains historical test evidence only; a later prerelease is required before stable 1.20.0. Stable promotion remains blocked on corrected desktop/Android hands-on validation plus explicit user approval.**",
+              "**Status: RC6 hands-on blockers are implemented and automated gates are green on `79e09ed6908e33b2216e62ebc317292fbf138c60` (Build #464); RC6 remains historical test evidence only. A fresh prerelease newer than RC6 is required for corrected desktop/Android hands-on validation before stable 1.20.0, followed by explicit user approval.**",
+          )
+          replacements = {
+              "- [ ] Remove the verbose Referer explanatory paragraph from the popup; keep controls self-explanatory and compact.": "- [x] Remove the verbose Referer explanatory paragraph from the popup; keep controls self-explanatory and compact.",
+              "- [ ] Add a popup control to disable/re-enable Request Control for the current site without changing the global enabled state.": "- [x] Add a popup control to disable/re-enable Request Control for the current site without changing the global enabled state.",
+              "- [ ] Add a popup action to suppress the currently matched rule/filter only on the current site without mutating managed Official/Community rule payloads or creating managed-update conflicts.": "- [x] Add a popup action to suppress the currently matched rule/filter only on the current site without mutating managed Official/Community rule payloads or creating managed-update conflicts.",
+              "- [ ] Repair Inspector based on a real start → reload → request capture → render → stop lifecycle regression; source-presence/string tests alone are not an acceptable release gate.": "- [x] Repair Inspector based on a real start → reload → request capture → render → stop lifecycle regression; runtime tests now exercise the real lifecycle rather than source-presence/string checks alone.",
+              "- [ ] Audit the Inspector background listener lifecycle against Firefox `webRequest` behavior and ensure capture works independently from Breakage Check/Referer/URL-analysis modules.": "- [x] Audit the Inspector background listener lifecycle against Firefox `webRequest` behavior and ensure capture works independently from Breakage Check/Referer/URL-analysis modules.",
+              "- [ ] Restore complete Filter-rule visibility: action-specific values such as parameter names, invert/trim-all state, redirect filtering and same-domain behavior must be visible and correctly initialized, not reduced to generic checked toggles.": "- [x] Restore complete Filter-rule visibility: action-specific values such as parameter names, invert/trim-all state, redirect filtering and same-domain behavior are visible and correctly initialized.",
+              "- [ ] Keep imported/managed filter data lossless while exposing that state in both compact read-only summaries and Edit mode.": "- [x] Keep imported/managed filter data lossless while exposing that state in both compact read-only summaries and Edit mode.",
+              "- [ ] Fix the compact Edit icon asset/alignment and ensure Edit/Enable controls are optically centered.": "- [x] Fix compact Edit/Enable icon rendering with deterministic inline SVG controls and centered desktop/mobile geometry.",
+              "- [ ] Increase spacing between Filter action controls and rule metadata badges so action state and metadata do not visually collide.": "- [x] Increase spacing between Filter action controls and rule metadata badges so action state and metadata do not visually collide.",
+              "- [ ] Add desktop/mobile regression coverage for popup site controls, per-rule site suppression, Filter summaries/editor state and compact icon alignment.": "- [x] Add desktop/mobile regression coverage for popup site controls, per-rule site suppression, Filter summaries/editor state, compact SVG icon alignment and accidental placeholder content.",
+              "- [ ] Run full build/security gates after the corrections and publish a fresh prerelease only from the exact green candidate.": "- [x] Run full build/security gates after the corrections: Build #464 is green on `79e09ed6908e33b2216e62ebc317292fbf138c60`; current code scanning, Dependabot, secret scanning and repository advisory gates report no open findings.\n- [ ] Publish a fresh prerelease newer than RC6 only from an exact green candidate.",
+          }
+          for old, new in replacements.items():
+              if old not in text:
+                  raise SystemExit(f"ROADMAP replacement not found: {old}")
+              text = text.replace(old, new, 1)
+          roadmap.write_text(text)
+
+          changelog = Path("CHANGELOG.md")
+          text = changelog.read_text()
+          referer = "- Add popup Referer protection controls with conservative browser-default behavior, deliberate exact-host exceptions and privacy-minimized breakage correlation that never stores Referer values.\n"
+          if referer not in text:
+              raise SystemExit("Referer changelog anchor missing")
+          text = text.replace(referer, referer + "- Add exact-site popup recovery controls to bypass Request Control for the current host or suppress the currently matched rule on that host without changing global enablement or mutating managed rule payloads.\n", 1)
+          rules = "- Improve Rules usability with persistent fixed-Type empty states, independent search/status/source/category/group filtering, configurable Test/Export/Share/Delete Quick Actions, compact Edit/Enable-Disable controls, explicit mobile selected-rule close/back behavior, stable checkbox-selection columns, wrapped long strings and coarse-pointer hit targets.\n"
+          if rules not in text:
+              raise SystemExit("Rules changelog anchor missing")
+          text = text.replace(rules, "- Improve Rules usability with persistent fixed-Type empty states, independent search/status/source/category/group filtering, configurable Test/Export/Share/Delete Quick Actions, deterministic centered SVG Edit/Enable-Disable controls, explicit mobile selected-rule close/back behavior, stable checkbox-selection columns, wrapped long strings and coarse-pointer hit targets.\n- Restore lossless Filter-rule presentation/editing for parameter names, invert/trim-all state, redirect filtering, same-domain behavior and related action-specific state; add deliberate spacing between action state and metadata.\n", 1)
+          changelog.write_text(text)
+      - name: Commit synchronized documentation and remove temporary workflow
+        shell: bash
+        run: |
+          set -euo pipefail
+          git rm .github/workflows/tmp-sync-rc7-docs.yml
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add ROADMAP.md CHANGELOG.md
+          git commit -m "Record green RC6 feedback corrections"
+          git push origin HEAD:dev
