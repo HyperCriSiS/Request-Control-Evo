@@ -13,9 +13,13 @@ test("rule quick actions are independently configurable instead of all-or-nothin
     expect(ui).toContain("rc-show-quick-delete");
 });
 
-test("rule edit and enable-disable controls are rendered compactly as icons", () => {
-    expect(ui).toContain('.btn-edit::before { content: "✎"; }');
-    expect(ui).toContain('.btn-activate::before { content: "⏻"; }');
+test("rule edit and enable-disable controls are rendered compactly as vector icons", () => {
+    expect(ui).toContain("function createRuleControlIcon(kind)");
+    expect(ui).toContain('ensureRuleControlIcon(edit, "edit")');
+    expect(ui).toContain('ensureRuleControlIcon(activate, "activate")');
+    expect(ui).toContain('svg.setAttribute("stroke", "currentColor")');
+    expect(ui).not.toContain('content: "✎"');
+    expect(ui).not.toContain('content: "⏻"');
     expect(ui).toContain('edit.setAttribute("aria-label", label)');
     expect(ui).toContain('activate.setAttribute("aria-label", label)');
 });
