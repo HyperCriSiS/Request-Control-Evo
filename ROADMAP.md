@@ -1,6 +1,6 @@
 # Request Control Evo — Roadmap
 
-**Status: RC6 hands-on feedback found release-blocking Inspector, popup and rule-editor UX/functional regressions. RC6 remains historical test evidence only; a later prerelease is required before stable 1.20.0. Stable promotion remains blocked on corrected desktop/Android hands-on validation plus explicit user approval.**
+**Status: RC6 hands-on blockers are implemented and automated gates are green on `79e09ed6908e33b2216e62ebc317292fbf138c60` (Build #464); RC6 remains historical test evidence only. A fresh prerelease newer than RC6 is required for corrected desktop/Android hands-on validation before stable 1.20.0, followed by explicit user approval.**
 
 This file is the binding source of truth for project progress. Do not infer completion from code alone when a gate below explicitly requires physical browser/device testing.
 
@@ -131,17 +131,18 @@ All 19 current Official package payloads were re-read from the canonical rules r
 
 ## RC6 hands-on feedback — blocking before next prerelease
 
-- [ ] Remove the verbose Referer explanatory paragraph from the popup; keep controls self-explanatory and compact.
-- [ ] Add a popup control to disable/re-enable Request Control for the current site without changing the global enabled state.
-- [ ] Add a popup action to suppress the currently matched rule/filter only on the current site without mutating managed Official/Community rule payloads or creating managed-update conflicts.
-- [ ] Repair Inspector based on a real start → reload → request capture → render → stop lifecycle regression; source-presence/string tests alone are not an acceptable release gate.
-- [ ] Audit the Inspector background listener lifecycle against Firefox `webRequest` behavior and ensure capture works independently from Breakage Check/Referer/URL-analysis modules.
-- [ ] Restore complete Filter-rule visibility: action-specific values such as parameter names, invert/trim-all state, redirect filtering and same-domain behavior must be visible and correctly initialized, not reduced to generic checked toggles.
-- [ ] Keep imported/managed filter data lossless while exposing that state in both compact read-only summaries and Edit mode.
-- [ ] Fix the compact Edit icon asset/alignment and ensure Edit/Enable controls are optically centered.
-- [ ] Increase spacing between Filter action controls and rule metadata badges so action state and metadata do not visually collide.
-- [ ] Add desktop/mobile regression coverage for popup site controls, per-rule site suppression, Filter summaries/editor state and compact icon alignment.
-- [ ] Run full build/security gates after the corrections and publish a fresh prerelease only from the exact green candidate.
+- [x] Remove the verbose Referer explanatory paragraph from the popup; keep controls self-explanatory and compact.
+- [x] Add a popup control to disable/re-enable Request Control for the current site without changing the global enabled state.
+- [x] Add a popup action to suppress the currently matched rule/filter only on the current site without mutating managed Official/Community rule payloads or creating managed-update conflicts.
+- [x] Repair Inspector based on a real start → reload → request capture → render → stop lifecycle regression; runtime tests now exercise the real lifecycle rather than source-presence/string checks alone.
+- [x] Audit the Inspector background listener lifecycle against Firefox `webRequest` behavior and ensure capture works independently from Breakage Check/Referer/URL-analysis modules.
+- [x] Restore complete Filter-rule visibility: action-specific values such as parameter names, invert/trim-all state, redirect filtering and same-domain behavior are visible and correctly initialized.
+- [x] Keep imported/managed filter data lossless while exposing that state in both compact read-only summaries and Edit mode.
+- [x] Fix compact Edit/Enable icon rendering with deterministic inline SVG controls and centered desktop/mobile geometry.
+- [x] Increase spacing between Filter action controls and rule metadata badges so action state and metadata do not visually collide.
+- [x] Add desktop/mobile regression coverage for popup site controls, per-rule site suppression, Filter summaries/editor state, compact SVG icon alignment and accidental placeholder content.
+- [x] Run full build/security gates after the corrections: Build #464 is green on `79e09ed6908e33b2216e62ebc317292fbf138c60`; current code scanning, Dependabot, secret scanning and repository advisory gates report no open findings.
+- [ ] Publish a fresh prerelease newer than RC6 only from an exact green candidate.
 
 ## Hands-on release gates — blocking
 
