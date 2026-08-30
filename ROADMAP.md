@@ -1,6 +1,6 @@
 # Request Control Evo — Roadmap
 
-**Status: RC6 hands-on blockers are implemented and automated gates are green on `79e09ed6908e33b2216e62ebc317292fbf138c60` (Build #464); RC6 remains historical test evidence only. A fresh prerelease newer than RC6 is required for corrected desktop/Android hands-on validation before stable 1.20.0, followed by explicit user approval.**
+**Status: `1.20.0-rc.7` is the current corrected hands-on candidate after the RC6 feedback block. Automated release/security gates are green; stable 1.20.0 remains blocked on Firefox/Waterfox desktop and Firefox Android hands-on validation plus explicit user approval.**
 
 This file is the binding source of truth for project progress. Do not infer completion from code alone when a gate below explicitly requires physical browser/device testing.
 
@@ -142,7 +142,9 @@ All 19 current Official package payloads were re-read from the canonical rules r
 - [x] Increase spacing between Filter action controls and rule metadata badges so action state and metadata do not visually collide.
 - [x] Add desktop/mobile regression coverage for popup site controls, per-rule site suppression, Filter summaries/editor state, compact SVG icon alignment and accidental placeholder content.
 - [x] Run full build/security gates after the corrections: Build #464 is green on `79e09ed6908e33b2216e62ebc317292fbf138c60`; current code scanning, Dependabot, secret scanning and repository advisory gates report no open findings.
-- [ ] Publish a fresh prerelease newer than RC6 only from an exact green candidate.
+- [x] Publish a fresh prerelease newer than RC6 only from an exact green candidate: `1.20.0-rc.7` from `c87197c17036ac193b86088832041bf05d26a99d`.
+
+- [x] RC7 verification: Release workflow #15 passed tests/lint/build/lint-build on the exact tagged candidate; annotated tag resolves to `c87197c17036ac193b86088832041bf05d26a99d`; byte-identical ZIP/XPI are 260,315 bytes with SHA-256 `332042c6ea2f9ffbc287bed1f29c098a7dfc3c04103e4fb93acb2eb54f611ed2`; Mozilla publishing was intentionally skipped.
 
 ## Hands-on release gates — blocking
 
