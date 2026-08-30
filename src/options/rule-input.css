@@ -1,1 +1,380 @@
-__REPLACE__
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+form .btn:not(button) {
+    border: none;
+    padding: 0;
+    background: none;
+    color: var(--text-color);
+}
+
+form .btn > input {
+    margin-right: 0.5em;
+}
+
+form .card,
+form .tags-input,
+form .card:focus {
+    border: 1px solid var(--border-color);
+    background: var(--surface-color);
+    color: var(--text-color);
+    padding: 0.2em;
+    font-size: 0.9em;
+    border-radius: 2px;
+}
+
+form select.scheme,
+form select.scheme:focus {
+    padding-top: 0.5em;
+    padding-bottom: 0.5em;
+}
+
+form .row {
+    border-spacing: 0;
+}
+
+.row {
+    margin-bottom: 0.3em !important;
+}
+
+.form-header {
+    font-weight: bold;
+    margin-bottom: 0.3em !important;
+}
+
+.rule-select {
+    margin: 0 0.8rem;
+    display: flex;
+}
+
+.rule-select > input {
+    margin: 0;
+}
+
+.disabled:not(.editing) > .rule-header {
+    color: var(--text-muted);
+}
+
+.disabled .btn-activate {
+    background: var(--success-color);
+    border-color: var(--success-color);
+    color: var(--on-success-color);
+}
+
+.rule-header {
+    border-top: 1px solid var(--border-color);
+    line-height: 1.3;
+    display: flex;
+    vertical-align: middle;
+    align-items: center;
+    padding: 0.1em 0;
+}
+
+.disabled:not(.editing) > .rule-header {
+    background: var(--surface-subtle);
+}
+
+.selected:not(.editing) > .rule-header {
+    background: var(--selected-background);
+}
+
+.rule-header-title {
+    flex-grow: 1;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    margin-bottom: 0;
+}
+
+.rule-header > .information {
+    text-align: right;
+    vertical-align: middle;
+}
+
+.rule-header > .information > .badge {
+    white-space: nowrap;
+    overflow: -moz-hidden-unscrollable;
+    text-overflow: ellipsis;
+}
+
+.editing .rule-header {
+    border-bottom: 1px solid var(--border-color);
+    padding: 0.3em 0;
+}
+
+.editing .rule-header > div:first-child > div {
+    max-height: 10em;
+    overflow-y: auto;
+}
+
+.btn-delete {
+    float: right;
+}
+
+.rule-input-buttons {
+    padding-top: 0.3em;
+    padding-bottom: 0.3em;
+}
+
+.rule-input {
+    padding-top: 0.3em;
+}
+
+.title:not([contenteditable="true"]) {
+    white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
+    display: inline-block;
+    max-width: 48em;
+}
+
+.rule-header div[class$="-wrap"] {
+    display: flex;
+    align-items: baseline;
+    user-select: none;
+}
+
+.editing .rule-header div[class$="-wrap"] {
+    display: block;
+}
+
+.rule-header div[class$="-wrap"] > .badge {
+    padding: 0;
+}
+
+.rule-header .title[contenteditable="true"],
+.rule-header .description[contenteditable="true"],
+.rule-header .tag[contenteditable="true"] {
+    color: var(--text-muted);
+}
+
+.rule-header .title[contenteditable="true"]:hover,
+.rule-header .description[contenteditable="true"]:hover,
+.rule-header .tag[contenteditable="true"]:hover,
+.rule-header .title[contenteditable="true"]:focus,
+.rule-header .description[contenteditable="true"]:focus,
+.rule-header .tag[contenteditable="true"]:focus {
+    color: var(--text-color);
+}
+
+.header-info-wrap {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.65rem;
+    text-align: end;
+}
+
+.header-info-wrap > .information {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.header-info-wrap > .rule-header-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
+}
+
+.col-trim-parameters {
+    display: flex;
+}
+
+.col-trim-parameters > :first-child {
+    flex: 1;
+}
+
+.more-types {
+    margin: 0 !important;
+}
+
+.redirectUrl {
+    padding: 0.4em !important;
+    box-sizing: border-box;
+}
+
+.tags-input {
+    margin-bottom: 0.3em !important;
+}
+
+@media (min-width: 35em) {
+    .rule-header-buttons {
+        min-width: 10em;
+        text-align: center;
+    }
+
+    .title:hover {
+        text-decoration: underline;
+        cursor: pointer;
+    }
+
+    .editing .title:hover {
+        text-decoration: initial;
+        cursor: initial;
+    }
+
+    .new:not(.editing) > .rule-header,
+    .saved:not(.editing) > .rule-header {
+        border-left: 2px solid var(--success-color);
+    }
+
+    .error > .rule-header {
+        border-left: 2px solid var(--danger-color);
+    }
+
+    .merged:not(.editing) > .rule-header {
+        border-left: 2px solid var(--warning-color);
+    }
+
+    .form-group-pattern {
+        display: flex;
+        margin: 0;
+        flex-flow: row wrap;
+    }
+
+    .form-group-pattern > div {
+        flex-grow: 1;
+    }
+
+    #tlds-form,
+    .form-group-pattern > div {
+        margin-right: 1em;
+    }
+
+    .form-group-pattern > div:first-child {
+        flex-grow: 0;
+    }
+
+    .form-wrap {
+        display: flex;
+        align-items: center;
+    }
+
+    .form-wrap > div:first-child {
+        flex-grow: 1;
+    }
+
+    .form-wrap .any-wrap {
+        min-width: 6em;
+        white-space: nowrap;
+        display: flex;
+    }
+
+    .url-wrap:not(.d-none) + div {
+        margin-top: 2em !important;
+        align-self: flex-start;
+    }
+}
+
+@media (max-width: 35em) {
+    .editing > .rule-header div[class$="-wrap"] {
+        display: flex;
+        align-items: flex-start;
+        flex-direction: column;
+        margin-bottom: 0.6em !important;
+    }
+
+    .editing .header-info-wrap,
+    .editing .rule-select {
+        display: none !important;
+    }
+
+    .rule-header {
+        display: grid;
+        grid-template-columns: 2.75rem minmax(0, 1fr);
+        gap: 0.35rem 0.45rem;
+        align-items: start;
+        padding: 0.45rem 0;
+    }
+
+    .rule-header > .rule-select {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 2.75rem;
+        min-height: 2.75rem;
+        margin: 0;
+    }
+
+    .rule-header > .rule-header-title {
+        min-width: 0;
+    }
+
+    .rule-header > .header-info-wrap {
+        grid-column: 1 / -1;
+        gap: 0.45rem;
+        flex-wrap: wrap;
+    }
+
+    .rule-header .information {
+        display: flex;
+        flex: 1 1 12rem;
+        flex-wrap: wrap;
+        gap: 0.25rem;
+        text-align: start;
+    }
+
+    .rule-header .rule-header-buttons {
+        display: flex;
+        flex: 1 1 12rem;
+        gap: 0.4rem;
+    }
+
+    .rule-header .rule-header-buttons > .btn {
+        flex: 1 1 0;
+    }
+
+    .title:not([contenteditable="true"]) {
+        max-width: 100%;
+    }
+
+    .information::before {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        display: inline-block;
+        margin: 0 0.3em;
+    }
+
+    .new:not(.editing) .information::before,
+    .saved:not(.editing) .information::before {
+        background: var(--success-color);
+        content: "";
+    }
+
+    .error .information::before {
+        background: var(--danger-color);
+        content: "";
+    }
+
+    .merged:not(.editing) .information::before {
+        background: var(--warning-color);
+        content: "";
+    }
+
+    .rule-header {
+        line-height: 1.5;
+        align-items: initial;
+    }
+
+    .editing .rule-header {
+        display: flex;
+        flex-direction: column;
+    }
+
+    .header-info-wrap {
+        justify-content: space-between;
+    }
+
+    .selected > .rule-header {
+        background: var(--selected-background);
+    }
+
+    .rule-input {
+        padding: 0;
+    }
+}

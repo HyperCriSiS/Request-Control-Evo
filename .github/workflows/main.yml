@@ -3,39 +3,102 @@ name: Build
 on:
   push:
     branches:
+      - master
       - dev
+  pull_request:
 
 permissions:
   contents: read
 
 jobs:
-  repair-rule-ui-placeholder:
+  audit:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
         with:
-          ref: dev
-          fetch-depth: 0
-      - name: Restore target files and apply intended UI patch
-        shell: bash
+          node-version-file: .node-version
+          cache: npm
+      - run: npm run audit
+
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - run: npm ci
+      - run: npm test -- --ci --coverage
+      - uses: codecov/codecov-action@v7
+        with:
+          fail_ci_if_error: false
+
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - uses: ./.github/actions/setup-pandoc
+      - run: npm ci
+      - run: npm run build
+      - uses: actions/upload-artifact@v7
+        with:
+          name: web-ext-artifacts
+          path: web-ext-artifacts/*.zip
+          if-no-files-found: error
+
+  lint-build:
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+          cache: npm
+      - uses: actions/download-artifact@v8
+        with:
+          name: web-ext-artifacts
+          path: web-ext-artifacts
+      - run: npm ci
+      - run: npm run lint-build
+
+  checker:
+    if: always()
+    needs:
+      - audit
+      - lint
+      - test
+      - build
+      - lint-build
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify required jobs
+        env:
+          AUDIT: ${{ needs.audit.result }}
+          LINT: ${{ needs.lint.result }}
+          TEST: ${{ needs.test.result }}
+          BUILD: ${{ needs.build.result }}
+          LINT_BUILD: ${{ needs.lint-build.result }}
         run: |
-          set -euo pipefail
-          base=5068078b2f50f31071fa9b16e00a53d42b6d6d49
-          git checkout "$base" -- .github/workflows/main.yml \
-            src/options/rule-management-ui.js \
-            src/options/rule-input.css \
-            test/rule-management-ux.test.js \
-            test/mobile-ui-regression.test.js
-          echo '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' | base64 -d | gzip -d > /tmp/ui.patch
-          git apply --whitespace=fix /tmp/ui.patch
-          node --check src/options/rule-management-ui.js
-          node --check test/rule-management-ux.test.js
-          node --check test/mobile-ui-regression.test.js
-          git diff --check
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add .github/workflows/main.yml src/options/rule-management-ui.js src/options/rule-input.css test/rule-management-ux.test.js test/mobile-ui-regression.test.js
-          git commit -m "Restore rule UI and apply icon spacing fix"
-          git push origin HEAD:dev
+          test "$AUDIT" = "success"
+          test "$LINT" = "success"
+          test "$TEST" = "success"
+          test "$BUILD" = "success"
+          test "$LINT_BUILD" = "success"
