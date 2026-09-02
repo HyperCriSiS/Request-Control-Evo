@@ -15,31 +15,52 @@
         <div class="content">
             <div id="records" class="hidden"></div>
             <div class="header">
-                <label id="showRules" class="btn" data-i18n="options_title"></label>
+                <button id="showRules" class="btn" type="button" data-i18n="options_title"></button>
                 <button
                     id="inspectCurrent"
                     class="btn"
-                    title="Inspect current page"
-                    aria-label="Inspect current page"
+                    type="button"
+                    data-i18n-title="inspection_title"
+                    data-i18n-aria-label="inspection_title"
                 >
                     <img src="/icons/ionicons/list-outline.svg" width="18" alt="" />
-                    <span>Inspect</span>
+                    <span data-i18n="inspection_title"></span>
                 </button>
-                <button
-                    id="analyzeCurrent"
-                    class="btn"
-                    data-i18n-title="analyzer_title"
-                    data-i18n-aria-label="analyzer_title"
-                >
-                    <img src="/icons/ionicons/shuffle-outline.svg" width="18" alt="" />
-                </button>
-                <label id="toggleActive" class="btn"></label>
+                <button id="toggleActive" class="btn" type="button"></button>
             </div>
+            <section id="siteControl" class="site-control hidden" aria-labelledby="siteControlTitle">
+                <div class="site-control-copy">
+                    <strong id="siteControlTitle" data-i18n="site_control_title"></strong>
+                    <span id="siteHost" class="site-host"></span>
+                </div>
+                <button id="toggleSite" class="btn site-toggle-button" type="button"></button>
+            </section>
+            <section id="referrerControl" class="referrer-control" aria-labelledby="referrerControlTitle">
+                <div class="referrer-control-head">
+                    <div class="referrer-control-copy">
+                        <strong id="referrerControlTitle" data-i18n="referrer_title"></strong>
+                        <span id="referrerHost" class="referrer-host"></span>
+                    </div>
+                    <label class="referrer-mode-field">
+                        <span class="visually-hidden" data-i18n="referrer_mode"></span>
+                        <select id="referrerMode" data-i18n-title="referrer_mode">
+                            <option value="browser" data-i18n="referrer_browser"></option>
+                            <option value="balanced" data-i18n="referrer_balanced"></option>
+                            <option value="same-origin" data-i18n="referrer_same_origin"></option>
+                            <option value="no-referrer" data-i18n="referrer_none"></option>
+                        </select>
+                    </label>
+                </div>
+                <div id="referrerHostRow" class="referrer-host-row hidden">
+                    <span class="referrer-scope"><span data-i18n="host"></span>: <span id="referrerHostScope"></span></span>
+                    <button id="toggleReferrerHost" class="btn referrer-host-button" type="button"></button>
+                </div>
+            </section>
         </div>
         <div id="details" class="hidden">
             <div class="text-shortcut">
-                <button class="copyButton tooltip" data-copy-target="url" data-i18n-title="copy_to_clipboard">
-                    <img src="/icons/firefox/copy.svg" width="20" />
+                <button type="button" class="copyButton tooltip" data-copy-target="url" data-i18n-title="copy_to_clipboard">
+                    <img src="/icons/firefox/copy.svg" width="20" alt="" />
                     <span class="tooltiptext" data-i18n="copied"></span>
                 </button>
             </div>
@@ -47,28 +68,31 @@
             <pre id="url"></pre>
             <div id="targetBlock" class="hidden">
                 <div class="text-shortcut">
-                    <button class="copyButton tooltip" data-copy-target="target" data-i18n-title="copy_to_clipboard">
-                        <img src="/icons/firefox/copy.svg" width="20" />
+                    <button type="button" class="copyButton tooltip" data-copy-target="target" data-i18n-title="copy_to_clipboard">
+                        <img src="/icons/firefox/copy.svg" width="20" alt="" />
                         <span class="tooltiptext" data-i18n="copied"></span>
                     </button>
                 </div>
                 <small data-i18n="new_target"></small>
                 <pre id="target"></pre>
             </div>
-            <a id="editLink" href="" data-i18n="edit_rule"></a>
+            <div class="detail-actions">
+                <a id="editLink" href="" data-i18n="edit_rule"></a>
+                <button id="toggleRuleSite" class="btn rule-site-button hidden" type="button"></button>
+            </div>
         </div>
         <template id="entryTemplate">
             <div class="entry">
-                <div class="entry-header">
+                <button type="button" class="entry-header">
                     <small class="timestamp"></small>
-                    <img class="icon" src="/icons/icon.svg" height="16" />
+                    <img class="icon" src="/icons/icon.svg" height="16" alt="" />
                     <span class="action"></span>
                     <span class="url"></span>
-                    <div>
-                        <label class="tags badge badge-light"></label>
-                        <label class="type badge badge-info"></label>
-                    </div>
-                </div>
+                    <span class="entry-badges">
+                        <span class="tags badge badge-light"></span>
+                        <span class="type badge badge-info"></span>
+                    </span>
+                </button>
             </div>
         </template>
     </body>

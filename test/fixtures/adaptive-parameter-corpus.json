@@ -1,0 +1,90 @@
+{
+  "schemaVersion": 1,
+  "description": "Synthetic manually labelled corpus; no real browsing data.",
+  "profiles": {
+    "strong-tracking": {
+      "observations": 4,
+      "sites": 4,
+      "identifierLike": 4,
+      "propagated": 3
+    },
+    "weak-tracking": {
+      "observations": 3,
+      "sites": 2,
+      "identifierLike": 2,
+      "propagated": 1
+    },
+    "strong-functional-secret": {
+      "observations": 4,
+      "sites": 4,
+      "identifierLike": 4,
+      "propagated": 3
+    },
+    "functional-id": {
+      "observations": 4,
+      "sites": 4,
+      "identifierLike": 4,
+      "propagated": 1
+    },
+    "functional-simple": {
+      "observations": 4,
+      "sites": 4,
+      "identifierLike": 0,
+      "propagated": 0
+    }
+  },
+  "cases": [
+    {"name": "trk_uid", "label": "tracking", "profile": "strong-tracking"},
+    {"name": "visitor_hash", "label": "tracking", "profile": "strong-tracking"},
+    {"name": "ad_event_key", "label": "tracking", "profile": "strong-tracking"},
+    {"name": "promo_trace", "label": "tracking", "profile": "strong-tracking"},
+    {"name": "marketing_uuid", "label": "tracking", "profile": "strong-tracking"},
+    {"name": "partner_trace", "label": "tracking", "profile": "strong-tracking"},
+    {"name": "conversion_marker", "label": "tracking", "profile": "strong-tracking"},
+    {"name": "attribution_key", "label": "tracking", "profile": "strong-tracking"},
+    {"name": "ad_touch", "label": "tracking", "profile": "strong-tracking"},
+    {"name": "traffic_trace", "label": "tracking", "profile": "strong-tracking"},
+    {"name": "funnel_marker", "label": "tracking", "profile": "strong-tracking"},
+    {"name": "click_trace", "label": "tracking", "profile": "strong-tracking"},
+    {"name": "campaign_hash", "label": "tracking", "profile": "strong-tracking"},
+    {"name": "media_attribution", "label": "tracking", "profile": "strong-tracking"},
+    {"name": "promo_uuid", "label": "tracking", "profile": "strong-tracking"},
+    {"name": "acquisition_key", "label": "tracking", "profile": "strong-tracking"},
+    {"name": "outbound_trace", "label": "tracking", "profile": "weak-tracking"},
+    {"name": "partner_hash", "label": "tracking", "profile": "weak-tracking"},
+    {"name": "touchpoint_hash", "label": "tracking", "profile": "weak-tracking"},
+    {"name": "visit_trace", "label": "tracking", "profile": "weak-tracking"},
+    {"name": "session_token", "label": "functional", "profile": "strong-functional-secret"},
+    {"name": "csrf_token", "label": "functional", "profile": "strong-functional-secret"},
+    {"name": "xsrf_token", "label": "functional", "profile": "strong-functional-secret"},
+    {"name": "oauth_state", "label": "functional", "profile": "strong-functional-secret"},
+    {"name": "state_nonce", "label": "functional", "profile": "strong-functional-secret"},
+    {"name": "authorization_code", "label": "functional", "profile": "strong-functional-secret"},
+    {"name": "code_verifier", "label": "functional", "profile": "strong-functional-secret"},
+    {"name": "code_challenge", "label": "functional", "profile": "strong-functional-secret"},
+    {"name": "login_token", "label": "functional", "profile": "strong-functional-secret"},
+    {"name": "reset_token", "label": "functional", "profile": "strong-functional-secret"},
+    {"name": "download_token", "label": "functional", "profile": "strong-functional-secret"},
+    {"name": "upload_token", "label": "functional", "profile": "strong-functional-secret"},
+    {"name": "checkout_token", "label": "functional", "profile": "strong-functional-secret"},
+    {"name": "payment_token", "label": "functional", "profile": "strong-functional-secret"},
+    {"name": "return_to", "label": "functional", "profile": "strong-functional-secret"},
+    {"name": "redirect_uri", "label": "functional", "profile": "strong-functional-secret"},
+    {"name": "cart_id", "label": "functional", "profile": "functional-id"},
+    {"name": "order_id", "label": "functional", "profile": "functional-id"},
+    {"name": "product_id", "label": "functional", "profile": "functional-id"},
+    {"name": "variant_id", "label": "functional", "profile": "functional-id"},
+    {"name": "account_id", "label": "functional", "profile": "functional-id"},
+    {"name": "user_id", "label": "functional", "profile": "functional-id"},
+    {"name": "document_id", "label": "functional", "profile": "functional-id"},
+    {"name": "file_id", "label": "functional", "profile": "functional-id"},
+    {"name": "page", "label": "functional", "profile": "functional-simple"},
+    {"name": "query", "label": "functional", "profile": "functional-simple"},
+    {"name": "search", "label": "functional", "profile": "functional-simple"},
+    {"name": "lang", "label": "functional", "profile": "functional-simple"},
+    {"name": "locale", "label": "functional", "profile": "functional-simple"},
+    {"name": "sort", "label": "functional", "profile": "functional-simple"},
+    {"name": "cursor", "label": "functional", "profile": "functional-simple"},
+    {"name": "theme", "label": "functional", "profile": "functional-simple"}
+  ]
+}

@@ -3,19 +3,29 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { normalizeImportSource } from "./import-source.js";
+import {
+    initialSelectedRuleUuids,
+    sameRuleSelection,
+    selectedRules as filterSelectedRules,
+} from "./import-selection.js";
+import { fetchWithTimeout } from "../main/remote-fetch.js";
 
-const COMMUNITY_CATALOG_URL =
-    "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/catalog.json";
-const COMMUNITY_REPOSITORY = "HyperCriSiS/requestcontrol-rules";
-
-let communityCatalogPromise;
+const ACTION_ORDER = ["filter", "redirect", "secure", "block", "whitelist"];
 
 class RuleImportInput extends HTMLElement {
     constructor() {
         super();
-        this.rules = [];
+        this._rules = [];
         this._data = {};
         this._source = "";
+        this._fetchSource = "";
+        this._loadPromise = null;
+        this._selectedUuids = new Set();
+        this._baselineSelectedUuids = new Set();
+        this._selectableRuleCount = 0;
+        this._selectionListDirty = true;
+        this.loadStatus = "idle";
+        this.integrityStatus = "unknown";
         const template = document.getElementById("rule-import-input");
         this.attachShadow({ mode: "open" }).appendChild(template.content.cloneNode(true));
         this.enhancePresentation();
@@ -38,18 +48,30 @@ class RuleImportInput extends HTMLElement {
             );
         });
 
-        this.shadowRoot.getElementById("import").addEventListener("click", () => {
-            this.dispatchEvent(
-                new CustomEvent("rule-import-import-list", {
-                    bubbles: true,
-                    composed: true,
-                })
-            );
+        this.shadowRoot.getElementById("import").addEventListener("click", async () => {
+            const button = this.shadowRoot.getElementById("import");
+            button.disabled = true;
+            button.classList.add("is-loading");
+            try {
+                await this.load();
+                if (!this.digest) {
+                    return;
+                }
+                if (this.selectedRules.length === 0 && !this._data?.imported) {
+                    await this.openSelection();
+                    return;
+                }
+                this.dispatchEvent(
+                    new CustomEvent("rule-import-import-list", {
+                        bubbles: true,
+                        composed: true,
+                    })
+                );
+            } finally {
+                button.classList.remove("is-loading");
+                this.updateImportAction();
+            }
         });
-    }
-
-    connectedCallback() {
-        this.applyCommunityMetadata();
     }
 
     static get observedAttributes() {
@@ -76,71 +98,139 @@ class RuleImportInput extends HTMLElement {
         const row = this.shadowRoot.querySelector("li");
         row.classList.add("import-row");
 
+        const heading = document.createElement("div");
+        heading.className = "import-heading";
+
+        const copy = document.createElement("div");
+        copy.className = "import-copy";
         const name = this.shadowRoot.getElementById("name");
         name.classList.add("import-name");
-
         const description = document.createElement("p");
         description.id = "description";
         description.className = "description";
         description.hidden = true;
-        row.append(description);
+        copy.append(name, description);
+
+        const actions = document.createElement("div");
+        actions.className = "import-actions";
+        for (const id of [
+            "count",
+            "imported",
+            "update",
+            "integrity",
+            "error",
+            "import",
+            "delete-imported",
+            "show-imported",
+            "delete",
+        ]) {
+            const element = this.shadowRoot.getElementById(id);
+            if (element) actions.append(element);
+        }
+        heading.append(copy, actions);
+        row.prepend(heading);
 
         const meta = document.createElement("div");
         meta.className = "import-meta";
 
+        const catalogMetadata = document.createElement("span");
+        catalogMetadata.id = "catalog-metadata";
+        catalogMetadata.className = "catalog-metadata";
+        catalogMetadata.hidden = true;
+        meta.append(catalogMetadata);
+
+        const selectionToggle = document.createElement("button");
+        selectionToggle.id = "selection-toggle";
+        selectionToggle.type = "button";
+        selectionToggle.className = "btn text selection-toggle";
+        selectionToggle.setAttribute("aria-expanded", "false");
+        selectionToggle.textContent = message("import_choose_rules", "Choose rules");
+        selectionToggle.addEventListener("click", () => this.toggleSelection());
+        meta.append(selectionToggle);
+
+        const types = document.createElement("span");
+        types.id = "import-types";
+        types.className = "import-types";
+        types.hidden = true;
+        meta.append(types);
+
         const url = this.shadowRoot.getElementById("url");
         url.classList.add("source-link");
         url.rel = "noopener noreferrer";
-        const sourceLabel = document.createElement("span");
-        sourceLabel.textContent = message("source", "Source");
-        url.append(sourceLabel);
         meta.append(url);
 
-        const rating = document.createElement("span");
-        rating.id = "rating";
-        rating.className = "rating";
-        rating.hidden = true;
-        const ratingLabel = document.createElement("span");
-        ratingLabel.textContent = message("community_rating", "Community");
-        const ratingLink = document.createElement("a");
-        ratingLink.id = "rating-link";
-        ratingLink.className = "rating-link";
-        ratingLink.target = "_blank";
-        ratingLink.rel = "noopener noreferrer";
-        ratingLink.title = message("rate_on_github", "Rate or review on GitHub");
-
-        const positive = document.createElement("span");
-        positive.append("👍 ");
-        const positiveCount = document.createElement("span");
-        positiveCount.id = "rating-positive";
-        positiveCount.textContent = "0";
-        positive.append(positiveCount);
-
-        const negative = document.createElement("span");
-        negative.append("👎 ");
-        const negativeCount = document.createElement("span");
-        negativeCount.id = "rating-negative";
-        negativeCount.textContent = "0";
-        negative.append(negativeCount);
-
-        ratingLink.append(positive, negative);
-        rating.append(ratingLabel, ratingLink);
-        meta.append(rating);
         row.append(meta);
+
+        const selection = document.createElement("div");
+        selection.id = "rule-selection";
+        selection.className = "rule-selection";
+        selection.hidden = true;
+
+        const selectionToolbar = document.createElement("div");
+        selectionToolbar.className = "selection-toolbar";
+        for (const [id, key, fallback, handler] of [
+            ["select-all-rules", "import_select_all", "Select all", () => this.selectAllRules()],
+            ["select-no-rules", "import_select_none", "Select none", () => this.selectNoRules()],
+            ["invert-rule-selection", "import_invert_selection", "Invert selection", () => this.invertRuleSelection()],
+            ["reset-rule-selection", "import_reset_selection", "Reset selection", () => this.resetRuleSelection()],
+        ]) {
+            const button = document.createElement("button");
+            button.id = id;
+            button.type = "button";
+            button.className = "btn text selection-action";
+            button.textContent = message(key, fallback);
+            button.addEventListener("click", handler);
+            selectionToolbar.append(button);
+        }
+
+        const selectionList = document.createElement("ul");
+        selectionList.id = "selection-list";
+        selectionList.className = "selection-list";
+        selection.append(selectionToolbar, selectionList);
+        row.append(selection);
+    }
+
+    async toggleSelection() {
+        const panel = this.shadowRoot.getElementById("rule-selection");
+        if (panel.hidden) {
+            await this.openSelection();
+        } else {
+            panel.hidden = true;
+            this.shadowRoot.getElementById("selection-toggle").setAttribute("aria-expanded", "false");
+            this.renderRuleSelection();
+        }
+    }
+
+    async openSelection() {
+        const panel = this.shadowRoot.getElementById("rule-selection");
+        const toggle = this.shadowRoot.getElementById("selection-toggle");
+        panel.hidden = false;
+        toggle.setAttribute("aria-expanded", "true");
+        if (this.source) {
+            await this.load();
+        }
+        if (this._selectionListDirty) {
+            this.renderRuleSelection();
+        }
     }
 
     onSourceChanged(src) {
         const text = this.shadowRoot.getElementById("name");
         const url = this.shadowRoot.getElementById("url");
+        const toggle = this.shadowRoot.getElementById("selection-toggle");
         url.title = message("view_list", "View source");
 
         if (!src) {
-            if (!this.textContent.trim()) {
-                text.textContent = "";
-            }
+            if (!this.textContent.trim()) text.textContent = "";
             url.removeAttribute("href");
-            this.rules = [];
+            toggle.hidden = true;
+            this._rules = [];
             this.digest = null;
+            this._selectedUuids = new Set();
+            this._baselineSelectedUuids = new Set();
+            this.renderRuleSelection();
+            this.loadStatus = "idle";
+            this.integrityStatus = "unknown";
             return;
         }
 
@@ -148,8 +238,11 @@ class RuleImportInput extends HTMLElement {
             text.textContent = new URL(src).hostname || src;
         }
 
+        toggle.hidden = false;
         url.href = humanReadableSource(src);
-        this.fetchRules(src);
+        if (!this.hasAttribute("lazy")) {
+            this.load();
+        }
     }
 
     onDeletableChanged(deletable) {
@@ -175,22 +268,67 @@ class RuleImportInput extends HTMLElement {
         this.onSourceChanged(this._source);
     }
 
+    set fetchSource(value) {
+        this._fetchSource = normalizeImportSource(value) || "";
+    }
+
+    set sourceHomepage(value) {
+        const link = this.shadowRoot.getElementById("url");
+        const source = normalizeImportSource(value);
+        if (source) link.href = source;
+    }
+
+    set catalogMetadata(value = {}) {
+        const container = this.shadowRoot.getElementById("catalog-metadata");
+        if (!container) return;
+        container.replaceChildren();
+
+        const behavior = catalogBehaviorLabel(value.behavior);
+        const scope = catalogScopeLabel(value.scope);
+        if (behavior) container.append(createMetadataBadge(behavior, "behavior"));
+        if (scope) container.append(createMetadataBadge(scope, "scope"));
+        if (value.risk === "medium" || value.risk === "high") {
+            container.append(createMetadataBadge(catalogRiskLabel(value.risk), `risk risk-${value.risk}`));
+        }
+        container.hidden = container.childElementCount === 0;
+    }
+
+    load() {
+        if (!this._loadPromise) {
+            const source = this._fetchSource || this.source;
+            this._loadPromise = this.fetchRules(source).finally(() => {
+                this.data = this._data;
+                if (!this.digest) {
+                    this._loadPromise = null;
+                    this._selectedUuids = new Set();
+                    this._baselineSelectedUuids = new Set();
+                    this.renderRuleSelection();
+                }
+            });
+        }
+        return this._loadPromise;
+    }
+
     get data() {
         return this._data;
+    }
+
+    get updateAvailable() {
+        return Boolean(this._data?.imported && this.digest && this._data.imported.digest !== this.digest);
     }
 
     set data(value = {}) {
         const imported = this.shadowRoot.getElementById("imported");
         const update = this.shadowRoot.getElementById("update");
-        const importList = this.shadowRoot.getElementById("import");
         const deleteImported = this.shadowRoot.getElementById("delete-imported");
         const showImported = this.shadowRoot.getElementById("show-imported");
         imported.hidden = !value.imported;
         update.hidden = !value.imported || !this.digest || value.imported.digest === this.digest;
-        importList.hidden = value.imported && update.hidden || !this.digest;
         showImported.hidden = !value.imported;
         deleteImported.hidden = !value.imported;
         this._data = value;
+        if (this.digest && this._rules.length) this.initializeSelection();
+        this.updateImportAction();
     }
 
     set description(value) {
@@ -201,125 +339,249 @@ class RuleImportInput extends HTMLElement {
         description.hidden = !text;
     }
 
-    async applyCommunityMetadata() {
-        if (!this.dataset.catalog || !this.dataset.entry) {
+    get selectedRules() {
+        return filterSelectedRules(this._rules, this._selectedUuids);
+    }
+
+    get rules() {
+        return this.selectedRules;
+    }
+
+    get selectedUuids() {
+        return this.selectedRules.map((rule) => rule.uuid);
+    }
+
+    initializeSelection() {
+        const selected = initialSelectedRuleUuids(this._rules, this._data?.imported || null);
+        this._selectedUuids = new Set(selected);
+        this._baselineSelectedUuids = new Set(selected);
+        this.renderRuleSelection();
+    }
+
+    selectAllRules() {
+        this._selectedUuids = new Set(this._rules.filter((rule) => rule?.uuid).map((rule) => rule.uuid));
+        this.updateSelectionPresentation();
+    }
+
+    selectNoRules() {
+        this._selectedUuids = new Set();
+        this.updateSelectionPresentation();
+    }
+
+    invertRuleSelection() {
+        const next = new Set();
+        for (const rule of this._rules) {
+            if (rule?.uuid && !this._selectedUuids.has(rule.uuid)) next.add(rule.uuid);
+        }
+        this._selectedUuids = next;
+        this.updateSelectionPresentation();
+    }
+
+    resetRuleSelection() {
+        this._selectedUuids = new Set(this._baselineSelectedUuids);
+        this.updateSelectionPresentation();
+    }
+
+    renderRuleSelection() {
+        const panel = this.shadowRoot.getElementById("rule-selection");
+        const list = this.shadowRoot.getElementById("selection-list");
+        if (!panel || !list) return;
+
+        const selectable = this._rules.filter((rule) => rule?.uuid);
+        this._selectableRuleCount = selectable.length;
+        this.renderActionBadges(selectable);
+
+        if (panel.hidden) {
+            list.replaceChildren();
+            this._selectionListDirty = true;
+            this.updateSelectionPresentation({ syncCheckboxes: false });
             return;
         }
 
-        try {
-            const catalog = await getCommunityCatalog();
-            const entry = catalog.ruleSets.find(
-                (item) => item && (item.id === this.dataset.entry || normalizeImportSource(item.url) === this.source)
-            );
-            if (!entry) {
-                return;
-            }
+        list.replaceChildren();
+        for (const [action, rules] of groupRulesByAction(selectable)) {
+            const header = document.createElement("li");
+            header.className = "selection-group-header";
+            header.dataset.action = action;
+            const label = document.createElement("span");
+            label.textContent = actionLabel(action);
+            const count = document.createElement("span");
+            count.className = "badge badge-light";
+            count.textContent = String(rules.length);
+            header.append(label, count);
+            list.append(header);
 
-            if (entry.description) {
-                this.description = entry.description;
+            for (const rule of rules) {
+                const item = document.createElement("li");
+                item.className = "selection-rule";
+                item.dataset.action = action;
+                const labelNode = document.createElement("label");
+                const checkbox = document.createElement("input");
+                checkbox.type = "checkbox";
+                checkbox.checked = this._selectedUuids.has(rule.uuid);
+                checkbox.dataset.uuid = rule.uuid;
+                checkbox.addEventListener("change", () => {
+                    if (checkbox.checked) this._selectedUuids.add(rule.uuid);
+                    else this._selectedUuids.delete(rule.uuid);
+                    this.updateSelectionPresentation({ syncCheckboxes: false });
+                });
+
+                const text = document.createElement("span");
+                text.className = "selection-rule-text";
+                const title = document.createElement("strong");
+                title.textContent = rule.title || rule.uuid;
+                text.append(title);
+                if (rule.description) {
+                    const description = document.createElement("small");
+                    description.textContent = rule.description;
+                    text.append(description);
+                }
+                labelNode.append(checkbox, text);
+                item.append(labelNode);
+                list.append(item);
             }
-            if (entry.homepage) {
-                this.shadowRoot.getElementById("url").href = entry.homepage;
-            }
-            if (entry.ratingIssue) {
-                await this.fetchRating(
-                    entry.ratingRepository || catalog.ratingRepository || COMMUNITY_REPOSITORY,
-                    entry.ratingIssue
-                );
-            }
-        } catch {
-            // Catalog presentation metadata is optional; importing must keep working offline.
         }
+        this._selectionListDirty = false;
+        this.updateSelectionPresentation();
     }
 
-    async fetchRating(repository, issueNumber) {
-        const rating = this.shadowRoot.getElementById("rating");
-        const link = this.shadowRoot.getElementById("rating-link");
-        const issueUrl = `https://github.com/${repository}/issues/${issueNumber}`;
-        link.href = issueUrl;
-        rating.hidden = false;
-
-        try {
-            const response = await fetch(`https://api.github.com/repos/${repository}/issues/${issueNumber}`);
-            if (!response.ok) {
-                throw new Error(`GitHub rating request failed: ${response.status}`);
-            }
-            const issue = await response.json();
-            this.shadowRoot.getElementById("rating-positive").textContent = issue.reactions?.["+1"] || 0;
-            this.shadowRoot.getElementById("rating-negative").textContent = issue.reactions?.["-1"] || 0;
-        } catch {
-            rating.title = message("community_rating_unavailable", "Community rating unavailable");
+    renderActionBadges(rules) {
+        const container = this.shadowRoot.getElementById("import-types");
+        if (!container) return;
+        const actions = [...new Set(rules.map((rule) => rule.action).filter(Boolean))]
+            .sort((a, b) => actionRank(a) - actionRank(b));
+        container.replaceChildren();
+        for (const action of actions) {
+            const badge = document.createElement("span");
+            badge.className = "badge badge-light import-type-badge";
+            badge.textContent = actionLabel(action).replace(/\s+rules$/i, "");
+            container.append(badge);
         }
+        container.hidden = actions.length === 0;
+    }
+
+    updateSelectionPresentation({ syncCheckboxes = true } = {}) {
+        const toggle = this.shadowRoot.getElementById("selection-toggle");
+        const list = this.shadowRoot.getElementById("selection-list");
+        if (!toggle || !list) return;
+        const selectableCount = this._selectableRuleCount;
+        const selectedCount = this._selectedUuids.size;
+        toggle.textContent = this.digest
+            ? (browser.i18n.getMessage("import_selected_count", [String(selectedCount), String(selectableCount)]) ||
+                `${selectedCount} of ${selectableCount} rules selected`)
+            : message("import_choose_rules", "Choose rules");
+        if (syncCheckboxes) {
+            list.querySelectorAll('input[type="checkbox"]').forEach((checkbox) => {
+                checkbox.checked = this._selectedUuids.has(checkbox.dataset.uuid);
+            });
+        }
+        this.shadowRoot.querySelectorAll(".selection-action").forEach((button) => {
+            button.disabled = selectableCount === 0;
+        });
+        const reset = this.shadowRoot.getElementById("reset-rule-selection");
+        if (reset) reset.disabled = sameRuleSelection(this._selectedUuids, this._baselineSelectedUuids);
+        this.updateImportAction();
+    }
+
+    updateImportAction() {
+        const importList = this.shadowRoot.getElementById("import");
+        const imported = Boolean(this._data?.imported);
+        const selectionDirty = imported && !sameRuleSelection(this._selectedUuids, this._baselineSelectedUuids);
+        const unavailable = !this.digest && !this.hasAttribute("lazy");
+        importList.hidden = unavailable || Boolean(imported && !this.updateAvailable && !selectionDirty);
+        importList.disabled = Boolean(!imported && this.digest && this._selectedUuids.size === 0);
+        importList.title = imported
+            ? message("import_apply_selection", "Apply selection")
+            : message("import_selected_rules", "Import selected rules");
     }
 
     async fetchRules(src) {
-        const loading = this.shadowRoot.getElementById("loading");
         const count = this.shadowRoot.getElementById("count");
         const integrity = this.shadowRoot.getElementById("integrity");
-        loading.hidden = false;
+        this.setAttribute("aria-busy", "true");
         count.hidden = true;
         integrity.hidden = true;
         this.digest = null;
-        this.rules = [];
+        this._rules = [];
+        this.loadStatus = "loading";
+        this.integrityStatus = this.expectedSha256 ? "pending" : "not-required";
 
         try {
             const source = normalizeImportSource(src);
-            if (!source) {
-                throw new TypeError("Unsupported rule source URL");
-            }
-            const response = await fetch(source);
-            if (!response.ok) {
-                throw new Error(`Failed to fetch rule list: ${response.status}`);
-            }
+            if (!source) throw new TypeError("Unsupported rule source URL");
+            const response = await fetchWithTimeout(source, { cache: "no-store" });
+            if (!response.ok) throw new Error(`Failed to fetch rule list: ${response.status}`);
             const text = await response.text();
             this.digest = await digest(text);
             if (this.expectedSha256 && this.digest !== this.expectedSha256) {
                 integrity.hidden = false;
                 integrity.textContent = message("integrity_failed", "Integrity check failed");
+                this.digest = null;
+                this.loadStatus = "integrity-failed";
+                this.integrityStatus = "failed";
                 return;
             }
-            this.rules = JSON.parse(text);
+            if (this.expectedSha256) this.integrityStatus = "verified";
+            const parsed = JSON.parse(text);
+            this._rules = Array.isArray(parsed) ? parsed : [parsed];
+            if (this._rules.some((rule) => !rule || typeof rule !== "object")) {
+                throw new TypeError("Invalid rule payload");
+            }
+            this.loadStatus = "available";
+            this.initializeSelection();
             count.hidden = false;
-            if (this.rules.length === 1) {
+            if (this._rules.length === 1) {
                 count.textContent = browser.i18n.getMessage("count_rule") || "1 rule";
             } else {
-                count.textContent = browser.i18n.getMessage("count_rules", this.rules.length) || `${this.rules.length} rules`;
+                count.textContent = browser.i18n.getMessage("count_rules", this._rules.length) || `${this._rules.length} rules`;
             }
         } catch {
+            this.digest = null;
+            this._rules = [];
+            this._selectedUuids = new Set();
+            this._baselineSelectedUuids = new Set();
+            this.renderRuleSelection();
+            this.loadStatus = "unavailable";
+            if (this.integrityStatus === "pending") this.integrityStatus = "unknown";
             count.hidden = false;
             count.textContent = message("import_unavailable", "Unavailable");
         } finally {
-            loading.hidden = true;
+            this.removeAttribute("aria-busy");
         }
     }
 }
 
 customElements.define("rule-import-input", RuleImportInput);
 
-async function getCommunityCatalog() {
-    if (!communityCatalogPromise) {
-        communityCatalogPromise = fetch(COMMUNITY_CATALOG_URL, { cache: "no-store" })
-            .then((response) => {
-                if (!response.ok) {
-                    throw new Error(`Community catalog request failed: ${response.status}`);
-                }
-                return response.json();
-            })
-            .then((catalog) => {
-                if (!catalog || !Array.isArray(catalog.ruleSets)) {
-                    throw new Error("Invalid community catalog");
-                }
-                return catalog;
-            });
+function groupRulesByAction(rules) {
+    const groups = new Map();
+    for (const rule of rules) {
+        const action = rule.action || "other";
+        if (!groups.has(action)) groups.set(action, []);
+        groups.get(action).push(rule);
     }
-    return communityCatalogPromise;
+    return Array.from(groups.entries()).sort(([a], [b]) => actionRank(a) - actionRank(b));
+}
+
+function actionRank(action) {
+    const index = ACTION_ORDER.indexOf(action);
+    return index === -1 ? ACTION_ORDER.length : index;
+}
+
+function actionLabel(action) {
+    const keys = {
+        filter: "filter_rules",
+        redirect: "redirect_rules",
+        secure: "secure_rules",
+        block: "block_rules",
+        whitelist: "whitelist_rules",
+    };
+    return browser.i18n.getMessage(keys[action]) || action || "Other";
 }
 
 function humanReadableSource(src) {
     const source = normalizeImportSource(src);
-    if (!source) {
-        return "about:blank";
-    }
+    if (!source) return "about:blank";
 
     try {
         const url = new URL(source);
@@ -330,233 +592,60 @@ function humanReadableSource(src) {
                 return `https://github.com/${owner}/${repo}/blob/${ref}/${path.join("/")}`;
             }
         }
-        if (url.hostname === "tumpio.github.io" && url.pathname.startsWith("/requestcontrol/rules/")) {
-            return "https://github.com/tumpio/requestcontrol/tree/master/rules";
-        }
-        if (url.protocol === "moz-extension:" || url.protocol === "chrome-extension:") {
-            return "https://github.com/HyperCriSiS/Request-Control-Evo/tree/dev/rules";
-        }
         return source;
     } catch {
         return "about:blank";
     }
 }
 
-function message(key, fallback, substitutions) {
-    return browser.i18n.getMessage(key, substitutions) || fallback;
+function createMetadataBadge(text, kind) {
+    const badge = document.createElement("span");
+    badge.className = `catalog-badge catalog-badge-${kind.split(" ").join(" catalog-badge-")}`;
+    badge.textContent = text;
+    return badge;
 }
 
-function exportJsonFile(name, object) {
-    const blob = new Blob([JSON.stringify(object, null, 2)], { type: "application/json" });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.href = url;
-    link.download = name;
-    document.body.append(link);
-    link.click();
-    link.remove();
-    setTimeout(() => URL.revokeObjectURL(url), 0);
+function catalogBehaviorLabel(value) {
+    const labels = {
+        "direct-link": ["catalog_behavior_direct_link", "Direct links"],
+        "media-quality": ["catalog_behavior_media_quality", "Media quality"],
+        "media-url-cleanup": ["catalog_behavior_media_url_cleanup", "Media URL cleanup"],
+        "site-cleanup": ["catalog_behavior_site_cleanup", "Site cleanup"],
+        "request-blocking": ["catalog_behavior_request_blocking", "Request blocking"],
+        "url-cleanup": ["catalog_behavior_url_cleanup", "URL cleanup"],
+        "privacy-embed": ["catalog_behavior_privacy_embed", "Private embeds"],
+        "provider-override": ["catalog_behavior_provider_override", "Provider override"],
+        "special-mode": ["catalog_behavior_special_mode", "Special mode"],
+        "url-normalization": ["catalog_behavior_url_normalization", "URL normalization"],
+    };
+    const label = labels[value];
+    return label ? message(label[0], label[1]) : "";
+}
+
+function catalogScopeLabel(value) {
+    const labels = {
+        "site-specific": ["catalog_scope_site_specific", "Site-specific"],
+        "cross-site": ["catalog_scope_cross_site", "Cross-site"],
+        global: ["catalog_scope_global", "Global"],
+    };
+    const label = labels[value];
+    return label ? message(label[0], label[1]) : "";
+}
+
+function catalogRiskLabel(value) {
+    return value === "high"
+        ? message("catalog_risk_high", "High risk")
+        : message("catalog_risk_medium", "Medium risk");
+}
+
+function message(key, fallback, substitutions) {
+    return browser.i18n.getMessage(key, substitutions) || fallback;
 }
 
 async function digest(text, algorithm = "SHA-256") {
     const encoder = new TextEncoder();
     const data = encoder.encode(text);
-    const digest = await crypto.subtle.digest(algorithm, data);
-    const bytes = Array.from(new Uint8Array(digest));
+    const digestValue = await crypto.subtle.digest(algorithm, data);
+    const bytes = Array.from(new Uint8Array(digestValue));
     return bytes.map((byte) => byte.toString(16).padStart(2, "0")).join("");
-}
-
-function setupBundledSpecialRulesets() {
-    const tab = document.getElementById("tab-imports");
-    if (!tab || document.getElementById("bundled-special-rulesets")) {
-        return;
-    }
-
-    const presets = [
-        {
-            path: "rules/media-original-quality.json",
-            title: browser.i18n.getMessage("special_media_original_title"),
-            description: browser.i18n.getMessage("special_media_original_description"),
-        },
-        {
-            path: "rules/privacy-enhanced-embeds.json",
-            title: browser.i18n.getMessage("special_privacy_embeds_title"),
-            description: browser.i18n.getMessage("special_privacy_embeds_description"),
-        },
-        {
-            path: "rules/developer-direct-raw.json",
-            title: browser.i18n.getMessage("special_developer_raw_title"),
-            description: browser.i18n.getMessage("special_developer_raw_description"),
-        },
-        {
-            path: "rules/search-engine-escape.json",
-            title: browser.i18n.getMessage("special_search_escape_title"),
-            description: browser.i18n.getMessage("special_search_escape_description"),
-        },
-        {
-            path: "rules/privacy-aggressive-direct-links.json",
-            title: browser.i18n.getMessage("special_aggressive_links_title"),
-            description: browser.i18n.getMessage("special_aggressive_links_description"),
-        },
-        {
-            path: "rules/web-canonical-desktop.json",
-            title: browser.i18n.getMessage("special_canonical_desktop_title"),
-            description: browser.i18n.getMessage("special_canonical_desktop_description"),
-        },
-        {
-            path: "rules/special-text-first-low-bandwidth.json",
-            title: browser.i18n.getMessage("special_text_first_title"),
-            description: browser.i18n.getMessage("special_text_first_description"),
-        },
-        {
-            path: "rules/special-first-party-firewall.json",
-            title: browser.i18n.getMessage("special_first_party_title"),
-            description: browser.i18n.getMessage("special_first_party_description"),
-            warning: true,
-        },
-    ];
-
-    const details = document.createElement("details");
-    details.id = "bundled-special-rulesets";
-    details.open = true;
-
-    const summary = document.createElement("summary");
-    summary.textContent = "Request Control Evo";
-    summary.title = browser.i18n.getMessage("special_rulesets_tooltip");
-
-    const list = document.createElement("ul");
-    for (const preset of presets) {
-        const input = document.createElement("rule-import-input");
-        input.source = browser.runtime.getURL(preset.path);
-        input.title = preset.description;
-        input.description = preset.description;
-        if (preset.warning) {
-            input.setAttribute("warning", "");
-        }
-        const label = document.createElement("span");
-        label.textContent = preset.title;
-        input.append(label);
-        list.append(input);
-    }
-
-    details.append(summary, list);
-    const communityLists = tab.querySelector("#community-rule-lists");
-    if (communityLists) {
-        tab.insertBefore(details, communityLists);
-    } else {
-        tab.append(details);
-    }
-}
-
-function setupGitHubCommunityShare() {
-    const tab = document.getElementById("tab-imports");
-    if (!tab || document.getElementById("github-community-share")) {
-        return;
-    }
-
-    const details = document.createElement("details");
-    details.id = "github-community-share";
-    details.className = "community-share";
-    details.open = true;
-
-    const summary = document.createElement("summary");
-    summary.textContent = message("github_community", "GitHub Community");
-
-    const description = document.createElement("p");
-    description.textContent = message(
-        "github_community_description",
-        "Share selected local rules for review in the Request Control community repository."
-    );
-
-    const actions = document.createElement("div");
-    actions.className = "community-share-actions";
-
-    const share = document.createElement("button");
-    share.id = "shareRulesGitHub";
-    share.className = "btn primary";
-    share.type = "button";
-    share.textContent = message("share_selected_github", "Share selected rules on GitHub");
-
-    const repository = document.createElement("a");
-    repository.className = "btn";
-    repository.target = "_blank";
-    repository.rel = "noopener noreferrer";
-    repository.href = `https://github.com/${COMMUNITY_REPOSITORY}`;
-    repository.textContent = message("open_community_repository", "Open community repository");
-
-    const status = document.createElement("span");
-    status.className = "community-share-status";
-
-    actions.append(share, repository, status);
-    details.append(summary, description, actions);
-
-    const myLists = Array.from(tab.querySelectorAll("details")).find(
-        (item) => item.querySelector("summary")?.dataset.i18n === "my_lists"
-    );
-    tab.insertBefore(details, myLists || null);
-
-    const getSelectedRules = () =>
-        Array.from(document.querySelectorAll("rule-list")).flatMap((list) => list.selected || []);
-
-    const update = () => {
-        const count = getSelectedRules().length;
-        share.disabled = count === 0;
-        status.textContent = count
-            ? message("github_share_selected_count", `${count} selected rule(s) ready to share.`, count)
-            : message("github_share_select_rules", "Select one or more rules in the Rules tab first.");
-    };
-
-    share.addEventListener("click", async () => {
-        const selected = getSelectedRules();
-        if (selected.length === 0) {
-            update();
-            return;
-        }
-
-        const payload = {
-            schemaVersion: 1,
-            exportedAt: new Date().toISOString(),
-            rules: selected,
-        };
-        const json = JSON.stringify(payload, null, 2);
-        const title = message(
-            "github_share_issue_title",
-            `Rule set submission (${selected.length} rules)`,
-            selected.length
-        );
-        const intro = message(
-            "github_share_issue_intro",
-            "Generated by Request Control for community review. I reviewed this payload and removed private or sensitive values."
-        );
-
-        const url = new URL(`https://github.com/${COMMUNITY_REPOSITORY}/issues/new`);
-        url.searchParams.set("template", "rule-set-submission.md");
-        url.searchParams.set("title", title);
-
-        if (json.length <= 24000) {
-            url.searchParams.set("body", `${intro}\n\n\`\`\`json\n${json}\n\`\`\``);
-        } else {
-            exportJsonFile("request-control-community-submission.json", payload);
-            status.textContent = message(
-                "github_share_too_large",
-                "The selection is too large for a prefilled GitHub submission. A JSON file was exported; attach or paste it into the opened form."
-            );
-        }
-
-        await browser.tabs.create({ url: url.toString() });
-    });
-
-    document.addEventListener("rule-selected", update);
-    update();
-}
-
-function setupImportExtras() {
-    setupBundledSpecialRulesets();
-    setupGitHubCommunityShare();
-}
-
-if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", setupImportExtras, { once: true });
-} else {
-    setupImportExtras();
 }

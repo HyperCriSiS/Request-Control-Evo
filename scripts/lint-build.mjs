@@ -1,4 +1,6 @@
 import { spawnSync } from "node:child_process";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const ALLOWED_COMPATIBILITY_CODES = new Set([
@@ -31,6 +33,11 @@ export function evaluateReport(report) {
     };
 }
 
+export function defaultArchivePath() {
+    const manifest = JSON.parse(readFileSync(new URL("../manifest.json", import.meta.url), "utf8"));
+    return resolve(`web-ext-artifacts/request_control-${manifest.version}.zip`);
+}
+
 function printMessages(label, messages) {
     if (messages.length === 0) {
         return;
@@ -42,11 +49,7 @@ function printMessages(label, messages) {
 }
 
 function main() {
-    const archive = process.argv[2];
-    if (!archive) {
-        console.error("Usage: node scripts/lint-build.mjs <extension.zip>");
-        process.exit(2);
-    }
+    const archive = process.argv[2] || defaultArchivePath();
 
     const executable = process.platform === "win32" ? "addons-linter.cmd" : "addons-linter";
     const result = spawnSync(executable, ["--output", "json", archive], {

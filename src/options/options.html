@@ -14,7 +14,6 @@
         <script defer src="../util/tab.js"></script>
         <script defer type="module" src="../util/i18n.js"></script>
         <script defer src="type-input.js"></script>
-        <script defer src="loading-dots.js"></script>
         <script defer type="module" src="rule-import-input.js"></script>
         <script defer type="module" src="../util/tags-input/src/tags-input.js"></script>
         <script defer type="module" src="rule-list.js"></script>
@@ -57,6 +56,44 @@
                 </div>
             </div>
             <div id="tab-rules" class="tab-pane active">
+                <div class="rules-commandbar" aria-label="Rule view controls">
+                    <label class="rules-search">
+                        <span class="sr-only" data-i18n="rule_search"></span>
+                        <input
+                            id="ruleSearch"
+                            type="search"
+                            autocomplete="off"
+                            data-i18n-placeholder="rule_search_placeholder"
+                        />
+                    </label>
+                    <select id="ruleStatusFilter" class="rules-view-select" data-i18n-title="rule_filter_status">
+                        <option value="all" data-i18n="rule_status_all"></option>
+                        <option value="active" data-i18n="rule_status_active"></option>
+                        <option value="disabled" data-i18n="rule_status_disabled"></option>
+                    </select>
+                    <select id="ruleSourceFilter" class="rules-view-select" data-i18n-title="rule_filter_source">
+                        <option value="all" data-i18n="rule_source_all"></option>
+                        <option value="local" data-i18n="rule_source_local"></option>
+                        <option value="official" data-i18n="imports_official"></option>
+                        <option value="community" data-i18n="imports_community"></option>
+                        <option value="custom" data-i18n="imports_custom_source"></option>
+                    </select>
+                    <select id="ruleGroupBy" class="rules-view-select" data-i18n-title="rule_group_by">
+                        <option value="group" data-i18n="rule_group_custom"></option>
+                        <option value="source" data-i18n="rule_group_source"></option>
+                        <option value="none" data-i18n="rule_group_none"></option>
+                    </select>
+                    <select id="ruleSort" class="rules-view-select" data-i18n-title="rule_sort">
+                        <option value="title" data-i18n="rule_sort_title"></option>
+                        <option value="title-desc" data-i18n="rule_sort_title_desc"></option>
+                        <option value="source" data-i18n="rule_sort_source"></option>
+                        <option value="manual" data-i18n="rule_sort_manual"></option>
+                    </select>
+                    <label class="rule-quick-actions-toggle">
+                        <input id="showRuleQuickActions" type="checkbox" autocomplete="off" />
+                        <span data-i18n="rule_quick_actions"></span>
+                    </label>
+                </div>
                 <rule-list id="filter" icon="/icons/icon-filter.svg" text="filter_rules" class="d-none"></rule-list>
                 <rule-list
                     id="redirect"
@@ -107,6 +144,16 @@
                             <span class="badge badge-light selected-count">0</span>
                         </button>
                         <button
+                            id="shareSelectedRulesGitHub"
+                            class="btn btn-selected-action"
+                            disabled="disabled"
+                            autocomplete="off"
+                        >
+                            <img src="/icons/ionicons/open-outline.svg" width="16" />
+                            <span data-i18n="share_selected_community"></span>
+                            <span class="badge badge-light selected-count">0</span>
+                        </button>
+                        <button
                             id="removeSelectedRules"
                             class="btn btn-danger btn-selected-action"
                             disabled="disabled"
@@ -121,37 +168,97 @@
                 </div>
             </div>
             <div id="tab-imports" class="tab-pane">
-                <details open>
-                    <summary data-i18n="common_lists"></summary>
-                    <ul>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-common-redirectors.json"><span data-i18n="privacy"></span> - <span data-i18n="imports_skip_redirectors"></span></rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-common-params.json"><span data-i18n="privacy"></span> - <span data-i18n="imports_remove_parameters"></span></rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-common-images.json"><span data-i18n="privacy"></span> - <span data-i18n="imports_remove_image_parameters"></span></rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-block-beacon-and-ping.json"><span data-i18n="privacy"></span> - <span data-i18n="imports_block_beacon_and_ping"></span></rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/other-skip-image-downsamplers.json"><span data-i18n="other"></span> - <span data-i18n="imports_skip_image_downsamplers"></span></rule-import-input>
-                    </ul>
-                </details>
-                <details open>
-                    <summary data-i18n="site_specific_lists"></summary>
-                    <ul>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-amazon.json"><span data-i18n="privacy"></span> - Amazon</rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-bing.json"><span data-i18n="privacy"></span> - Bing</rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-duckduckgo.json"><span data-i18n="privacy"></span> - DuckDuckGo</rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-facebook.json"><span data-i18n="privacy"></span> - Facebook</rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-google.json"><span data-i18n="privacy"></span> - Google</rule-import-input>
-                        <rule-import-input src="https://tumpio.github.io/requestcontrol/rules/privacy-youtube.json"><span data-i18n="privacy"></span> - YouTube</rule-import-input>
-                    </ul>
-                </details>
-                <details open>
-                    <summary data-i18n="my_lists"></summary>
-                    <ul id="my-import-sources"></ul>
+                <div class="imports-intro">
+                    <h3 data-i18n="imports_rule_packages"></h3>
+                    <p data-i18n="imports_rule_packages_description"></p>
+                </div>
+                <div class="imports-channel-tabs" role="tablist" aria-label="Rule source channel">
+                    <button
+                        id="imports-tab-official"
+                        type="button"
+                        class="imports-channel-tab active"
+                        role="tab"
+                        aria-selected="true"
+                        aria-controls="official-rule-lists"
+                        data-import-channel="official"
+                    >
+                        <span data-i18n="imports_official"></span>
+                        <span id="official-update-count" class="badge badge-notify" hidden></span>
+                    </button>
+                    <button
+                        id="imports-tab-community"
+                        type="button"
+                        class="imports-channel-tab"
+                        role="tab"
+                        aria-selected="false"
+                        aria-controls="community-rule-lists"
+                        data-import-channel="community"
+                    >
+                        <span data-i18n="imports_community"></span>
+                    </button>
+                    <button
+                        id="imports-tab-custom"
+                        type="button"
+                        class="imports-channel-tab"
+                        role="tab"
+                        aria-selected="false"
+                        aria-controls="custom-rule-lists"
+                        data-import-channel="custom"
+                    >
+                        <span data-i18n="imports_custom_source"></span>
+                    </button>
+                </div>
+                <section
+                    id="official-rule-lists"
+                    class="imports-section imports-channel-panel active"
+                    role="tabpanel"
+                    data-import-panel="official"
+                >
+                    <div class="imports-section-head">
+                        <p class="imports-section-description" data-i18n="imports_official_description"></p>
+                        <button
+                            id="official-update-all"
+                            type="button"
+                            class="btn"
+                            data-i18n="imports_update_all"
+                            hidden
+                            disabled
+                        ></button>
+                    </div>
+                    <p
+                        id="official-rule-status"
+                        class="imports-section-status"
+                        data-i18n="imports_official_loading"
+                    ></p>
+                    <ul id="official-rule-list" class="imports-package-list"></ul>
+                </section>
+                <section
+                    id="community-rule-lists"
+                    class="imports-section imports-channel-panel"
+                    role="tabpanel"
+                    data-import-panel="community"
+                    hidden
+                >
+                    <p class="imports-section-description" data-i18n="imports_community_description"></p>
+                    <p id="community-rule-status" class="imports-section-status" data-i18n="imports_community_open_to_load"></p>
+                    <ul id="community-rule-list" class="imports-package-list"></ul>
+                </section>
+                <section
+                    id="custom-rule-lists"
+                    class="imports-section imports-channel-panel"
+                    role="tabpanel"
+                    data-import-panel="custom"
+                    hidden
+                >
+                    <p class="imports-section-description" data-i18n="imports_custom_source_description"></p>
+                    <ul id="my-import-sources" class="imports-package-list"></ul>
                     <form id="import-source-form">
                         <input id="new-import-source" name="src" required type="url" data-i18n-placeholder="add_url_to_rules"></input>
                         <button class="btn">
                             <span data-i18n="add"></span>
                         </button>
                     </form>
-                </details>
+                </section>
             </div>
             <div id="tab-settings" class="tab-pane">
                 <h4 data-i18n="export_rules"></h4>
@@ -301,6 +408,21 @@
                             <span id="patterns-badge" class="count-patterns"></span>
                         </label>
                     </div>
+                    <div class="rule-quick-actions" aria-label="Rule actions">
+                        <button type="button" class="btn rule-quick-action" data-rule-command="test" data-i18n-title="test_selected_rules">
+                            <img src="/icons/ionicons/shuffle-outline.svg" width="16" alt="" />
+                        </button>
+                        <button type="button" class="btn rule-quick-action" data-rule-command="export" data-i18n-title="export">
+                            <img src="/icons/ionicons/code-download-outline.svg" width="16" alt="" />
+                        </button>
+                        <button type="button" class="btn rule-quick-action" data-rule-command="share" data-i18n-title="share_selected_community">
+                            <img src="/icons/ionicons/open-outline.svg" width="16" alt="" />
+                        </button>
+                        <button type="button" class="btn rule-quick-action btn-danger" data-rule-command="delete" data-i18n-title="remove">
+                            <img src="/icons/ionicons/trash-bin-outline.svg" width="16" alt="" />
+                        </button>
+                    </div>
+                    <button type="button" class="btn rule-drag-handle" data-i18n-title="rule_drag_manual_hint" aria-hidden="true" tabindex="-1">⋮⋮</button>
                     <div class="rule-header-buttons">
                         <button class="btn btn-edit toggle-edit" data-i18n="edit"></button>
                         <button id="activate" class="btn btn-activate" data-i18n="disable"></button>
@@ -334,7 +456,7 @@
                                             spellcheck="false"
                                             data-separator=", "
                                             data-edit-only="true"
-											size="10"
+                                            size="10"
                                         />
                                     </div>
                                     <div>
@@ -651,9 +773,9 @@
                     <slot id="name"></slot>
                 </label>
                 <a id="url" target="_blank" data-i18n-title="view_list"><img src="/icons/ionicons/open-outline.svg" height="20" class="middle"></a>
-                <loading-dots id="loading"></loading-dots>
                 <img id="error" src="/icons/ionicons/warning-outline.svg" height="20" class="middle" hidden/>
                 <span id="count" class="badge badge-info"></span>
+                <span id="integrity" class="badge badge-danger" hidden></span>
                 <span id="imported" class="badge badge-success" data-i18n="imported" hidden></span>
                 <span id="update" class="badge badge-notify" data-i18n="update" hidden></span>
                 <button id="show-imported" class="btn text" data-i18n-title="show_imported_rules" hidden><img src="/icons/ionicons/list-outline.svg" height="20" class="middle"/></button>

@@ -1,155 +1,210 @@
-# Request Control Evo Roadmap
+# Request Control Evo — Roadmap
 
-This document is the binding source of truth for the active modernization/release line. Historical design notes remain in `docs/roadmap.md` and related documents, but implementation status must be reflected here.
+**Status: `1.20.0-rc.7` is the current corrected hands-on candidate after the RC6 feedback block. Automated release/security gates are green; stable 1.20.0 remains blocked on Firefox/Waterfox desktop and Firefox Android hands-on validation plus explicit user approval.**
 
-**Status: 1.19.0 released and verified; Phase 10 complete**
+This file is the binding source of truth for project progress. Do not infer completion from code alone when a gate below explicitly requires physical browser/device testing.
 
-## Release history and current baseline
+## Product direction
 
-- Request Control 1.17.0 is released from `master`.
-- Request Control 1.18.0 is released from `master`; its tag and release assets remain immutable.
-- Request Control 1.18.1 is released from `master` with the bundled showcase rulesets.
-- Request Control 1.19.0 is released from `master` with the Compatibility Guardian, Referer protection, source-site/DNR hardening, Firefox Android UI fixes and hardened import-source handling.
-- `dev` is the active development branch and contains the released 1.19.0 baseline.
-- Dependency and CI policy: current direct dependency baselines, lockfile refreshes, advisory-specific audit gate and checksum-verified Pandoc setup remain mandatory.
+Request Control Evo keeps the original extension's deep request-control semantics while making them understandable, reviewable and maintainable for non-specialists. Firefox `webRequest` behavior is the semantic reference implementation. Chromium/DNR support remains capability-gated and must never silently approximate unsupported behavior.
 
-## Phase 1 — reliability and modernization baseline
+The extension must stay local-first. There is no remote executable code, no browsing-history upload, no hidden automatic rules, and no silent remote rule replacement. Official and Community rules are data, not executable extension code.
 
-- [x] Establish `dev` as active integration branch and keep `master` release-focused.
-- [x] Modernize project dependencies and CI without blindly taking unsafe major updates.
-- [x] Add a permanent dependency audit gate; patched legacy `js-yaml` / `brace-expansion` advisories are removed from the lockfile.
-- [x] Pin and checksum-verify Pandoc in CI instead of relying on runner `apt` state.
-- [x] Keep exact upstream-only audit exceptions narrow and fail on any new high/critical advisory.
+## Architecture invariants
 
-## Phase 2 — rule engine and navigation hardening
+- Firefox `webRequest` behavior is the semantic reference implementation.
+- Chromium/DNR compiles only proven-lossless subsets; unsupported semantics stay explicitly unsupported.
+- Runtime trust channels are **Official / Community / Custom**.
+- Managed package updates preserve locally modified rules as conflicts rather than overwriting them.
+- Runtime rule order is independent from display order/grouping.
+- **Type** is fixed behavior: Filter / Redirect / Secure / Block / Whitelist.
+- **Group** is user-owned organization only.
+- Behavior/category metadata is read-only presentation metadata and is not a replacement for Group.
+- Legacy Tag UI is retired; existing tag data remains preserved as migration/fallback metadata only when no user Group exists.
+- Inspection/Breakage diagnostics are explicit, local and bounded.
+- Referer diagnostics never persist Referer values.
+- External research/curation sources are processed only in the rules repository, never at extension runtime.
+- Wormhole Observatory transport remains deferred, local-first and review-only.
+- `master` is the sole long-lived integration branch; Git tags/releases define published stability, and release publication is always explicit/manual.
 
-- [x] Preserve Firefox `webRequest` as semantic reference implementation.
-- [x] Cover direct requests, redirects and SPA/history navigation behavior.
-- [x] Keep unsupported matcher/action combinations explicit rather than approximating silently.
-- [x] Build an initial DNR compiler foundation with direct parity/boundary fixtures.
+## Completed modernization phases
 
-## Phase 3 — release 1.17.0
+Phases 1–12 are complete. The historical implementation includes the Firefox semantic reference path, conservative DNR capability gating, managed Official/Community/Custom sources, selective imports, local-rule conflict preservation, Inspector/Rule-from-Request foundations, Compatibility Guardian/Breakage diagnostics, safe Referer protection, curated redirect helpers, responsive/mobile UI work and release/security automation.
 
-- [x] Validate the complete candidate through lint, tests, build, build-lint/checker and security checks.
-- [x] Promote the validated candidate to `master`.
-- [x] Release 1.17.0 through the reproducible release workflow.
-- [x] Verify tag, release asset and signing status after publication.
+No Phase 13 is introduced. Remaining work is release hardening, bounded experiments and future maintenance.
 
-## Phase 4 — post-1.17 UI and GitHub community workflow
+## 1.20.0 post-RC structure reset — automated implementation complete
 
-### Theme/accessibility
+### Inspector / URL analysis
 
-- [x] Replace remaining fixed light-theme text/background colors in options/rule editor components with shared theme variables.
-- [x] Verify import rows, rule editor states, badges, form controls, links, disabled states and editable text remain readable in dark theme.
-- [x] Add regression coverage where practical for theme-sensitive structural classes and avoid introducing new fixed foreground colors.
+- [x] Remove the standalone URL Analyzer from user-facing navigation and reuse the analysis engine contextually inside Inspector.
+- [x] Inspector reload/capture/render/stop path remains independent from optional diagnostics.
+- [x] Integrated URL findings distinguish known tracking parameters, redirects and ambiguous review-only parameters.
+- [x] Ambiguous parameters never become automatic cleanup actions.
+- [x] Optional Rule Source / Referer / Breakage diagnostics cannot prevent Inspector start, polling or rendering.
+- [x] Explicit inspection session limiter remains 10 minutes.
 
-### Import/catalog presentation
+### Breakage Check / Referer
 
-- [x] Replace raw-JSON-oriented import presentation with a structured import card/row showing name, concise description, rule count/status and a human-readable source link.
-- [x] Show a concise description directly below each import and expose the same description as a tooltip for compact layouts.
-- [x] Consume optional `description`, `homepage`, `ratingIssue` and related metadata from the community catalog without breaking older catalog entries.
-- [x] Keep integrity verification (`sha256`) and managed-rule reconciliation unchanged.
+- [x] Compatibility Guardian is presented as Inspector **Breakage Check**, not as a separate product surface.
+- [x] Rule breakage correlation requires the same concrete request rather than an unrelated page error.
+- [x] Referer breakage correlation requires the same target host.
+- [x] Referer diagnostics store only bounded metadata (`trimmed` / `removed`, mode and target host), never Referer values.
+- [x] Referer mode is exposed in the popup.
+- [x] Exact-host Referer exceptions can be created from the popup / Inspector diagnosis path.
+- [x] No automatic rule disable, automatic whitelist or hidden self-learning exception is allowed.
 
-### GitHub-backed sharing and ratings
+### Rules information architecture
 
-- [x] Add a GitHub Community section to the import view for publishing/share flow without embedding GitHub credentials in the extension.
-- [x] Generate a reviewable GitHub submission from local rules, with explicit size/error handling and no automatic upload of browsing data.
-- [x] Add a requestcontrol-rules issue template/workflow for rule-set submissions so GitHub authentication and moderation remain on GitHub.
-- [x] Add catalog rating metadata backed by GitHub issue reactions; display positive/negative counts in the import UI and link users to GitHub to rate/review.
-- [x] Document that ratings are discovery/community signals only and never override review/integrity/safety status.
-- [x] Validate offline/failure behavior: built-in imports must continue to work when GitHub catalog/rating endpoints are unavailable.
+- [x] Rule **Type** remains the fixed engine action: Filter / Redirect / Secure / Block / Whitelist.
+- [x] User **Group** is a separate organizational field and can be created/filtered from the Rules command bar.
+- [x] Behavior/category metadata is shown separately from Type and Group.
+- [x] Legacy Tag UI removed non-destructively; tag values remain preserved as fallback migration metadata where no Group exists.
+- [x] Search/status/source/type/group/sort controls operate on display state only.
+- [x] Drag ordering changes UI display order only and never runtime semantics.
+- [x] Per-rule Quick Actions are individually configurable.
+- [x] Edit and Enable/Disable stay compact icon actions.
+- [x] Mobile selected-rule action sheet has explicit close/back handling, Escape support and focus restoration.
 
-### Validation/release
+### Imports information architecture
 
-- [x] Run lint, tests, build, build-lint/checker and security checks for the complete post-1.17 UI/community phase.
-- [x] Update user-facing documentation and changelog only after the implemented behavior is stable.
-- [x] Prepare the next release only after the above work is fully validated: 1.18.0 candidate on `chore/release-1.18.0` passed audit, lint, tests, build, build-lint and checker.
+- [x] Trust/source remains Official / Community / Custom.
+- [x] Package presentation is Standard / Advanced.
+- [x] Behavior categories are URL Cleanup / Redirect / Request Transform / Block & Allow / Privacy & Special.
+- [x] Closed package rows are compact and do not repeat low-value technical badges.
+- [x] Package contents remain expandable before import.
+- [x] Per-rule selection keeps All / None / Invert / Reset controls.
+- [x] UUID-based managed reconciliation and local-rule conflict preservation remain unchanged.
+- [x] Per-package GitHub review button removed from ordinary import rows; contribution/community workflow remains separate from package trust.
 
-## Phase 5 — Inspection Mode and guided rule creation
+### Layout / localization hardening
 
-### Inspection session
+- [x] Text buttons size/wrap for localized strings instead of being forced into icon geometry.
+- [x] Icon-only buttons remain compact/square.
+- [x] Rules checkbox visual size is separated from its hit target and from import-list checkbox sizing.
+- [x] Rules rows keep a stable selection grid and aligned text baseline.
+- [x] Long localized strings wrap rather than overflow.
+- [x] Coarse-pointer/mobile controls retain approximately 44 px touch targets.
+- [x] Rules checkbox/string alignment regression is green in Build #434 on `5986da1f3e6e7006ed6d6f10b2dc39699f07715c`.
 
-- [x] Add an explicit `Reload & inspect` mode for the current tab; do not record normal browsing continuously.
-- [x] Record a bounded in-memory request snapshot with request URL, method/type, first-/third-party classification, completion/error state and Request Control rule effects.
-- [x] Keep inspection local-only and stop/remove webRequest observation when no inspection session is active.
-- [x] Provide domain grouping, request filtering/search and direct request details in a dedicated interactive GUI.
+## Official package audit — complete
 
-### Rule from request
+All 19 current Official package payloads were re-read from the canonical rules repository rather than classified only by package names.
 
-- [x] Create disabled rule drafts directly from an inspected request for exact-request, host, resource-type, third-party and current-site scopes.
-- [x] Add an explicit top-level source-site matcher to the Firefox `webRequest` engine so `only on this site` is exact rather than an approximate UI promise.
-- [x] Expose source-site scope as a dedicated editable field in the expert editor, using the same exact `pattern.source` match-pattern semantics as Inspection Mode.
-- [x] Reject source-site scope explicitly in DNR compilation until exact MV3 parity is proven.
-- [x] Show which existing Request Control rule affected a captured request and allow opening that rule in the expert editor.
+- [x] Ping/Beacon protections separated by actual behavior/risk.
+- [x] Common parameter cleanup kept conservative.
+- [x] Common redirectors are Advanced because redirect rewriting has higher compatibility risk.
+- [x] Common Images is Advanced / High because its current rule mix is broad and whitelist-heavy.
+- [x] Search Engine Escape is Advanced / High and treated as provider override rather than ordinary privacy cleanup.
+- [x] No package merge justified solely for cosmetic simplification.
+- [x] Package IDs and native UUIDs remain unchanged so managed updates keep continuity.
+- [x] Rules repository validation remained green after audit metadata changes.
+- [ ] If confusing package boundaries are split later, first define an explicit managed-package migration contract; never solve it by silently changing IDs/UUIDs.
 
-### Optional guided assistant
+## 1.20.0 RC5 automated release/security gate — complete
 
-- [x] Keep the assistant opt-in behind `Guided rule…`; it must not replace or hide the expert editor.
-- [x] Explain the selected request and proposed scope in human-readable language before creating a draft.
-- [x] Reuse the same deterministic rule builder as the direct Rule-from-Request actions; do not require a cloud/LLM service.
+- [x] Exact RC5 candidate: `94dfeeea0b48e4f45b5d4a248ef00eca4cc20358`.
+- [x] Candidate Build #435 green.
+- [x] Current code-scanning alerts: 0.
+- [x] Current Dependabot alerts: 0 at release-gate verification.
+- [x] Current secret-scanning alerts: 0.
+- [x] Current repository security advisories in triage: 0.
+- [x] Release workflow #13 green.
+- [x] Annotated tag `1.20.0-rc.5` resolves exactly to the candidate commit.
+- [x] Unsigned ZIP/XPI are byte-identical: 249,925 bytes; SHA-256 `1bda263c4581d003330fe0f324582c38661e40aa29fe490de03c7f0aa7f58a3e`.
+- [x] Mozilla signing/publishing intentionally skipped for prerelease testing.
+- [x] 1.20 changelog reflects the RC5 structure reset while remaining `Unreleased` until stable approval.
 
-### Validation
+## 1.20.0 RC6 final prerelease gate — complete
 
-- [x] Add unit coverage for inspection classification/grouping, bounded session storage, source-site matching, rule-draft generation and DNR rejection boundaries.
-- [x] Run full CI and only mark Phase 5 implementation items complete after the branch is green.
+- [x] Exact RC6 code candidate: `ed6968deb04012da73fd8088e9012db00644cbda`.
+- [x] Candidate Build #447 green.
+- [x] Current code-scanning alerts: 0.
+- [x] Current Dependabot alerts: 0.
+- [x] Current secret-scanning alerts: 0.
+- [x] Current repository security advisories in triage: 0.
+- [x] Release workflow #14 green.
+- [x] Annotated tag `1.20.0-rc.6` resolves exactly to the candidate commit.
+- [x] Unsigned ZIP/XPI are byte-identical: 252,863 bytes; SHA-256 `20f1b1b572d0b951ef4ea89c96f86c6df32d3e2c38f9784b897c0d3bbec2c93d`.
+- [x] Mozilla signing/publishing intentionally skipped for prerelease testing.
+- [x] Changelog remains `1.20.0 - Unreleased`; the dormant adaptive prototype is not presented as an enabled runtime feature.
+- [x] Later ROADMAP-only synchronization does not change the RC6 extension artifact or candidate code.
 
-## Phase 6 — 1.18.0 release finalization
+## RC6 hands-on feedback — blocking before next prerelease
 
-- [x] Align `manifest.json` and `CHANGELOG.md` at 1.18.0 after the released 1.17.0 baseline.
-- [x] Make unsigned XPI generation reproducible from the same validated ZIP and remove the obsolete temporary 1.17 roadmap automation.
-- [x] Promote the validated 1.18.0 candidate to `master` via PR #33; master release commit `3110baa79f186be1c28e36e529554f72695571f3`.
-- [x] Verify Release run `32126387364` creates tag `1.18.0`, GitHub release `372260245`, ZIP and byte-identical unsigned XPI. Both assets are 207884 bytes with SHA-256 `22ee7b029156853d95b0c93197224e64abdc4599448470bf174877ec62d9f4f6`; Mozilla signing was skipped because AMO credentials were not configured.
+- [x] Remove the verbose Referer explanatory paragraph from the popup; keep controls self-explanatory and compact.
+- [x] Add a popup control to disable/re-enable Request Control for the current site without changing the global enabled state.
+- [x] Add a popup action to suppress the currently matched rule/filter only on the current site without mutating managed Official/Community rule payloads or creating managed-update conflicts.
+- [x] Repair Inspector based on a real start → reload → request capture → render → stop lifecycle regression; runtime tests now exercise the real lifecycle rather than source-presence/string checks alone.
+- [x] Audit the Inspector background listener lifecycle against Firefox `webRequest` behavior and ensure capture works independently from Breakage Check/Referer/URL-analysis modules.
+- [x] Restore complete Filter-rule visibility: action-specific values such as parameter names, invert/trim-all state, redirect filtering and same-domain behavior are visible and correctly initialized.
+- [x] Keep imported/managed filter data lossless while exposing that state in both compact read-only summaries and Edit mode.
+- [x] Fix compact Edit/Enable icon rendering with deterministic inline SVG controls and centered desktop/mobile geometry.
+- [x] Increase spacing between Filter action controls and rule metadata badges so action state and metadata do not visually collide.
+- [x] Add desktop/mobile regression coverage for popup site controls, per-rule site suppression, Filter summaries/editor state, compact SVG icon alignment and accidental placeholder content.
+- [x] Run full build/security gates after the corrections: Build #464 is green on `79e09ed6908e33b2216e62ebc317292fbf138c60`; current code scanning, Dependabot, secret scanning and repository advisory gates report no open findings.
+- [x] Publish a fresh prerelease newer than RC6 only from an exact green candidate: `1.20.0-rc.7` from `c87197c17036ac193b86088832041bf05d26a99d`.
 
-## Phase 7 — bundled showcase rulesets and 1.18.1 patch release
+- [x] RC7 verification: Release workflow #15 passed tests/lint/build/lint-build on the exact tagged candidate; annotated tag resolves to `c87197c17036ac193b86088832041bf05d26a99d`; byte-identical ZIP/XPI are 260,315 bytes with SHA-256 `332042c6ea2f9ffbc287bed1f29c098a7dfc3c04103e4fb93acb2eb54f611ed2`; Mozilla publishing was intentionally skipped.
 
-- [x] Add eight curated bundled showcase rulesets to `dev`, covering media quality, privacy embeds, developer/raw URLs, search handoff, redirect-wrapper bypass, canonical desktop URLs, low-bandwidth browsing and strict first-party isolation.
-- [x] Rename the broad third-party blocker to `Strict First-Party Mode`, mark it prominently as site-breaking, and keep it disabled after import until the user deliberately enables it.
-- [x] Localize bundled preset titles/descriptions, add visible warning styling, document activation policy and add concrete regression coverage for the showcase transformations and matcher behavior.
-- [x] Synchronize the final showcase-ruleset tree to `master` via PR #35 / commit `09202d592f6e863ef2ec16911460a6dfcc22547e`; the already-published 1.18.0 tag/release remains immutable.
-- [x] Align release metadata at 1.18.1 and validate the patch candidate.
-- [x] Promote the validated 1.18.1 candidate to `master` via PR #38; master release commit `49fa1814940f2347bd345b898574a96f093b6c5d`.
-- [x] Verify Release run `32127317095` creates tag `1.18.1`, GitHub release `372266035`, ZIP and byte-identical unsigned XPI. Both assets are 216149 bytes with SHA-256 `94d9438fa6753fbb55c697140323fcf32482edeec2570b8fc9c14d01b04a9124`; Mozilla signing was skipped because AMO credentials were not configured.
+## Hands-on release gates — blocking
 
-## Phase 8 — on-demand compatibility diagnostics and Referrer protection
+RC6 hands-on validation exposed the blocking issues above. Do **not** use RC6 for final sign-off; use the next prerelease produced after this feedback block is green.
 
-- [x] Port the Compatibility Guardian onto the current Inspection/Runtime architecture without adding continuous request monitoring.
-- [x] Keep Guardian request listeners strictly on-demand, bounded to the selected tab/session and automatically removed after stop/timeout/tab close.
-- [x] Add explicit Referer protection modes: browser default, balanced cross-origin origin-only, same-origin only and no-referrer.
-- [x] Ensure browser-default Referer mode registers no `onBeforeSendHeaders` listener and does not alter browser behavior.
-- [x] Preserve HTTPS-to-HTTP privacy downgrade protection in balanced mode.
-- [x] Add regression coverage for Guardian lifecycle/scoring and Referer header transformations/listener lifecycle.
-- [x] Run the complete audit/lint/test/build/build-lint/checker suite before marking Phase 8 complete; Build run `32128491533` is green across all required jobs.
+- [x] Publish a fresh prerelease from the final validated post-RC5 code state before Stable promotion.
+- [ ] Firefox/Waterfox desktop hands-on on the final prerelease: popup sizing; Inspector start/reload/capture/render/stop; integrated URL findings; Breakage Check; Referer mode/exact-host exception; fixed Type vs Group/category model; long Rules strings/checkbox alignment; Imports; Official updates; selective editing; local-rule preservation.
+- [ ] Firefox Android hands-on on the final prerelease: popup; Referer controls; Inspector navigation; large package; expand/collapse; sparse selection; repeated taps; update reconciliation; scrolling/touch; localized strings; Rules selection/action sheet.
+- [x] Decouple repository integration from publication: `master` is the sole long-lived integration branch; merging validated RC code to `master` does **not** publish Stable.
+- [x] Stable and prerelease publication are manual release-workflow actions from `master`; no push to `master` may create a release implicitly.
+- [ ] Publish Stable `1.20.0` only after desktop + Android hands-on gates pass and the user explicitly approves the Stable release.
+- [ ] Replace changelog `Unreleased` only at approved Stable release preparation.
 
+## Software-Engineering-Framework assurance follow-up — non-blocking unless a defect is found
 
-## Phase 9 — source-site semantic hardening and Chromium top-level-domain parity
+The RC7 functional regressions cover the highest-risk changed paths. The broader Browser Extension Assurance matrix is tracked separately so generic hardening does not silently expand the 1.20 release scope. Any concrete defect found here becomes release-blocking according to severity.
 
-- [x] Re-audit the Firefox source-site matcher against current WebExtension match-pattern semantics before using it as the DNR parity reference.
-- [x] Fix wildcard source hosts so `*.example.com` matches the bare domain and real subdomains, but not unrelated suffix hosts such as `badexample.com`.
-- [x] Re-evaluate Chromium 145+ `topDomains` / `excludedTopDomains` and document the session-only, domain-only and no-top-frame fallback constraints.
-- [x] Add capability-gated DNR source-scope compilation only for the proven session-only `*://*.domain/*` subset; default/static/dynamic and neighboring source forms preserve `source-matcher-unsupported`.
-- [x] Add direct positive/negative boundary fixtures for the activated session `topDomains` form plus explicit rejection fixtures for exact-host, fixed-scheme, explicit-port, constrained-path and non-session forms.
-- [x] Run audit, lint, tests, build, build-lint/checker and security checks before marking Phase 9 complete; PR #42 Build run `32145208740` is green across all required project jobs, with no open code-scanning, secret-scanning or Dependabot alerts on validation.
+- [ ] Verify extension disable → re-enable and background-page restart/reinitialization without stale listeners or duplicated runtime state.
+- [ ] Verify Firefox private-window policy when private access is allowed and when it is denied; private-only rule semantics must remain correct.
+- [ ] Exercise many-tabs/many-frames navigation, including SPA history changes and full reloads, while Inspector remains bounded to its selected tab.
+- [ ] Exercise restricted/CSP-heavy pages and hostile page DOM/CSS; extension pages and popup/Inspector rendering must remain isolated from page styling.
+- [ ] Verify upgrade from representative pre-1.18/pre-1.19 storage snapshots, malformed/partial stored state, and managed-package reconciliation without rule loss.
+- [ ] Verify storage/quota failure handling for bounded diagnostic state and large managed imports; failure must degrade safely without corrupting persistent rules.
+- [x] Optional-permission revoke/deny testing is not applicable to the current manifest because Request Control declares no `optional_permissions`; required browser-API absence remains capability/error-path coverage instead.
 
-## Phase 10 — Firefox Android hardening and 1.19.0 release finalization
+## Adaptive Parameter Intelligence experiment — dormant prototype complete
 
-- [x] Carry the fully validated Phase 8 Compatibility Guardian and Referer-protection work forward from `dev`.
-- [x] Carry the fully validated Phase 9 source-site semantic hardening and capability-gated Chromium session `topDomains` subset forward from `dev`.
-- [x] Harden Firefox Android options, rule-selection, popup, inspector, analyzer and dialog layouts; retain mobile rule selection and add dedicated regression coverage.
-- [x] Align `manifest.json` and `CHANGELOG.md` at 1.19.0 because the post-1.18.1 development line contains new user-facing capabilities, not only patch fixes.
-- [x] Validate the complete 1.19.0 candidate through audit, lint, tests, build, build-lint/checker and security checks; PR #46 passed the full project CI and both CodeQL analyses, with zero open code-scanning, Dependabot or secret-scanning alerts at the release gate.
-- [x] Promote the validated candidate to `master` without rewriting the immutable 1.18.x release history; PR #46 merged as `d2001728b4887d74a244717920de6e4b10827745` from a `master`-based promotion branch whose Git tree matched validated `dev`.
-- [x] Verify the 1.19.0 tag and GitHub release through Release run `32152724142`; `request_control-1.19.0.zip` and `.xpi` are both 225938 bytes with SHA-256 `3da8de30075b2f6e11e3fa265f26d60e89b038c23e5cf0b8fbd19aff9ab56e82`. Mozilla signing was skipped because AMO credentials are not configured.
+This does **not** gate 1.20 stable and belongs under Inspector architecture. The prototype remains deliberately unconnected to runtime/Inspector storage until a later labelled evaluation justifies integration.
 
-## Blockers / dependencies
+- [x] Prototype local-only learning for unknown URL parameters.
+- [x] Persistable snapshots contain only parameter names and bounded aggregate metadata; never full browsing URLs, host/site identities or raw parameter values.
+- [x] Score using multiple signals: repeated/cross-site occurrence, identifier/high-entropy characteristics, propagation and explicit tracking/functional verification.
+- [x] Keep all learned candidates review-only (`autoSuggest: false`); never silently remove unknown parameters.
+- [x] No observation upload, network transport or auto-promotion into Official rules; dormant-boundary regression proves no background/Inspector wiring.
+- [x] Precision/false-positive, privacy/storage and performance thresholds defined in `docs/adaptive-parameter-intelligence.md`; abandon/redesign rather than weaken boundaries if they fail.
+- [x] Prototype implementation/regressions green in Build #440 on `c76ec3c2e376fc9c477e63a46eb80c506795b945`.
+- [x] Initial 52-case synthetic manually labelled corpus deliberately includes high-entropy functional/session/auth/state/token/redirect cases; the original score failed at 50% precision / 50% functional false positives, so the experiment was hardened instead of being integrated.
+- [x] Conservative functional-name penalties bring the same corpus to 100% review precision, 0% functional false positives and 80% tracking recall while preserving `autoSuggest: false`; full Build #443 is green on `7c4cda2b0fa037aa47e5c191f6be62fec45caafc`.
+- [x] A second 42-case public-semantics corpus uses independently documented Matomo/Google tracking semantics plus OAuth/PKCE/OIDC/AWS/OData functional counterexamples with synthetic observations only; after exposing and fixing three functional false positives it reaches 100% review precision, 0% functional false positives and 70% tracking recall; full Build #445 is green on `9d2ca73d7558fa0885a467f8bcf041514ed500d1`.
+- [x] Unambiguous publicly documented tracking names discovered during evaluation are promoted to ordinary conservative static detection instead of being treated as something the adaptive learner should discover; analyzer regression Build #446 is green on `bbe614b0e8f7f56dca4dae23c9adb5e7d00ce18f`.
+- [x] Matching Official `privacy-common-params` package advanced to 1.2.0 without changing its package ID or native rule UUIDs; canonical rules validation #97 is green on `01777ca0607c6b08b756f68073bc9724f26858fb`.
+- [ ] Keep the adaptive prototype dormant until a future independently reviewed corpus contains genuinely unknown tracking cases that cannot simply be promoted to static conservative detection and still passes the same privacy/precision/false-positive/recall gates; do not collect or upload normal browsing history to manufacture such a corpus.
 
-- No release blocker remains for 1.18.0, 1.18.1 or 1.19.0; all three milestones are published and verified.
-- GitHub's agentic `github-advanced-security` PR check currently fails at service startup with `400 The requested model is not supported` for `claude-opus-4.6`. The repository's actual `Analyze (actions)` and `Analyze (javascript-typescript)` CodeQL jobs pass; treat the agentic service failure as an external GitHub platform issue unless its behavior changes.
-- No code blocker is currently known for the theme/import-presentation work.
-- Fully credential-less direct writes to GitHub are intentionally not assumed. The preferred community publication design keeps authentication on GitHub (submission/review UI) rather than storing a personal access token or secret inside the extension.
-- GitHub community metadata and ratings are optional network features; the existing local/built-in rule functionality must remain usable when GitHub is unavailable.
-- Source-site matching remains Firefox `webRequest` functionality by default. Chromium 145+ session `topDomains` is now available only through the explicit `rulesetScope: "session"` + `capabilities: { topDomains: true }` compiler gate for the proven `*://*.domain/*` form; default/static/dynamic, exact-host, fixed-scheme, explicit-port and constrained-path source scopes remain explicit unsupported diagnostics.
-- Inspection must remain bounded and opt-in; it must not become a persistent browsing-history collector.
+## Source-curation follow-up — non-blocking
 
-## Completion status
+- [x] ClearURLs deterministic curation active where semantics are lossless.
+- [x] FastForward deterministic URL-only curation active where semantics are lossless.
+- [x] Actually Legitimate URL Shortener Tool deferred due mixed provenance and regex/domain/path-sensitive semantics.
+- [x] AdGuard URL Tracking deferred pending exception handling and explicit license/provenance review.
+- [x] Direct vendor/standards documentation is used to maintain conservative tracking-parameter semantics without copying third-party filter lists or executable source; provenance is recorded in the rules repository.
+- [ ] Expand adapters only where licensing, deterministic semantics and maintenance value justify them.
 
-**Phases 1–10 are complete.** Request Control 1.19.0 is published and verified. The release contains the Compatibility Guardian, Referer protection, source-site/DNR parity hardening, Firefox Android responsive-UI work and hardened rule-import source handling. The next development work belongs to a new Phase 11.
+## Mobile/selective-import follow-up
+
+- [x] Large-package checkbox updates avoid full-list resynchronization.
+- [x] 2,000+ rule sparse-selection regression coverage exists.
+- [x] Collapsed package rows do not eagerly materialize checkbox DOM.
+- [ ] Physical Firefox Android validation remains open and cannot be inferred from automated tests.
+
+## Completion condition for 1.20.0
+
+Stable `1.20.0` is ready only when a prerelease newer than RC6 passes the corrected Firefox/Waterfox desktop and Firefox Android hands-on gates, the 1.20 changelog accurately reflects the final structure, no current release-blocking security finding exists, and the user explicitly approves Stable publication. `master` may contain the unreleased validated integration state before that approval; tags/releases, not branch membership, define published stability.

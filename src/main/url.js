@@ -189,14 +189,16 @@ export class QueryParser extends UrlParser {
     }
 
     getKeyStart(key) {
-        const start = this.query.indexOf(key);
-        if (
-            start === -1 ||
-            (start > 0 && this.query.charAt(start - 1) !== "?" && this.query.charAt(start - 1) !== "&")
-        ) {
-            return;
+        let start = this.query.indexOf(key);
+        while (start !== -1) {
+            const end = start + key.length;
+            const validStart = start === 0 || this.query.charAt(start - 1) === "?" || this.query.charAt(start - 1) === "&";
+            const validEnd = end === this.query.length || "#&?=".includes(this.query.charAt(end));
+            if (validStart && validEnd) {
+                return start;
+            }
+            start = this.query.indexOf(key, start + 1);
         }
-        return start;
     }
 
     getKeyEnd(key) {
@@ -204,11 +206,7 @@ export class QueryParser extends UrlParser {
         if (typeof start === "undefined") {
             return;
         }
-        const end = key.length + 1;
-        if (end < this.query.length && !"#&?=".includes(this.query.charAt(end))) {
-            return;
-        }
-        return end;
+        return start + key.length;
     }
 
     getValueEnd(keyEnd) {
@@ -482,7 +480,11 @@ export function parseInlineUrl(url) {
         inlineUrl = inlineUrl.replace(/\?.*/, "");
     }
 
-    inlineUrl = decodeURIComponent(inlineUrl);
+    try {
+        inlineUrl = decodeURIComponent(inlineUrl);
+    } catch {
+        return null;
+    }
 
     if (!inlineUrl.startsWith("://", j)) {
         return null;

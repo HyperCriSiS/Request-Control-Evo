@@ -137,6 +137,18 @@ test("Inline url parsing", () => {
     expect(parseInlineUrl("http://site.com/?r=www.example.com")).toBe(null);
 });
 
+test("Inline url parsing rejects malformed percent encoding without throwing", () => {
+    for (const value of [
+        "https://wrapper.test/?url=http%",
+        "https://wrapper.test/?url=http%ZZ",
+        "https://wrapper.test/?url=https%3A%2F%2Fexample.test%ZZ",
+    ]) {
+        expect(() => parseInlineUrl(value)).not.toThrow();
+        expect(parseInlineUrl(value)).toBeNull();
+        expect(new FilterRule().apply(value)).toBe(value);
+    }
+});
+
 test("Query parameter trimming", () => {
     expect(trimQueryParameters(
         "http://site.com/?parameter&utm_source&key=value?utm_medium=abc&parameter&utm_term?key=value&utm_medium=abc",

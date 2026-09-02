@@ -160,7 +160,24 @@ form .row {
 .header-info-wrap {
     display: flex;
     align-items: center;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+    gap: 0.65rem;
     text-align: end;
+}
+
+.header-info-wrap > .information {
+    display: flex;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+}
+
+.header-info-wrap > .rule-header-buttons {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.35rem;
 }
 
 .col-trim-parameters {

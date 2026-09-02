@@ -8,6 +8,7 @@ const alertPopupCss = fs.readFileSync(new URL("../src/options/alert-popup.css", 
 const ruleTesterCss = fs.readFileSync(new URL("../src/options/rule-tester.css", import.meta.url), "utf8");
 const importCss = fs.readFileSync(new URL("../src/options/rule-import-input.css", import.meta.url), "utf8");
 const importJs = fs.readFileSync(new URL("../src/options/rule-import-input.js", import.meta.url), "utf8");
+const optionsJs = fs.readFileSync(new URL("../src/options/options.js", import.meta.url), "utf8");
 
 const legacyLightOnlyPatterns = [
     /color:\s*black\b/i,
@@ -54,19 +55,27 @@ test("rule editor and modal no longer carry known light-only foreground/backgrou
     }
 });
 
-test("import presentation has descriptions, human source links and rating affordances", () => {
+test("import presentation keeps metadata compact without nested details", () => {
     expect(importCss).toContain(".description");
     expect(importCss).toContain(".source-link");
-    expect(importCss).toContain(".rating-link");
+    expect(importCss).not.toContain(".rating-link");
+    expect(importCss).toContain(".selection-toggle");
+    expect(importCss).toContain(".import-types");
+    expect(importCss).toContain(".rule-selection[hidden]");
+    expect(importCss).not.toContain(".import-details");
     expect(importJs).toContain("description.title = text");
     expect(importJs).toContain("humanReadableSource");
-    expect(importJs).toContain("rating-positive");
-    expect(importJs).toContain("rating-negative");
+    expect(importJs).not.toContain("community_review");
+    expect(importJs).not.toContain("rating-positive");
+    expect(importJs).not.toContain("rating-negative");
 });
 
 test("community submission remains credential-less and AMO-linter friendly", () => {
-    expect(importJs).not.toMatch(/innerHTML\s*=/);
-    expect(importJs).not.toMatch(/github[_-]?token|personal[_-]?access[_-]?token|authorization:/i);
-    expect(importJs).toContain("request-control-community-submission.json");
-    expect(importJs).toContain("rule-set-submission.md");
+    for (const js of [importJs, optionsJs]) {
+        expect(js).not.toMatch(/innerHTML\s*=/);
+        expect(js).not.toMatch(/github[_-]?token|personal[_-]?access[_-]?token|authorization:/i);
+    }
+    expect(optionsJs).toContain("request-control-community-submission.json");
+    expect(optionsJs).toContain("rule-set-submission.md");
+    expect(optionsJs).toContain("share_rules_public_warning");
 });

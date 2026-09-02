@@ -24,6 +24,7 @@ export class InspectionStore {
             requests: [],
             requestIndex: new Map(),
             pendingEffects: new Map(),
+            pendingDiagnostics: new Map(),
         };
         this.sessions.set(tabId, session);
         return this.snapshot(tabId);
@@ -36,6 +37,8 @@ export class InspectionStore {
         }
         session.active = false;
         session.stoppedAt = Date.now();
+        session.pendingEffects.clear();
+        session.pendingDiagnostics.clear();
         return this.snapshot(tabId);
     }
 
@@ -66,6 +69,8 @@ export class InspectionStore {
             return existing;
         }
         if (session.requests.length >= this.maxRequests) {
+            session.pendingEffects.delete(request.requestId);
+            session.pendingDiagnostics.delete(request.requestId);
             session.dropped += 1;
             return null;
         }
@@ -85,11 +90,17 @@ export class InspectionStore {
             error: null,
             classification: classifyInspectionRequest(session.pageUrl, request.url),
             effect: null,
+            diagnostics: [],
         };
         const pendingEffect = session.pendingEffects.get(request.requestId);
         if (pendingEffect) {
             record.effect = pendingEffect;
             session.pendingEffects.delete(request.requestId);
+        }
+        const pendingDiagnostics = session.pendingDiagnostics.get(request.requestId);
+        if (pendingDiagnostics) {
+            record.diagnostics.push(...pendingDiagnostics);
+            session.pendingDiagnostics.delete(request.requestId);
         }
         session.requests.push(record);
         session.requestIndex.set(request.requestId, record);
@@ -98,14 +109,49 @@ export class InspectionStore {
 
     markEffect(tabId, requestId, effect) {
         const session = this.sessions.get(tabId);
-        if (!session || !requestId) {
+        if (!session?.active || !requestId) {
             return;
         }
         const record = session.requestIndex.get(requestId);
         if (record) {
             record.effect = effect;
-        } else {
-            session.pendingEffects.set(requestId, effect);
+            return;
+        }
+        if (session.requests.length >= this.maxRequests) {
+            return;
+        }
+        if (!session.pendingEffects.has(requestId) && session.pendingEffects.size >= this.maxRequests) {
+            return;
+        }
+        session.pendingEffects.set(requestId, effect);
+    }
+
+    markDiagnostic(tabId, requestId, diagnostic) {
+        const session = this.sessions.get(tabId);
+        if (!session?.active || !requestId || !diagnostic || typeof diagnostic !== "object") {
+            return;
+        }
+        const safeDiagnostic = { ...diagnostic };
+        const record = session.requestIndex.get(requestId);
+        if (record) {
+            if (!record.diagnostics.some((item) => sameDiagnostic(item, safeDiagnostic))) {
+                record.diagnostics.push(safeDiagnostic);
+            }
+            return;
+        }
+        if (session.requests.length >= this.maxRequests) {
+            return;
+        }
+        let pending = session.pendingDiagnostics.get(requestId);
+        if (!pending) {
+            if (session.pendingDiagnostics.size >= this.maxRequests) {
+                return;
+            }
+            pending = [];
+            session.pendingDiagnostics.set(requestId, pending);
+        }
+        if (!pending.some((item) => sameDiagnostic(item, safeDiagnostic))) {
+            pending.push(safeDiagnostic);
         }
     }
 
@@ -136,7 +182,15 @@ export class InspectionStore {
                 ...request,
                 classification: { ...request.classification },
                 effect: request.effect ? { ...request.effect, rule: request.effect.rule ? { ...request.effect.rule } : null } : null,
+                diagnostics: request.diagnostics.map((diagnostic) => ({ ...diagnostic })),
             })),
         };
     }
+}
+
+function sameDiagnostic(left, right) {
+    return left.kind === right.kind &&
+        left.effect === right.effect &&
+        left.mode === right.mode &&
+        left.targetHost === right.targetHost;
 }

@@ -129,6 +129,39 @@ test("Same domain - no match", () => {
     ).toBeFalsy();
 });
 
+test("single-label web hosts use exact host comparison for domain party checks", () => {
+    const [sameDomain] = RequestControl.createRequestFilters({
+        action: "filter",
+        pattern: { origin: "same-domain" },
+    });
+    const [thirdParty] = RequestControl.createRequestFilters({
+        action: "filter",
+        pattern: { origin: "third-party-domain" },
+    });
+
+    const differentHosts = {
+        originUrl: "http://intranet/",
+        url: "http://attacker/",
+    };
+    expect(sameDomain.matcher.test(differentHosts)).toBe(false);
+    expect(thirdParty.matcher.test(differentHosts)).toBe(true);
+
+    for (const request of [
+        { originUrl: "http://intranet/", url: "https://intranet/path" },
+        { originUrl: "http://localhost:8080/", url: "https://LOCALHOST:8443/path" },
+    ]) {
+        expect(sameDomain.matcher.test(request)).toBe(true);
+        expect(thirdParty.matcher.test(request)).toBe(false);
+    }
+
+    expect(
+        sameDomain.matcher.test({
+            originUrl: "http://intranet/",
+            url: "data:text/plain,local",
+        })
+    ).toBe(true);
+});
+
 test("Third Party Domain - match", () => {
     const url = "http://foo.com/click?p=240631&a=2314955&g=21407340&url=http%3A%2F%2Fbar.com%2F";
     const [filter] = RequestControl.createRequestFilters({

@@ -6,6 +6,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.20.0] - Unreleased
+- Consolidate page analysis in Inspector: remove the standalone URL Analyzer, surface tracking-parameter and redirect findings contextually, fold Compatibility Guardian into the bounded Breakage Check, keep the 10-minute Inspection limiter, and isolate optional diagnostics so they cannot block core capture/rendering.
+- Add popup Referer protection controls with conservative browser-default behavior, deliberate exact-host exceptions and privacy-minimized breakage correlation that never stores Referer values.
+- Add exact-site popup recovery controls to bypass Request Control for the current host or suppress the currently matched rule on that host without changing global enablement or mutating managed rule payloads.
+- Clarify the Rules information model: fixed Rule Type sections (Filter / Redirect / Secure / Block / Whitelist), user-owned Groups, and read-only behavior/category metadata are now separate concepts; retire the Legacy Tag UI while preserving stored tag metadata and safe tag-to-Group fallback for upgrades.
+- Improve Rules usability with persistent fixed-Type empty states, independent search/status/source/category/group filtering, configurable Test/Export/Share/Delete Quick Actions, deterministic centered SVG Edit/Enable-Disable controls, explicit mobile selected-rule close/back behavior, stable checkbox-selection columns, wrapped long strings and coarse-pointer hit targets.
+- Restore lossless Filter-rule presentation/editing for parameter names, invert/trim-all state, redirect filtering, same-domain behavior and related action-specific state; add deliberate spacing between action state and metadata.
+- Simplify Imports while keeping Official, Community and Custom as explicit trust channels, Standard / Advanced presentation, behavior categories, compact package rows and the dedicated selected-rules contribution flow instead of per-package GitHub/community-review actions.
+- Move the maintainer-managed Official corpus fully to the versioned remote catalog with schema/channel validation, SHA-256 verification, per-package update detection, Update all, offline-safe local retention and conflict preservation for locally modified managed rules.
+- Keep selective package imports expandable with Select all, Select none, Invert and Reset controls; persist selections by stable rule UUID so upstream package growth never silently enables newly published rules.
+- Audit all 19 Official package payloads against their real native actions and risk: narrow the existing Beacon/Ping UUID to Ping-only, add Beacon as a separate disabled-by-default rule, narrow Common Parameters to well-known tracking parameters, move broader referral/share cleanup to a disabled rule, move Common Redirectors to Advanced, and correct misleading provider metadata without changing package IDs or silently broadening existing managed installs.
+- Remove legacy managed-source aliases and packaged Official rule copies; obsolete managed identities are pruned while their installed rules are preserved as ordinary local rules.
+- Harden Firefox Android large-package imports by avoiding full checkbox-list resynchronization on individual taps, caching selection counts and deferring checkbox DOM creation until an expanded package selector is actually opened.
+- Keep Wormhole Observatory transport disabled; inspection and breakage analysis remain local, explicit and bounded.
+
 ## [1.19.0] - Aug. 18, 2026
 - Add the on-demand Compatibility Guardian for bounded per-tab diagnostics, including lifecycle cleanup and local scoring without continuous browsing surveillance.
 - Add configurable Referer protection modes for browser-default, balanced cross-origin origin-only, same-origin only and no-referrer behavior; browser-default remains listener-free and balanced mode preserves HTTPS-to-HTTP downgrade protection.
@@ -211,7 +226,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add tabs to options view.
 - Fix trim parameter inconsistency: support literal string params and regexp params. #17
 - Fix pageAction details bug with block rules. #19
-- Fix filter rule redirection url filtering. #20
 - Remove url status icon. #19
 
 ## [1.6.1] - June 21, 2017

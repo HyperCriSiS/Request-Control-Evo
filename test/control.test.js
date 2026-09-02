@@ -301,6 +301,35 @@ describe("When multiple rules match a request", () => {
         const resolve = controller.resolve(request);
         expect(resolve.redirectUrl).toBe("https://redirect.url1/");
     });
+    test("first registered redirect remains first with three redirects and interleaved filters", () => {
+        request = { requestId: 0, url: "https://youtube.com/watch?v=OipJYWhMi3k&feature=em-uploademail" };
+        controller.mark(
+            request,
+            createRule({
+                action: "filter",
+                paramsFilter: { values: ["feature"] },
+            })
+        );
+        for (const suffix of ["first", "second", "third"]) {
+            controller.mark(
+                request,
+                createRule({
+                    action: "redirect",
+                    redirectUrl: `https://${suffix}.example/`,
+                })
+            );
+        }
+        controller.mark(
+            request,
+            createRule({
+                action: "filter",
+                paramsFilter: { values: ["v"] },
+            })
+        );
+
+        const resolve = controller.resolve(request);
+        expect(resolve.redirectUrl).toBe("https://first.example/");
+    });
     test("redirect rule matches first before any filter rule", () => {
         request = { requestId: 0, url: "https://youtube.com/watch?v=OipJYWhMi3k&feature=em-uploademail" };
         controller.mark(

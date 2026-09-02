@@ -2,16 +2,54 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+export const MAX_TAB_RECORDS = 500;
+
 const records = new Map();
 
-export function add(tabId, record) {
-    let tabRecords = records.get(tabId);
-    if (!tabRecords) {
-        tabRecords = [];
-        records.set(tabId, tabRecords);
+function createBuffer(initialRecords = []) {
+    const buffer = {
+        items: new Array(MAX_TAB_RECORDS),
+        start: 0,
+        length: 0,
+        total: 0,
+    };
+    for (const record of initialRecords.slice(-MAX_TAB_RECORDS)) {
+        append(buffer, record);
     }
-    tabRecords.push(record);
-    return tabRecords.length;
+    buffer.total = buffer.length;
+    return buffer;
+}
+
+function append(buffer, record) {
+    let index = (buffer.start + buffer.length) % MAX_TAB_RECORDS;
+    if (buffer.length === MAX_TAB_RECORDS) {
+        index = buffer.start;
+        buffer.start = (buffer.start + 1) % MAX_TAB_RECORDS;
+    } else {
+        buffer.length += 1;
+    }
+    buffer.items[index] = record;
+    buffer.total = Math.min(buffer.total + 1, Number.MAX_SAFE_INTEGER);
+}
+
+function toArray(buffer) {
+    if (!buffer) {
+        return undefined;
+    }
+    return Array.from(
+        { length: buffer.length },
+        (_, index) => buffer.items[(buffer.start + index) % MAX_TAB_RECORDS]
+    );
+}
+
+export function add(tabId, record) {
+    let buffer = records.get(tabId);
+    if (!buffer) {
+        buffer = createBuffer();
+        records.set(tabId, buffer);
+    }
+    append(buffer, record);
+    return buffer.total;
 }
 
 export function has(tabId) {
@@ -33,12 +71,12 @@ export function getTabRecords() {
             active: true,
         })
         .then((tabs) => {
-            return records.get(tabs[0].id);
+            return toArray(records.get(tabs[0].id));
         });
 }
 
 export function setTabRecords(tabId, tabRecords) {
-    return records.set(tabId, tabRecords);
+    return records.set(tabId, createBuffer(tabRecords));
 }
 
 export function removeTabRecords(tabId) {
@@ -46,7 +84,10 @@ export function removeTabRecords(tabId) {
 }
 
 export function getLastRedirectRecords(tabId, url, isServerRedirect = false, limit = 5) {
-    const tabRecords = records.get(tabId);
+    const tabRecords = toArray(records.get(tabId));
+    if (!tabRecords) {
+        return [];
+    }
     const lastRecord = getLastRedirectRecord(tabRecords, url, isServerRedirect, limit);
 
     if (!lastRecord) {

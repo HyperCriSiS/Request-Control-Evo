@@ -2,10 +2,33 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { normalizeSiteHost } from "../main/site-exceptions.js";
+import {
+    isRuleSiteHostSuppressed,
+    isSiteHostDisabled,
+    toggleRuleSiteHost,
+    toggleSiteHost,
+} from "./site-controls.js";
+
+const REFERRER_MODES = new Set(["browser", "balanced", "same-origin", "no-referrer"]);
+let currentSiteHost = null;
+let selectedRecord = null;
+
 document.addEventListener("DOMContentLoaded", async () => {
-    const { disabled } = await browser.storage.local.get("disabled");
+    const settings = await browser.storage.local.get([
+        "disabled",
+        "referrerProtectionMode",
+        "referrerProtectionExceptions",
+        "disabledSiteHosts",
+        "ruleSiteExceptions",
+    ]);
+    const { disabled } = settings;
 
     updateDisabled(disabled === true);
+    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
+    currentSiteHost = normalizeSiteHost(tabs[0]?.url || "");
+    setupSiteControls(settings);
+    setupReferrerControls(settings);
 
     for (const copyButton of document.getElementsByClassName("copyButton")) {
         copyButton.addEventListener("click", copyText);
@@ -14,8 +37,9 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     document.getElementById("showRules").addEventListener("click", openOptionsPage);
     document.getElementById("inspectCurrent").addEventListener("click", openInspector);
-    document.getElementById("analyzeCurrent").addEventListener("click", openAnalyzer);
     document.getElementById("toggleActive").addEventListener("click", toggleActive);
+    document.getElementById("toggleSite").addEventListener("click", toggleCurrentSite);
+    document.getElementById("toggleRuleSite").addEventListener("click", toggleSelectedRuleSite);
     document.getElementById("editLink").addEventListener("click", editRule);
 
     if (disabled !== true) {
@@ -23,19 +47,148 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 });
 
-async function getRecords() {
-    const records = await browser.runtime.sendMessage(null);
+function setupReferrerControls(settings) {
+    const modeSelect = document.getElementById("referrerMode");
+    const mode = REFERRER_MODES.has(settings.referrerProtectionMode)
+        ? settings.referrerProtectionMode
+        : "browser";
+    modeSelect.value = mode;
+    modeSelect.addEventListener("change", setReferrerMode);
 
-    if (!records) {
+    const exceptions = normalizeExceptionHosts(settings.referrerProtectionExceptions);
+    renderReferrerHostException(exceptions);
+    document.getElementById("toggleReferrerHost").addEventListener("click", toggleReferrerHost);
+}
+
+async function setReferrerMode(event) {
+    const mode = REFERRER_MODES.has(event.currentTarget.value) ? event.currentTarget.value : "browser";
+    await browser.storage.local.set({ referrerProtectionMode: mode });
+}
+
+async function toggleReferrerHost() {
+    if (!currentSiteHost) {
+        return;
+    }
+    const stored = await browser.storage.local.get("referrerProtectionExceptions");
+    const exceptions = new Set(normalizeExceptionHosts(stored.referrerProtectionExceptions));
+    if (exceptions.has(currentSiteHost)) {
+        exceptions.delete(currentSiteHost);
+    } else {
+        exceptions.add(currentSiteHost);
+    }
+    const next = [...exceptions].sort();
+    await browser.storage.local.set({ referrerProtectionExceptions: next });
+    renderReferrerHostException(next);
+}
+
+function renderReferrerHostException(exceptions) {
+    const row = document.getElementById("referrerHostRow");
+    const host = document.getElementById("referrerHost");
+    const button = document.getElementById("toggleReferrerHost");
+    if (!currentSiteHost) {
+        host.textContent = "";
+        row.classList.add("hidden");
         return;
     }
 
+    host.textContent = currentSiteHost;
+    document.getElementById("referrerHostScope").textContent = currentSiteHost;
+    row.classList.remove("hidden");
+    const isException = exceptions.includes(currentSiteHost);
+    const label = browser.i18n.getMessage(isException ? "remove" : "whitelist");
+    button.textContent = label;
+    button.title = `${label}: ${currentSiteHost}`;
+    button.setAttribute("aria-pressed", String(isException));
+}
+
+function normalizeExceptionHosts(values) {
+    if (!Array.isArray(values)) {
+        return [];
+    }
+    return [...new Set(values.filter((value) => typeof value === "string").map((value) => value.trim().toLowerCase()).filter(Boolean))].sort();
+}
+
+function setupSiteControls(settings) {
+    const section = document.getElementById("siteControl");
+    if (!currentSiteHost) {
+        section.classList.add("hidden");
+        return;
+    }
+    document.getElementById("siteHost").textContent = currentSiteHost;
+    section.classList.remove("hidden");
+    renderSiteControl(settings.disabledSiteHosts);
+}
+
+async function toggleCurrentSite() {
+    if (!currentSiteHost) {
+        return;
+    }
+    const stored = await browser.storage.local.get("disabledSiteHosts");
+    const next = toggleSiteHost(stored.disabledSiteHosts, currentSiteHost);
+    await browser.storage.local.set({ disabledSiteHosts: next });
+    renderSiteControl(next);
+}
+
+function renderSiteControl(values) {
+    const button = document.getElementById("toggleSite");
+    const disabledForSite = isSiteHostDisabled(values, currentSiteHost);
+    const label = browser.i18n.getMessage(disabledForSite ? "site_enable" : "site_disable");
+    button.textContent = label;
+    button.title = `${label}: ${currentSiteHost}`;
+    button.classList.toggle("disabled", disabledForSite);
+    button.setAttribute("aria-pressed", String(disabledForSite));
+}
+
+async function toggleSelectedRuleSite() {
+    const ruleUuid = selectedRecord?.rule?.uuid;
+    if (!currentSiteHost || !ruleUuid) {
+        return;
+    }
+    const stored = await browser.storage.local.get("ruleSiteExceptions");
+    const next = toggleRuleSiteHost(stored.ruleSiteExceptions, ruleUuid, currentSiteHost);
+    await browser.storage.local.set({ ruleSiteExceptions: next });
+    renderSelectedRuleSiteControl(next);
+}
+
+async function renderSelectedRuleSiteControl(value = undefined) {
+    const button = document.getElementById("toggleRuleSite");
+    const ruleUuid = selectedRecord?.rule?.uuid;
+    if (!currentSiteHost || !ruleUuid) {
+        button.classList.add("hidden");
+        return;
+    }
+    const exceptions = value === undefined
+        ? (await browser.storage.local.get("ruleSiteExceptions")).ruleSiteExceptions
+        : value;
+    const suppressed = isRuleSiteHostSuppressed(exceptions, ruleUuid, currentSiteHost);
+    const label = browser.i18n.getMessage(suppressed ? "rule_site_enable" : "rule_site_disable");
+    button.textContent = label;
+    button.title = `${label}: ${currentSiteHost}`;
+    button.classList.toggle("disabled", suppressed);
+    button.setAttribute("aria-pressed", String(suppressed));
+    button.classList.remove("hidden");
+}
+
+async function getRecords() {
+    const records = await browser.runtime.sendMessage(null);
+    renderRecords(records);
+}
+
+export function renderRecords(records) {
     const list = document.getElementById("records");
+    if (!list) {
+        return;
+    }
+
+    if (!Array.isArray(records) || records.length === 0) {
+        list.classList.add("hidden");
+        return;
+    }
 
     records.forEach((record) => list.prepend(newListItem(record)));
 
-    list.querySelector(".entry:first-child .entry-header").click();
-    document.getElementById("records").classList.remove("hidden");
+    list.querySelector(".entry:first-child .entry-header")?.click();
+    list.classList.remove("hidden");
 }
 
 function newListItem(record) {
@@ -64,6 +217,7 @@ function newListItem(record) {
 }
 
 function showDetails(details) {
+    selectedRecord = details;
     document.getElementById("details").classList.remove("hidden");
     document.getElementById("url").textContent = details.url;
     if (details.target) {
@@ -74,6 +228,7 @@ function showDetails(details) {
     }
     const optionsUrl = browser.runtime.getURL("src/options/options.html");
     document.getElementById("editLink").href = `${optionsUrl}?edit=${details.rule.uuid}`;
+    renderSelectedRuleSiteControl();
 }
 
 async function openInspector() {
@@ -84,18 +239,6 @@ async function openInspector() {
     }
     const inspectorUrl = browser.runtime.getURL(`src/inspector/inspector.html?tabId=${encodeURIComponent(tab.id)}`);
     await browser.tabs.create({ url: inspectorUrl });
-    window.close();
-}
-
-async function openAnalyzer() {
-    const tabs = await browser.tabs.query({ active: true, currentWindow: true });
-    const tab = tabs[0];
-    const currentUrl = tab?.url || "";
-    const tabId = typeof tab?.id === "number" ? tab.id : "";
-    const analyzerUrl = browser.runtime.getURL(
-        `src/analyzer/analyzer.html?url=${encodeURIComponent(currentUrl)}&tabId=${encodeURIComponent(tabId)}`
-    );
-    await browser.tabs.create({ url: analyzerUrl });
     window.close();
 }
 

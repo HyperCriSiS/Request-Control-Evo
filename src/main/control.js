@@ -34,7 +34,12 @@ export class CompositeRule {
 
     add(rule) {
         if (rule instanceof RedirectRule) {
-            this.rules.unshift(rule);
+            const firstFilter = this.rules.findIndex((current) => !(current instanceof RedirectRule));
+            if (firstFilter === -1) {
+                this.rules.push(rule);
+            } else {
+                this.rules.splice(firstFilter, 0, rule);
+            }
         } else {
             this.rules.push(rule);
         }

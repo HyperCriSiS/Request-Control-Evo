@@ -89,3 +89,77 @@ test("guardian message API validates tabs and keeps unrelated runtime messages u
     expect(guardian.handleMessage({ namespace: "inspection", action: "start", tabId: 1 })).toBeUndefined();
     await expect(guardian.handleMessage({ namespace: "guardian", action: "start", tabId: -1 })).resolves.toEqual({ error: "invalid-tab" });
 });
+
+test("guardian only flags rule breakage when the exact affected request also fails", () => {
+    const guardian = new CompatibilityGuardian({ webRequest: fakeWebRequest() });
+    guardian.start(21);
+
+    guardian.recordRuleEffect(
+        { tabId: 21, requestId: "req-1", url: "https://cdn.example.test/app.js", timeStamp: 10 },
+        { action: "block", rule: { uuid: "rule-1", title: "Block app" } }
+    );
+    guardian.recordRuleEffect(
+        { tabId: 21, requestId: "req-2", url: "https://img.example.test/logo.png", timeStamp: 11 },
+        { action: "filter", rule: { uuid: "rule-2", title: "Filter logo" } }
+    );
+    guardian.onError({
+        tabId: 21,
+        requestId: "req-1",
+        type: "script",
+        url: "https://cdn.example.test/app.js",
+        error: "NS_ERROR_FAILURE",
+        timeStamp: 12,
+    });
+    guardian.onError({
+        tabId: 21,
+        requestId: "unrelated",
+        type: "image",
+        url: "https://img.example.test/other.png",
+        error: "NS_ERROR_FAILURE",
+        timeStamp: 13,
+    });
+
+    const report = guardian.status(21);
+    expect(report.counts.ruleModified).toBe(2);
+    expect(report.ruleSuspects).toEqual([
+        expect.objectContaining({
+            requestId: "req-1",
+            action: "block",
+            failures: 1,
+            rule: expect.objectContaining({ uuid: "rule-1" }),
+        }),
+    ]);
+});
+
+test("guardian correlates Referer changes with failures on the same target host only", () => {
+    const guardian = new CompatibilityGuardian({ webRequest: fakeWebRequest() });
+    guardian.start(22);
+    guardian.recordReferrerEffect(
+        { tabId: 22, requestId: "ref-1", timeStamp: 20 },
+        { kind: "referrer-protection", targetHost: "login.example.test", effect: "removed", mode: "no-referrer" }
+    );
+    guardian.onCompleted({
+        tabId: 22,
+        requestId: "ref-1",
+        type: "xmlhttprequest",
+        url: "https://login.example.test/session",
+        statusCode: 403,
+        timeStamp: 21,
+    });
+    guardian.onCompleted({
+        tabId: 22,
+        requestId: "other",
+        type: "image",
+        url: "https://unrelated.test/missing",
+        statusCode: 404,
+        timeStamp: 22,
+    });
+
+    expect(guardian.status(22).referrerSuspects).toEqual([
+        expect.objectContaining({
+            targetHost: "login.example.test",
+            referrerRemoved: 1,
+            failures: 1,
+        }),
+    ]);
+});

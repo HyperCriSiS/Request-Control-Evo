@@ -8,8 +8,11 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>Inspection Mode</title>
         <link rel="stylesheet" href="inspector.css" />
+        <link rel="stylesheet" href="url-analysis.css" />
         <script defer type="module" src="localize.js"></script>
         <script defer type="module" src="inspector.js"></script>
+        <script defer type="module" src="compatibility.js"></script>
+        <script defer type="module" src="url-analysis.js"></script>
     </head>
     <body>
         <header class="page-header">
@@ -31,6 +34,7 @@
                 <div>
                     <strong id="status" data-i18n="inspection_ready"></strong>
                     <p id="status-detail" data-i18n="inspection_ready_detail"></p>
+                    <p id="compatibility-status" class="compatibility-status hidden"></p>
                 </div>
                 <span id="recording-dot" class="recording-dot" aria-hidden="true"></span>
             </section>
@@ -43,11 +47,7 @@
                 <article><strong id="stat-affected">0</strong><span data-i18n="inspection_rule_affected"></span></article>
             </section>
 
-            <section class="privacy-note">
-                <strong data-i18n="inspection_local_only"></strong>
-                <span data-i18n="inspection_local_only_detail"></span>
-                <span id="dropped" class="warning hidden"></span>
-            </section>
+            <p id="dropped" class="warning inspection-limit-warning hidden"></p>
 
             <section class="workspace">
                 <aside class="domains-panel panel">
@@ -97,6 +97,28 @@
                     <div><dt data-i18n="inspection_request_status"></dt><dd id="detail-status"></dd></div>
                     <div id="detail-rule-wrap" class="hidden"><dt data-i18n="inspection_matched_rule"></dt><dd><button id="detail-rule" class="link-button"></button></dd></div>
                 </dl>
+
+                <div id="detail-referrer" class="referrer-diagnostic hidden">
+                    <div>
+                        <strong data-i18n="inspection_referrer_changed"></strong>
+                        <p id="detail-referrer-message"></p>
+                        <p id="detail-referrer-warning" class="warning hidden" data-i18n="inspection_referrer_breakage_hint"></p>
+                    </div>
+                    <button id="detail-referrer-allow" class="button" type="button" data-i18n="inspection_referrer_allow_host"></button>
+                </div>
+                <p id="detail-compatibility-warning" class="warning compatibility-warning hidden" data-i18n="inspection_rule_breakage_hint"></p>
+
+                <section id="detail-url-analysis" class="url-analysis hidden" aria-labelledby="detail-url-analysis-title">
+                    <div class="url-analysis-head">
+                        <div>
+                            <p class="eyebrow" data-i18n="inspection_url_analysis"></p>
+                            <strong id="detail-url-analysis-title" data-i18n="inspection_url_findings"></strong>
+                        </div>
+                        <button id="detail-url-create" class="button hidden" type="button" data-i18n="inspection_url_cleanup_draft"></button>
+                    </div>
+                    <div id="detail-url-findings" class="url-findings"></div>
+                    <p id="detail-url-result" class="rule-result hidden"></p>
+                </section>
 
                 <div class="rule-actions">
                     <div>

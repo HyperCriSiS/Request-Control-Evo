@@ -28,6 +28,71 @@ function unmanagedRuleData(rule) {
     return copy;
 }
 
+function sourceReferenceMatches(value, source) {
+    if (!value) return false;
+    return [source.id, source.url].filter(Boolean).includes(value);
+}
+
+const CURRENT_CATALOG_PATHS = Object.freeze({
+    "requestcontrol-official": "/HyperCriSiS/requestcontrol-rules/main/official/rules/",
+    "requestcontrol-community": "/HyperCriSiS/requestcontrol-rules/main/community/rules/",
+});
+
+function isCurrentCatalogUrl(value, catalog) {
+    const pathPrefix = CURRENT_CATALOG_PATHS[catalog];
+    if (!value || !pathPrefix) return false;
+    try {
+        const url = new URL(value);
+        return url.protocol === "https:" && url.hostname === "raw.githubusercontent.com" && url.pathname.startsWith(pathPrefix);
+    } catch {
+        return false;
+    }
+}
+
+function isCurrentCatalogSource(source) {
+    if (!source?.catalog || !source?.entry || !source?.id || !source?.url) return false;
+    return source.id === `${source.catalog}/${source.entry}` && isCurrentCatalogUrl(source.url, source.catalog);
+}
+
+function isCurrentCustomSource(source, imports) {
+    if (!source || !imports) return false;
+    const state = imports[source.url] || imports[source.id];
+    return Boolean(state?.deletable);
+}
+
+export function migrateManagedSourceState(rules = [], imports = {}) {
+    let demoted = 0;
+    let pruned = 0;
+    const cleanedImports = {};
+
+    for (const [key, data] of Object.entries(imports || {})) {
+        if (data?.deletable || Object.keys(CURRENT_CATALOG_PATHS).some((catalog) => isCurrentCatalogUrl(key, catalog))) {
+            cleanedImports[key] = data;
+        } else {
+            pruned += 1;
+        }
+    }
+
+    const cleanedRules = (rules || []).map((rule) => {
+        if (!rule?.managed) return rule;
+        if (isCurrentCatalogSource(rule.source) || isCurrentCustomSource(rule.source, cleanedImports)) return rule;
+
+        const copy = cloneJson(rule);
+        delete copy.managed;
+        delete copy.source;
+        demoted += 1;
+        return copy;
+    });
+
+    return {
+        rules: cleanedRules,
+        imports: cleanedImports,
+        changed: demoted > 0 || pruned > 0,
+        demoted,
+        pruned,
+    };
+}
+
 async function sha256(text) {
     if (!globalThis.crypto || !globalThis.crypto.subtle) {
         throw new Error("Web Crypto API is unavailable");
@@ -67,14 +132,18 @@ function sourceMatches(rule, source) {
     if (!rule.source) {
         return false;
     }
-    if (source.id && rule.source.id) {
-        return source.id === rule.source.id;
-    }
-    return Boolean(source.url && rule.source.url === source.url);
+    return sourceReferenceMatches(rule.source.id, source) || sourceReferenceMatches(rule.source.url, source);
 }
 
 export async function reconcileManagedRules(localRules, incomingRules, source) {
-    const incomingById = new Map(incomingRules.filter(({uuid}) => uuid).map((rule) => [rule.uuid, rule]));
+    const incomingById = new Map();
+    for (const rule of incomingRules) {
+        if (!rule.uuid) continue;
+        if (incomingById.has(rule.uuid)) {
+            throw new TypeError(`Managed rule package contains duplicate UUID: ${rule.uuid}`);
+        }
+        incomingById.set(rule.uuid, rule);
+    }
     const result = [];
     const changes = {
         added: [],
@@ -144,7 +213,7 @@ export async function reconcileManagedRules(localRules, incomingRules, source) {
             result.push(localRule);
             changes.conflicts.push({
                 uuid: localRule.uuid,
-                reason: "uuid-collision-or-legacy-local-modified",
+                reason: "uuid-collision-or-local-rule",
             });
         }
     }

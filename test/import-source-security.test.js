@@ -25,6 +25,13 @@ test("rule import sources reject executable and embedded-document schemes", () =
     expect(normalizeImportSource("not a URL")).toBeNull();
 });
 
+test("rule import sources reject URLs containing credentials", () => {
+    expect(normalizeImportSource("https://user:secret@example.com/rules.json")).toBeNull();
+    expect(normalizeImportSource("https://user@example.com/rules.json")).toBeNull();
+    expect(normalizeImportSource("https://:secret@example.com/rules.json")).toBeNull();
+    expect(normalizeImportSource("https://user%40mail:secret%2Ftoken@example.com/rules.json")).toBeNull();
+});
+
 test("dynamic import sources are not interpolated into selectors or src attributes", () => {
     expect(optionsJs).not.toContain('setAttribute("src", src)');
     expect(optionsJs).not.toContain('rule-import-input[src="${');

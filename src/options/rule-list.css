@@ -2,6 +2,12 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+rule-list {
+    --rule-checkbox-size: 1.05rem;
+    --rule-selection-column: 2.4rem;
+    --rule-content-gap: 0.5rem;
+}
+
 rule-list * + * {
     margin-top: 0;
     margin-bottom: 0;
@@ -32,20 +38,83 @@ rule-list .header:not(.d-none) {
     padding: 0.35rem 0.75rem;
     font-size: 0.9rem;
     background: var(--surface-subtle);
+    border-left: 3px solid var(--primary-color);
+    gap: var(--rule-content-gap);
+}
+
+rule-list .rule-type-kind {
+    flex: 0 0 auto;
+    padding: 0.15rem 0.35rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-size: 0.68rem;
+    font-weight: 700;
+    line-height: 1.2;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+}
+
+rule-list .rule-type-title {
+    min-width: 0;
+    font-weight: 700;
 }
 
 rule-list .header > * {
-    margin-right: 0.5rem;
+    margin: 0;
 }
 
-rule-list .header > * + * {
-    margin-top: 0.2rem;
-    margin-bottom: 0.2rem;
-}
-
-rule-list .select-all {
-    margin: 0 0.45rem 0 0.15rem;
+rule-list .rule-select {
+    flex: 0 0 var(--rule-selection-column);
+    inline-size: var(--rule-selection-column);
+    min-inline-size: var(--rule-selection-column);
+    min-block-size: 2.25rem;
+    margin: 0;
     display: flex;
+    align-items: center;
+    justify-content: center;
+    box-sizing: border-box;
+}
+
+rule-list .rule-select > input[type="checkbox"] {
+    inline-size: var(--rule-checkbox-size);
+    block-size: var(--rule-checkbox-size);
+    min-inline-size: var(--rule-checkbox-size);
+    margin: 0;
+    flex: 0 0 auto;
+}
+
+rule-list .rule-header {
+    display: grid;
+    grid-template-columns: var(--rule-selection-column) minmax(0, 1fr) auto;
+    column-gap: var(--rule-content-gap);
+    align-items: center;
+    padding: 0.3rem 0;
+}
+
+rule-list .rule-header > .rule-select {
+    grid-column: 1;
+}
+
+rule-list .rule-header > .rule-header-title {
+    grid-column: 2;
+    min-width: 0;
+    padding-right: 0.25rem;
+}
+
+rule-list .rule-header > .header-info-wrap {
+    grid-column: 3;
+    min-width: 0;
+}
+
+rule-list .rule-header .title:not([contenteditable="true"]) {
+    display: block;
+    max-width: none;
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    overflow-wrap: anywhere;
+    line-height: 1.35;
 }
 
 rule-list .header > .collapse-button {
@@ -63,8 +132,8 @@ rule-list .rule-group-header {
     align-items: center;
     gap: 0.45rem;
     min-height: 2.2rem;
-    padding: 0.25rem 0.75rem;
-    background: var(--surface-subtle);
+    padding: 0.25rem 0.75rem 0.25rem calc(var(--rule-selection-column) + 0.5rem);
+    background: var(--surface-color);
     border-top: 1px solid var(--border-color);
     border-bottom: 1px solid var(--border-color);
 }
@@ -102,14 +171,22 @@ rule-list .group-hidden {
     display: none;
 }
 
+rule-list .rule-list-empty-state {
+    padding: 0.65rem 0.85rem 0.65rem calc(var(--rule-selection-column) + 0.5rem);
+    color: var(--text-muted);
+    font-size: 0.82rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
 @media (max-width: 35em) {
-    rule-list .select-all {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        min-width: 2.75rem;
-        min-height: 2.75rem;
-        margin: 0 0.25rem 0 0;
+    rule-list .rule-header {
+        grid-template-columns: var(--rule-selection-column) minmax(0, 1fr);
+        row-gap: 0.35rem;
+        align-items: start;
+    }
+
+    rule-list .rule-header > .header-info-wrap {
+        grid-column: 1 / -1;
     }
 
     rule-list .header:not(.d-none) {
@@ -126,11 +203,54 @@ rule-list .group-hidden {
 
     rule-list .rule-group-header {
         min-height: 2.75rem;
-        padding-left: 0.55rem;
+        padding-left: calc(var(--rule-selection-column) + 0.35rem);
         padding-right: 0.55rem;
     }
 
     rule-list .rule-group-toggle {
         min-height: 2.75rem;
     }
+}
+
+@media (hover: none) and (pointer: coarse) {
+    rule-list {
+        --rule-checkbox-size: 1.15rem;
+        --rule-selection-column: 2.75rem;
+    }
+
+    rule-list .rule-select {
+        min-block-size: 2.75rem;
+    }
+}
+
+rule-list .view-hidden {
+    display: none !important;
+}
+
+rule-list [data-uuid].drag-enabled:not(.editing) {
+    cursor: grab;
+}
+
+rule-list [data-uuid].dragging {
+    opacity: 0.45;
+    cursor: grabbing;
+}
+
+rule-list [data-uuid].drag-target-before::before,
+rule-list [data-uuid].drag-target-after::after {
+    content: "";
+    position: absolute;
+    left: 0.6rem;
+    right: 0.6rem;
+    height: 2px;
+    background: var(--primary-color);
+    z-index: 2;
+}
+
+rule-list [data-uuid].drag-target-before::before {
+    top: -1px;
+}
+
+rule-list [data-uuid].drag-target-after::after {
+    bottom: -1px;
 }

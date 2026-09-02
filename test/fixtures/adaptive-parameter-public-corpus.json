@@ -1,0 +1,84 @@
+{
+  "schemaVersion": 1,
+  "description": "Public-semantics evaluation corpus. Labels come from public standards/vendor documentation; observation profiles and values are synthetic and contain no browsing records.",
+  "sources": {
+    "matomo-campaign": {
+      "url": "https://matomo.org/faq/general/how-to-track-google-ads-campaigns-with-matomo/",
+      "basis": "Matomo documents mtm_* campaign parameters and compatible matomo_/pk_/piwik_ campaign prefixes as campaign tracking data."
+    },
+    "google-traffic-source": {
+      "url": "https://support.google.com/analytics/answer/15612152?hl=en",
+      "basis": "Google Analytics documents gclsrc alongside auto-tagging identifiers for Search Ads 360 traffic-source attribution."
+    },
+    "oauth-rfc6749": {
+      "url": "https://datatracker.ietf.org/doc/rfc6749/",
+      "basis": "OAuth 2.0 defines authorization-request parameters such as response_type, client_id, redirect_uri, scope and state."
+    },
+    "pkce-rfc7636": {
+      "url": "https://datatracker.ietf.org/doc/rfc7636/",
+      "basis": "PKCE defines code_verifier, code_challenge and code_challenge_method as protocol parameters."
+    },
+    "oidc-core": {
+      "url": "https://openid.net/specs/openid-connect-core-1_0-final.html",
+      "basis": "OpenID Connect defines nonce and authorization-request controls/hints including prompt, max_age, locale and login-related parameters."
+    },
+    "aws-s3-sigv4": {
+      "url": "https://docs.aws.amazon.com/AmazonS3/latest/developerguide/sigv4-query-string-auth.html",
+      "basis": "Amazon S3 Signature V4 uses X-Amz-* query parameters to authenticate presigned URLs."
+    },
+    "odata-query-options": {
+      "url": "https://learn.microsoft.com/en-us/odata/concepts/queryoptions-overview",
+      "basis": "OData system query options control filtering, selection, ordering, paging, expansion and search."
+    }
+  },
+  "profiles": {
+    "tracking-strong": {"observations": 4, "sites": 4, "identifierLike": 4, "propagated": 3},
+    "tracking-weak": {"observations": 3, "sites": 2, "identifierLike": 2, "propagated": 1},
+    "functional-security-stress": {"observations": 4, "sites": 4, "identifierLike": 4, "propagated": 3},
+    "functional-simple": {"observations": 4, "sites": 4, "identifierLike": 0, "propagated": 0}
+  },
+  "cases": [
+    {"name": "mtm_campaign", "label": "tracking", "profile": "tracking-strong", "sourceId": "matomo-campaign"},
+    {"name": "mtm_kwd", "label": "tracking", "profile": "tracking-weak", "sourceId": "matomo-campaign"},
+    {"name": "mtm_source", "label": "tracking", "profile": "tracking-weak", "sourceId": "matomo-campaign"},
+    {"name": "mtm_medium", "label": "tracking", "profile": "tracking-weak", "sourceId": "matomo-campaign"},
+    {"name": "mtm_content", "label": "tracking", "profile": "tracking-strong", "sourceId": "matomo-campaign"},
+    {"name": "mtm_cid", "label": "tracking", "profile": "tracking-strong", "sourceId": "matomo-campaign"},
+    {"name": "pk_campaign", "label": "tracking", "profile": "tracking-strong", "sourceId": "matomo-campaign"},
+    {"name": "piwik_campaign", "label": "tracking", "profile": "tracking-strong", "sourceId": "matomo-campaign"},
+    {"name": "matomo_campaign", "label": "tracking", "profile": "tracking-strong", "sourceId": "matomo-campaign"},
+    {"name": "gclsrc", "label": "tracking", "profile": "tracking-strong", "sourceId": "google-traffic-source"},
+    {"name": "response_type", "label": "functional", "profile": "functional-simple", "sourceId": "oauth-rfc6749"},
+    {"name": "client_id", "label": "functional", "profile": "functional-security-stress", "sourceId": "oauth-rfc6749"},
+    {"name": "redirect_uri", "label": "functional", "profile": "functional-security-stress", "sourceId": "oauth-rfc6749"},
+    {"name": "scope", "label": "functional", "profile": "functional-simple", "sourceId": "oauth-rfc6749"},
+    {"name": "state", "label": "functional", "profile": "functional-security-stress", "sourceId": "oauth-rfc6749"},
+    {"name": "code_verifier", "label": "functional", "profile": "functional-security-stress", "sourceId": "pkce-rfc7636"},
+    {"name": "code_challenge", "label": "functional", "profile": "functional-security-stress", "sourceId": "pkce-rfc7636"},
+    {"name": "code_challenge_method", "label": "functional", "profile": "functional-simple", "sourceId": "pkce-rfc7636"},
+    {"name": "nonce", "label": "functional", "profile": "functional-security-stress", "sourceId": "oidc-core"},
+    {"name": "prompt", "label": "functional", "profile": "functional-simple", "sourceId": "oidc-core"},
+    {"name": "max_age", "label": "functional", "profile": "functional-simple", "sourceId": "oidc-core"},
+    {"name": "ui_locales", "label": "functional", "profile": "functional-simple", "sourceId": "oidc-core"},
+    {"name": "claims_locales", "label": "functional", "profile": "functional-simple", "sourceId": "oidc-core"},
+    {"name": "id_token_hint", "label": "functional", "profile": "functional-security-stress", "sourceId": "oidc-core"},
+    {"name": "login_hint", "label": "functional", "profile": "functional-security-stress", "sourceId": "oidc-core"},
+    {"name": "acr_values", "label": "functional", "profile": "functional-simple", "sourceId": "oidc-core"},
+    {"name": "display", "label": "functional", "profile": "functional-simple", "sourceId": "oidc-core"},
+    {"name": "X-Amz-Algorithm", "label": "functional", "profile": "functional-simple", "sourceId": "aws-s3-sigv4"},
+    {"name": "X-Amz-Credential", "label": "functional", "profile": "functional-security-stress", "sourceId": "aws-s3-sigv4"},
+    {"name": "X-Amz-Date", "label": "functional", "profile": "functional-simple", "sourceId": "aws-s3-sigv4"},
+    {"name": "X-Amz-Expires", "label": "functional", "profile": "functional-simple", "sourceId": "aws-s3-sigv4"},
+    {"name": "X-Amz-SignedHeaders", "label": "functional", "profile": "functional-simple", "sourceId": "aws-s3-sigv4"},
+    {"name": "X-Amz-Signature", "label": "functional", "profile": "functional-security-stress", "sourceId": "aws-s3-sigv4"},
+    {"name": "X-Amz-Security-Token", "label": "functional", "profile": "functional-security-stress", "sourceId": "aws-s3-sigv4"},
+    {"name": "$filter", "label": "functional", "profile": "functional-simple", "sourceId": "odata-query-options"},
+    {"name": "$select", "label": "functional", "profile": "functional-simple", "sourceId": "odata-query-options"},
+    {"name": "$orderby", "label": "functional", "profile": "functional-simple", "sourceId": "odata-query-options"},
+    {"name": "$count", "label": "functional", "profile": "functional-simple", "sourceId": "odata-query-options"},
+    {"name": "$top", "label": "functional", "profile": "functional-simple", "sourceId": "odata-query-options"},
+    {"name": "$skip", "label": "functional", "profile": "functional-simple", "sourceId": "odata-query-options"},
+    {"name": "$expand", "label": "functional", "profile": "functional-simple", "sourceId": "odata-query-options"},
+    {"name": "$search", "label": "functional", "profile": "functional-simple", "sourceId": "odata-query-options"}
+  ]
+}

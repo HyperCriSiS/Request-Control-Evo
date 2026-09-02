@@ -1,8 +1,12 @@
 import {
     analyzeUrl,
     analyzeUrlSamples,
+    assessQueryParameters,
+    CONSERVATIVE_PARAMETER_PATTERNS,
     matchParameterPattern,
+    REVIEW_PARAMETER_PATTERNS,
     suggestParameterActions,
+    suggestSafeRedirectActions,
 } from "../src/main/analysis/url-analyzer.js";
 
 test("analyzeUrl splits URL components and query parameters", () => {
@@ -66,17 +70,103 @@ test("suggestParameterActions combines catalog matches and nested URL detection"
     );
 
     expect(suggestParameterActions(result, ["utm_*"])).toEqual([
-        {
+        expect.objectContaining({
             type: "unwrap-query-parameter",
             parameter: "url",
             targetUrl: target,
             confidence: "structural",
-        },
+            autoSuggest: true,
+        }),
         {
             type: "remove-query-parameter",
             parameter: "utm_campaign",
             matchedPattern: "utm_*",
-            confidence: "catalog",
+            confidence: "high",
+            autoSuggest: true,
         },
     ]);
+});
+
+test("local analyzer heuristics suggest only unambiguous tracking parameters", () => {
+    const result = analyzeUrl(
+        "https://example.com/article?utm_source=news&fbclid=facebook&gclid=google&gclsrc=aw.ds" +
+        "&msclkid=bing&twclid=x&mc_cid=mailchimp&mtm_campaign=matomo&mtm_kwd=keyword" +
+        "&ref_id=needed&referrer=needed&id=42"
+    );
+
+    expect(suggestParameterActions(result, CONSERVATIVE_PARAMETER_PATTERNS).map(({ parameter }) => parameter)).toEqual([
+        "utm_source",
+        "fbclid",
+        "gclid",
+        "gclsrc",
+        "msclkid",
+        "twclid",
+        "mc_cid",
+        "mtm_campaign",
+        "mtm_kwd",
+    ]);
+});
+
+test("vendor-documented Matomo campaign parameter names are conservative static tracking matches", () => {
+    const names = [
+        "mtm_campaign",
+        "matomo_campaign",
+        "pk_campaign",
+        "piwik_campaign",
+        "mtm_kwd",
+        "mtm_keyword",
+        "pk_kwd",
+        "piwik_kwd",
+        "pk_keyword",
+        "mtm_source",
+        "mtm_medium",
+        "mtm_content",
+        "mtm_cid",
+    ];
+
+    for (const name of names) {
+        expect(CONSERVATIVE_PARAMETER_PATTERNS.some((pattern) => matchParameterPattern(name, pattern))).toBe(true);
+    }
+});
+
+test("suggestSafeRedirectActions separates structural detection from redirect safety", () => {
+    const safe = analyzeUrl(
+        `https://redirect.example/?url=${encodeURIComponent("https://destination.example/article")}`
+    );
+    expect(suggestSafeRedirectActions(safe)[0]).toMatchObject({
+        type: "unwrap-query-parameter",
+        autoSuggest: true,
+        safety: {safe: true, level: "safe"},
+    });
+
+    const downgrade = analyzeUrl(
+        `https://redirect.example/?url=${encodeURIComponent("http://destination.example/article")}`
+    );
+    expect(suggestSafeRedirectActions(downgrade)[0]).toMatchObject({
+        autoSuggest: false,
+        safety: {safe: false, level: "blocked", reasons: ["https-to-http-downgrade"]},
+    });
+});
+
+
+test("parameter assessment exposes every parameter without treating ambiguous referral fields as safe cleanup", () => {
+    const result = analyzeUrl(
+        `https://example.com/article?utm_source=news&ref_id=partner&id=42&url=${encodeURIComponent("https://destination.example/page")}`
+    );
+    const assessed = assessQueryParameters(result);
+
+    expect(assessed.map(({ name, classification }) => [name, classification])).toEqual([
+        ["utm_source", "tracking"],
+        ["ref_id", "review"],
+        ["id", "ordinary"],
+        ["url", "redirect"],
+    ]);
+    expect(REVIEW_PARAMETER_PATTERNS).toContain("ref_*");
+});
+
+test("unsupported non-http URLs are rejected", () => {
+    expect(analyzeUrl("ftp://example.com/file")).toMatchObject({
+        valid: false,
+        error: "unsupported-protocol",
+    });
 });

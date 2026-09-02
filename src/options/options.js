@@ -3,6 +3,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { reconcileManagedRules } from "../main/catalog.js";
+import { recordCatalogUnavailable, recordImportCheck } from "../main/import-check-state.js";
+import { sanitizeLocalRule } from "../main/local-import.js";
+import { fetchWithTimeout } from "../main/remote-fetch.js";
+import {
+    CATALOG_CHANNEL,
+    buildCatalogSource,
+    findCatalogImportState,
+    validateRemoteCatalog,
+} from "../main/remote-catalog.js";
 import { exportObject, importFile } from "../util/import-export.js";
 import { Toc } from "../util/toc.js";
 import { uuid } from "../util/uuid.js";
@@ -12,14 +21,38 @@ import { OPTION_CHANGE_ICON, OPTION_SHOW_COUNTER } from "./constants.js";
 import { showRuleTestDialog } from "./rule-tester.js";
 import { normalizeImportSource } from "./import-source.js";
 
-document.addEventListener("DOMContentLoaded", async () => {
-    const { rules } = await browser.storage.local.get("rules");
+const COMMUNITY_REPOSITORY = "HyperCriSiS/requestcontrol-rules";
+const OFFICIAL_CATALOG_URL = "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/official/catalog.json";
+const COMMUNITY_CATALOG_URL = "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/community/catalog.json";
+const RULE_VIEW_SETTINGS_KEY = "ruleViewSettings";
+const RULE_QUICK_ACTIONS_KEY = "ruleQuickActions";
+const RULE_UI_ORDER_KEY = "ruleUiOrder";
 
-    if (rules) {
+let ruleViewSettings = {
+    status: "all",
+    source: "all",
+    groupBy: "group",
+    sort: "title",
+};
+let ruleUiOrder = {};
+
+document.addEventListener("DOMContentLoaded", async () => {
+    const stored = await browser.storage.local.get({
+        rules: [],
+        [RULE_VIEW_SETTINGS_KEY]: ruleViewSettings,
+        [RULE_QUICK_ACTIONS_KEY]: false,
+        [RULE_UI_ORDER_KEY]: {},
+    });
+    const rules = stored.rules || [];
+    ruleViewSettings = { ...ruleViewSettings, ...(stored[RULE_VIEW_SETTINGS_KEY] || {}) };
+    ruleUiOrder = stored[RULE_UI_ORDER_KEY] || {};
+
+    if (rules.length > 0) {
         createRuleInputs(rules);
     } else {
         toggleEmpty();
     }
+    setupRuleViewControls(Boolean(stored[RULE_QUICK_ACTIONS_KEY]));
 
     const query = new URLSearchParams(location.search);
     if (query.has("edit")) {
@@ -78,6 +111,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         exportObject(fileName, selected);
     });
 
+    document.getElementById("shareSelectedRulesGitHub").addEventListener("click", () => showCommunityShareDialog());
+
     document.getElementById("removeSelectedRules").addEventListener("click", async () => {
         const selected = new Set(getSelectedRules().map((rule) => rule.uuid));
         const { rules } = await browser.storage.local.get("rules");
@@ -105,6 +140,8 @@ document.addEventListener("DOMContentLoaded", async () => {
         document.querySelector(".mobile-toolbar").classList.toggle("show");
     });
 
+    document.getElementById("tab-rules").addEventListener("click", onRuleQuickAction);
+
     document.querySelector(".mobile-toolbar").addEventListener("click", function () {
         this.classList.remove("show");
     });
@@ -113,7 +150,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         .querySelectorAll("rule-list")
         .forEach((list) => list.addEventListener("rule-edit-completed", onRuleEditCompleted));
 
-    setupImportsTab();
+    await setupImportsTab();
 });
 
 document.addEventListener("rule-created", async (e) => {
@@ -165,7 +202,11 @@ document.addEventListener("rule-deleted", async (e) => {
 
 document.addEventListener("rule-selected", updateToolbar);
 
-document.addEventListener("rule-import-selected", toggleImportSelectedButton);
+document.addEventListener("rule-ui-order-changed", async (e) => {
+    ruleUiOrder = { ...(e.detail?.manualOrder || {}) };
+    await browser.storage.local.set({ [RULE_UI_ORDER_KEY]: ruleUiOrder });
+    applyRuleView();
+});
 
 document.addEventListener("rule-import-deleted", onImportSourceDeleted);
 
@@ -185,29 +226,44 @@ document.addEventListener("rule-import-show-imported", (e) => {
     updateToolbar();
 });
 
-document.addEventListener("rule-import-import-list", async (e) => {
-    const input = e.target;
+document.addEventListener("rule-import-import-list", (e) => {
+    applyManagedImport(e.target).catch(showAlertPopup);
+});
+
+async function applyManagedImport(input) {
+    await input.load();
+    if (!input.digest) {
+        throw new Error(browser.i18n.getMessage("import_unavailable") || "Rule package is unavailable.");
+    }
+
     let { imports } = await browser.storage.local.get("imports");
     const src = input.source;
+    const previousKey = input.dataset.importKey || src;
     const rulesToImport = input.rules.filter((rule) => rule.uuid);
 
     if (!imports) {
         imports = {};
     }
 
+    const previousData = imports[previousKey] || input.data || {};
     if (!(src in imports)) {
-        imports[src] = input.data;
+        imports[src] = previousData;
     }
 
     const data = imports[src];
-    const source = {
-        id: input.dataset.entry ? `${input.dataset.catalog}/${input.dataset.entry}` : src,
-        url: src,
-        revision: input.etag || input.digest,
-        catalog: input.dataset.catalog || undefined,
-        entry: input.dataset.entry || undefined,
-        version: input.dataset.version || undefined,
-    };
+    const source = input.catalogDefinition && input.catalogEntry
+        ? {
+            ...buildCatalogSource(input.catalogDefinition, input.catalogEntry, src),
+            revision: input.etag || input.digest,
+        }
+        : {
+            id: input.dataset.entry ? `${input.dataset.catalog}/${input.dataset.entry}` : src,
+            url: src,
+            revision: input.etag || input.digest,
+            catalog: input.dataset.catalog || undefined,
+            entry: input.dataset.entry || undefined,
+            version: input.dataset.version || undefined,
+        };
 
     let { rules } = await browser.storage.local.get("rules");
     if (!rules) {
@@ -226,18 +282,32 @@ document.addEventListener("rule-import-import-list", async (e) => {
         .map((rule) => rule.uuid);
     const hasConflicts = reconciliation.conflicts.length > 0;
 
+    const previousImported = data.imported || {};
     imports[src].imported = {
         uuids: managedUuids,
         etag: input.etag,
-        digest: hasConflicts ? data.imported && data.imported.digest : input.digest,
+        digest: hasConflicts ? previousImported.digest : input.digest,
         availableDigest: input.digest,
+        availableVersion: source.version,
         timestamp: Date.now(),
         conflicts: reconciliation.conflicts,
+        catalog: source.catalog,
+        entry: source.entry,
+        version: hasConflicts ? previousImported.version : source.version,
+        integrityStatus: input.integrityStatus,
+        lastCheckStatus: "ok",
+        lastCheckedAt: Date.now(),
     };
+    if (previousKey && previousKey !== src) {
+        delete imports[previousKey];
+    }
 
     await browser.storage.local.set({ imports });
+    input.dataset.importKey = src;
     input.data = imports[src];
-});
+    refreshOfficialUpdateState();
+    return reconciliation;
+}
 
 function markLegacyImportedRules(rules, imported, source) {
     if (!imported || !Array.isArray(imported.uuids)) {
@@ -259,83 +329,289 @@ function markLegacyImportedRules(rules, imported, source) {
 
 async function setupImportsTab() {
     const { imports } = await browser.storage.local.get("imports");
+    const importState = imports || {};
 
-    if (imports) {
-        Object.entries(imports).forEach(([src, data]) => {
-            if (data.deletable) {
-                createImportInput(src, data);
-            } else {
-                const input = findImportInputBySource(src);
-                if (input) {
-                    input.data = data;
-                }
-            }
-        });
-    }
-
-    const importTab = document.querySelector('a[href="#tab-imports"]');
-    const loadCommunityCatalog = async () => {
-        if (importTab.dataset.communityLoaded === "true") {
-            return;
+    Object.entries(importState).forEach(([src, data]) => {
+        if (data.deletable) {
+            createImportInput(src, data);
         }
-        importTab.dataset.communityLoaded = "true";
-        await setupCommunityCatalog(imports || {});
-    };
-    importTab.addEventListener("click", loadCommunityCatalog);
-    if (location.hash === "#tab-imports") {
-        loadCommunityCatalog();
-    }
+    });
 
+    document.querySelectorAll("[data-import-channel]").forEach((button) => {
+        button.addEventListener("click", () => activateImportChannel(button.dataset.importChannel, importState));
+    });
+    document.getElementById("official-update-all").addEventListener("click", updateAllOfficial);
     document.getElementById("import-source-form").addEventListener("submit", onImportSourceAdded);
     document.getElementById("new-import-source").addEventListener("input", checkImportSourceValidity);
+    await setupOfficialCatalog(importState);
+}
+
+async function activateImportChannel(channel, importState) {
+    document.querySelectorAll("[data-import-channel]").forEach((button) => {
+        const active = button.dataset.importChannel === channel;
+        button.classList.toggle("active", active);
+        button.setAttribute("aria-selected", String(active));
+    });
+    document.querySelectorAll("[data-import-panel]").forEach((panel) => {
+        const active = panel.dataset.importPanel === channel;
+        panel.hidden = !active;
+        panel.classList.toggle("active", active);
+    });
+
+    if (channel === CATALOG_CHANNEL.COMMUNITY) {
+        await setupCommunityCatalog(importState);
+    } else if (channel === "custom") {
+        document.querySelectorAll("#custom-rule-lists rule-import-input").forEach((input) => input.load());
+    }
+}
+
+function toggleAdvancedPackages(button) {
+    const target = document.getElementById(button.getAttribute("aria-controls"));
+    if (!target) return;
+    const open = target.hidden;
+    target.hidden = !open;
+    button.setAttribute("aria-expanded", String(open));
+}
+
+async function setupOfficialCatalog(imports) {
+    return setupRemoteCatalog({
+        panelId: "official-rule-lists",
+        statusId: "official-rule-status",
+        listId: "official-rule-list",
+        catalogUrl: OFFICIAL_CATALOG_URL,
+        channel: CATALOG_CHANNEL.OFFICIAL,
+        imports,
+    });
 }
 
 async function setupCommunityCatalog(imports) {
-    const catalogUrl = "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/catalog.json";
+    return setupRemoteCatalog({
+        panelId: "community-rule-lists",
+        statusId: "community-rule-status",
+        listId: "community-rule-list",
+        catalogUrl: COMMUNITY_CATALOG_URL,
+        channel: CATALOG_CHANNEL.COMMUNITY,
+        imports,
+    });
+}
+
+function ensureCatalogPresentation(panel, list, channel) {
+    let heading = panel.querySelector(`.imports-tier-heading[data-channel="${channel}"]`);
+    if (!heading) {
+        heading = document.createElement("div");
+        heading.className = "imports-tier-heading";
+        heading.dataset.channel = channel;
+        heading.textContent = browser.i18n.getMessage("imports_standard") || "Standard";
+        list.before(heading);
+    }
+
+    let advancedToggle = document.getElementById(`${channel}-advanced-toggle`);
+    let advancedList = document.getElementById(`${channel}-advanced-rule-list`);
+    let advancedCount = document.getElementById(`${channel}-advanced-count`);
+    if (!advancedToggle || !advancedList || !advancedCount) {
+        advancedToggle = document.createElement("button");
+        advancedToggle.id = `${channel}-advanced-toggle`;
+        advancedToggle.type = "button";
+        advancedToggle.className = "imports-advanced-toggle";
+        advancedToggle.hidden = true;
+        advancedToggle.setAttribute("aria-expanded", "false");
+        advancedToggle.setAttribute("aria-controls", `${channel}-advanced-packages`);
+
+        const label = document.createElement("span");
+        label.textContent = browser.i18n.getMessage("imports_advanced") || "Advanced";
+        advancedCount = document.createElement("span");
+        advancedCount.id = `${channel}-advanced-count`;
+        advancedCount.className = "badge badge-light";
+        const hint = document.createElement("span");
+        hint.className = "imports-advanced-hint";
+        hint.textContent = browser.i18n.getMessage("imports_advanced_hint") ||
+            "Expert, broad or potentially disruptive packages";
+        advancedToggle.append(label, advancedCount, hint);
+        advancedToggle.addEventListener("click", () => toggleAdvancedPackages(advancedToggle));
+
+        const advancedPackages = document.createElement("div");
+        advancedPackages.id = `${channel}-advanced-packages`;
+        advancedPackages.className = "imports-advanced-packages";
+        advancedPackages.hidden = true;
+        advancedList = document.createElement("ul");
+        advancedList.id = `${channel}-advanced-rule-list`;
+        advancedList.className = "imports-package-list";
+        advancedPackages.append(advancedList);
+        list.after(advancedToggle, advancedPackages);
+    }
+    return { advancedList, advancedToggle, advancedCount };
+}
+
+async function setupRemoteCatalog({ panelId, statusId, listId, catalogUrl, channel, imports }) {
+    const panel = document.getElementById(panelId);
+    if (panel.dataset.loaded === "true" || panel.dataset.loading === "true") {
+        return;
+    }
+
+    const status = document.getElementById(statusId);
+    const list = document.getElementById(listId);
+    const { advancedList, advancedToggle, advancedCount } = ensureCatalogPresentation(panel, list, channel);
+    panel.dataset.loading = "true";
+    status.hidden = false;
+    status.textContent = channel === CATALOG_CHANNEL.OFFICIAL
+        ? (browser.i18n.getMessage("imports_official_loading") || "Checking official rule packages…")
+        : (browser.i18n.getMessage("imports_community_loading") || "Loading community catalog…");
+
     try {
-        const response = await fetch(catalogUrl, { cache: "no-store" });
+        const response = await fetchWithTimeout(catalogUrl, { cache: "no-store" });
         if (!response.ok) {
-            return;
+            throw new Error(`${channel} catalog request failed: ${response.status}`);
         }
         const catalog = await response.json();
-        if (!catalog || !Array.isArray(catalog.ruleSets)) {
-            return;
+        const validation = validateRemoteCatalog(catalog, channel);
+        if (validation.length) {
+            throw new Error(`Invalid ${channel} catalog: ${validation.join(", ")}`);
         }
 
-        const container = document.getElementById("tab-imports");
-        const details = document.createElement("details");
-        details.open = true;
-        const summary = document.createElement("summary");
-        summary.textContent = "Request Control Community";
-        const list = document.createElement("ul");
-
+        list.replaceChildren();
+        advancedList?.replaceChildren();
+        const importedChecks = [];
+        const importedInputs = [];
+        let advancedPackages = 0;
         for (const entry of catalog.ruleSets) {
-            if (!entry || !entry.url || !entry.name) {
-                continue;
-            }
             const source = normalizeImportSource(entry.url);
-            if (!source) {
-                continue;
-            }
+            if (!source) continue;
 
             const input = document.createElement("rule-import-input");
-            input.textContent = `${entry.category || "community"} - ${entry.name}`;
-            input.dataset.catalog = catalog.catalog || "requestcontrol-community";
-            input.dataset.entry = entry.id || entry.url;
+            input.setAttribute("lazy", "");
+            if (entry.warning) input.setAttribute("warning", "");
+            input.textContent = entry.name;
+            input.description = entry.description || "";
+            input.dataset.catalog = catalog.catalog;
+            input.dataset.entry = entry.id;
             input.dataset.version = entry.version || catalog.version || "";
-            input.dataset.group = entry.group || "";
-            if (entry.sha256) {
-                input.setAttribute("expected-sha256", entry.sha256);
-            }
+            input.dataset.channel = channel;
+            input.catalogDefinition = catalog;
+            input.catalogEntry = entry;
+            input.catalogMetadata = entry;
+            if (entry.sha256) input.setAttribute("expected-sha256", entry.sha256);
             input.source = source;
-            input.data = imports[source] || imports[entry.url] || {};
-            list.append(input);
+            if (entry.homepage) input.sourceHomepage = entry.homepage;
+
+
+            const imported = findCatalogImportState(imports, entry, source);
+            input.dataset.importKey = imported.key || source;
+            input.data = imported.data;
+            const targetList = entry.presentation === "advanced" && advancedList ? advancedList : list;
+            targetList.append(input);
+            if (entry.presentation === "advanced") advancedPackages += 1;
+            if (input.data.imported) {
+                importedInputs.push(input);
+                importedChecks.push(input.load());
+            }
         }
 
-        details.append(summary, list);
-        container.prepend(details);
+        if (advancedToggle && advancedCount) {
+            advancedToggle.hidden = advancedPackages === 0;
+            advancedCount.textContent = String(advancedPackages);
+        }
+        panel.dataset.loaded = "true";
+        await Promise.allSettled(importedChecks);
+        await persistRemoteCheckResults(importedInputs);
+
+        if (channel === CATALOG_CHANNEL.OFFICIAL) {
+            refreshOfficialUpdateState();
+        } else if (catalog.ruleSets.length === 0) {
+            status.hidden = false;
+            status.textContent = browser.i18n.getMessage("imports_community_empty") || "No community packages are published yet.";
+        } else {
+            status.hidden = true;
+        }
     } catch {
-        // Community catalog is optional; built-in and user lists continue to work offline.
+        await persistCatalogFailure(channel);
+        status.hidden = false;
+        status.textContent = channel === CATALOG_CHANNEL.OFFICIAL
+            ? (browser.i18n.getMessage("imports_official_unavailable") || "Official rule updates are currently unavailable.")
+            : (browser.i18n.getMessage("imports_community_unavailable") || "Community catalog is currently unavailable.");
+    } finally {
+        delete panel.dataset.loading;
+    }
+}
+
+async function persistRemoteCheckResults(inputs) {
+    if (inputs.length === 0) return;
+
+    const stored = await browser.storage.local.get("imports");
+    const imports = { ...(stored.imports || {}) };
+    let changed = false;
+
+    for (const input of inputs) {
+        const key = input.dataset.importKey || input.source;
+        if (!imports[key]?.imported) continue;
+
+        imports[key] = recordImportCheck(imports[key], {
+            loadStatus: input.loadStatus,
+            digest: input.digest,
+            version: input.dataset.version,
+            integrityStatus: input.integrityStatus,
+        });
+        input.data = imports[key];
+        changed = true;
+    }
+
+    if (changed) await browser.storage.local.set({ imports });
+}
+
+async function persistCatalogFailure(channel) {
+    const catalog = channel === CATALOG_CHANNEL.OFFICIAL
+        ? "requestcontrol-official"
+        : "requestcontrol-community";
+    try {
+        const stored = await browser.storage.local.get("imports");
+        const imports = recordCatalogUnavailable(stored.imports || {}, catalog);
+        await browser.storage.local.set({ imports });
+    } catch {
+        // The visible catalog error remains useful even when storage is unavailable.
+    }
+}
+
+function refreshOfficialUpdateState() {
+    const panel = document.getElementById("official-rule-lists");
+    const status = document.getElementById("official-rule-status");
+    const badge = document.getElementById("official-update-count");
+    const button = document.getElementById("official-update-all");
+    if (!panel || !status || !badge || !button) return;
+
+    const updates = Array.from(panel.querySelectorAll("rule-import-input")).filter((input) => input.updateAvailable);
+    const failedChecks = Array.from(panel.querySelectorAll("rule-import-input")).filter((input) =>
+        input.data?.imported && ["integrity-failed", "unavailable"].includes(input.loadStatus)
+    );
+    badge.hidden = updates.length === 0;
+    badge.textContent = String(updates.length);
+    button.hidden = updates.length === 0;
+    button.disabled = updates.length === 0;
+    status.hidden = false;
+    if (failedChecks.length > 0) {
+        status.textContent = browser.i18n.getMessage("imports_official_checks_failed", failedChecks.length) ||
+            `Could not verify ${failedChecks.length} installed official package(s). Existing rules remain active and unchanged.`;
+    } else if (updates.length > 0) {
+        status.textContent = browser.i18n.getMessage("imports_official_updates_available", updates.length) ||
+            `${updates.length} official package update(s) available.`;
+    } else {
+        status.textContent = browser.i18n.getMessage("imports_official_up_to_date") ||
+            "Official packages are up to date.";
+    }
+}
+
+async function updateAllOfficial() {
+    const button = document.getElementById("official-update-all");
+    const inputs = Array.from(document.querySelectorAll("#official-rule-lists rule-import-input")).filter((input) => input.updateAvailable);
+    button.disabled = true;
+    button.classList.add("is-loading");
+    try {
+        for (const input of inputs) {
+            await applyManagedImport(input);
+        }
+    } catch (error) {
+        showAlertPopup(error);
+    } finally {
+        button.classList.remove("is-loading");
+        refreshOfficialUpdateState();
     }
 }
 
@@ -395,7 +671,6 @@ async function onImportSourceDeleted(e) {
 
     input.remove();
     checkImportSourceValidity();
-    toggleImportSelectedButton();
 }
 
 async function onRemoveImportedRules(e) {
@@ -429,10 +704,14 @@ function createImportInput(src, data) {
 
     const input = document.createElement("rule-import-input");
     const inputs = document.getElementById("my-import-sources");
+    input.setAttribute("lazy", "");
     input.source = source;
     input.setAttribute("deletable", true);
     input.data = data;
     inputs.append(input);
+    if (!document.getElementById("custom-rule-lists")?.hidden) {
+        input.load();
+    }
     return input;
 }
 
@@ -449,12 +728,6 @@ function findImportInputBySource(src) {
     );
 }
 
-function toggleImportSelectedButton() {
-    const selected = document.querySelectorAll("rule-import-input[selected]");
-    const importButton = document.getElementById("importSelected");
-    importButton.disabled = selected.length === 0;
-}
-
 function onRuleEditCompleted(e) {
     const { action, input } = e.detail;
     if (action !== this.id) {
@@ -465,6 +738,7 @@ function onRuleEditCompleted(e) {
 function createRuleInputs(rules) {
     rules.forEach((rule) => document.getElementById(rule.action).add(rule));
     updateLists();
+    applyRuleView();
     updateToolbar();
 }
 
@@ -499,8 +773,9 @@ function mergeRules(rules, imported) {
     const newRules = [];
     const mergedRules = [];
     const importedRules = Array.isArray(imported) ? imported : [imported];
-    for (const rule of importedRules) {
-        if (!rule.hasOwnProperty("uuid")) {
+    for (const importedRule of importedRules) {
+        const rule = sanitizeLocalRule(importedRule);
+        if (!Object.prototype.hasOwnProperty.call(rule, "uuid")) {
             rule.uuid = uuid();
             rules.push(rule);
             newRules.push(rule);
@@ -529,6 +804,167 @@ function updateLists() {
         list.toggle();
     });
     toggleEmpty();
+}
+
+function showCommunityShareDialog(rules = null) {
+    const selected = Array.isArray(rules) ? rules : getSelectedRules();
+    if (selected.length === 0) {
+        return;
+    }
+
+    const payload = {
+        schemaVersion: 1,
+        exportedAt: new Date().toISOString(),
+        rules: selected,
+    };
+    const json = JSON.stringify(payload, null, 2);
+
+    const dialog = document.createElement("modal-dialog");
+    dialog.className = "community-share-dialog";
+
+    const title = document.createElement("span");
+    title.slot = "title";
+    title.textContent = browser.i18n.getMessage("share_rules_title") || "Share rules with the community";
+
+    const content = document.createElement("div");
+    content.slot = "content";
+    content.className = "community-share-content";
+
+    const description = document.createElement("p");
+    description.textContent = browser.i18n.getMessage("share_rules_description", selected.length) ||
+        `${selected.length} selected rules will be prepared for public review in the Request Control community repository.`;
+
+    const warning = document.createElement("p");
+    warning.className = "community-share-warning";
+    warning.textContent = browser.i18n.getMessage("share_rules_public_warning") ||
+        "GitHub submissions are public. Review URLs, parameters and rule descriptions for private or sensitive values before continuing.";
+
+    const preview = document.createElement("details");
+    preview.className = "community-share-preview";
+    const previewSummary = document.createElement("summary");
+    previewSummary.textContent = browser.i18n.getMessage("share_rules_preview") || "Preview JSON";
+    const pre = document.createElement("pre");
+    pre.textContent = json;
+    preview.append(previewSummary, pre);
+
+    const actions = document.createElement("div");
+    actions.className = "community-share-actions";
+    const download = document.createElement("button");
+    download.type = "button";
+    download.className = "btn";
+    download.textContent = browser.i18n.getMessage("share_rules_download_json") || "Download JSON";
+    download.addEventListener("click", () => exportObject("request-control-community-submission.json", payload));
+
+    const continueButton = document.createElement("button");
+    continueButton.type = "button";
+    continueButton.className = "btn btn-dark";
+    continueButton.textContent = browser.i18n.getMessage("share_rules_continue_github") || "Continue to GitHub";
+    continueButton.addEventListener("click", async () => {
+        const url = new URL(`https://github.com/${COMMUNITY_REPOSITORY}/issues/new`);
+        url.searchParams.set("template", "rule-set-submission.md");
+        url.searchParams.set(
+            "title",
+            browser.i18n.getMessage("github_share_issue_title", selected.length) || `Rule set submission (${selected.length} rules)`
+        );
+        const intro = browser.i18n.getMessage("github_share_issue_intro") ||
+            "Generated by Request Control for community review. I reviewed this payload and removed private or sensitive values.";
+        if (json.length <= 24000) {
+            url.searchParams.set("body", `${intro}\n\n\`\`\`json\n${json}\n\`\`\``);
+        } else {
+            exportObject("request-control-community-submission.json", payload);
+        }
+        await browser.tabs.create({ url: url.toString() });
+        dialog.remove();
+    });
+    actions.append(download, continueButton);
+    content.append(description, warning, preview, actions);
+    dialog.append(title, content);
+    document.body.append(dialog);
+}
+
+function setupRuleViewControls(showQuickActions) {
+    const search = document.getElementById("ruleSearch");
+    const status = document.getElementById("ruleStatusFilter");
+    const source = document.getElementById("ruleSourceFilter");
+    const groupBy = document.getElementById("ruleGroupBy");
+    const sort = document.getElementById("ruleSort");
+    const quickActions = document.getElementById("showRuleQuickActions");
+
+    status.value = ruleViewSettings.status || "all";
+    source.value = ruleViewSettings.source || "all";
+    groupBy.value = ruleViewSettings.groupBy || "group";
+    sort.value = ruleViewSettings.sort || "title";
+    quickActions.checked = showQuickActions;
+    document.body.classList.toggle("show-rule-quick-actions", showQuickActions);
+
+    search.addEventListener("input", applyRuleView);
+    for (const control of [status, source, groupBy, sort]) {
+        control.addEventListener("change", async () => {
+            ruleViewSettings = {
+                status: status.value,
+                source: source.value,
+                groupBy: groupBy.value,
+                sort: sort.value,
+            };
+            await browser.storage.local.set({ [RULE_VIEW_SETTINGS_KEY]: ruleViewSettings });
+            applyRuleView();
+        });
+    }
+    quickActions.addEventListener("change", async () => {
+        document.body.classList.toggle("show-rule-quick-actions", quickActions.checked);
+        await browser.storage.local.set({ [RULE_QUICK_ACTIONS_KEY]: quickActions.checked });
+    });
+    applyRuleView();
+}
+
+function applyRuleView() {
+    const search = document.getElementById("ruleSearch");
+    const view = {
+        query: search?.value || "",
+        status: document.getElementById("ruleStatusFilter")?.value || ruleViewSettings.status || "all",
+        source: document.getElementById("ruleSourceFilter")?.value || ruleViewSettings.source || "all",
+        groupBy: document.getElementById("ruleGroupBy")?.value || ruleViewSettings.groupBy || "group",
+        sort: document.getElementById("ruleSort")?.value || ruleViewSettings.sort || "title",
+        manualOrder: ruleUiOrder,
+    };
+    document.body.classList.toggle("rule-sort-manual", view.sort === "manual");
+    document.querySelectorAll("rule-list").forEach((list) => list.setView(view));
+}
+
+function onRuleQuickAction(e) {
+    const button = e.target.closest("[data-rule-command]");
+    if (!button) return;
+    const input = button.closest("[data-uuid]");
+    if (!input?.rule) return;
+    e.preventDefault();
+    e.stopPropagation();
+
+    switch (button.dataset.ruleCommand) {
+        case "test":
+            showRuleTestDialog([input.rule]);
+            break;
+        case "export": {
+            const fileName = browser.i18n.getMessage("export-file-name");
+            exportObject(fileName, [input.rule]);
+            break;
+        }
+        case "share":
+            showCommunityShareDialog([input.rule]);
+            break;
+        case "delete": {
+            const prompt = browser.i18n.getMessage("rule_quick_delete_confirm") || "Delete this rule?";
+            if (window.confirm(prompt)) {
+                input.dispatchEvent(new CustomEvent("rule-deleted", {
+                    bubbles: true,
+                    composed: true,
+                    detail: { uuid: input.rule.uuid },
+                }));
+            }
+            break;
+        }
+        default:
+            break;
+    }
 }
 
 function toggleEmpty() {

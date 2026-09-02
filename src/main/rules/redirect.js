@@ -228,11 +228,15 @@ function parseRedirectInstructions(redirectUrl) {
             inlineCount++;
             if (!instruction) {
                 if (redirectUrl.startsWith(queryParamStart, i + 1)) {
-                    const name = redirectUrl.substring(i + queryParamStart.length + 1).match(/^\w+/)[0];
+                    const nameMatch = redirectUrl.substring(i + queryParamStart.length + 1).match(/^\w+/);
+                    if (!nameMatch) {
+                        continue;
+                    }
+                    const name = nameMatch[0];
                     instruction = {
                         offset: i,
                         name,
-                        valueStart: queryParamStart.length + name.length + 2,
+                        valueStart: i + queryParamStart.length + name.length + 2,
                     };
                     i += queryParamStart.length + name.length;
                     queryInstruction = true;
@@ -290,10 +294,14 @@ function parseRedirectParameters(redirectUrl) {
             }
 
             if (redirectUrl.startsWith(queryParamStart, i + 1)) {
-                const name = redirectUrl.substring(i + queryParamStart.length + 1).match(/^\w+/)[0];
+                const nameMatch = redirectUrl.substring(i + queryParamStart.length + 1).match(/^\w+/);
+                if (!nameMatch) {
+                    continue;
+                }
+                const name = nameMatch[0];
                 parameter = {
                     offset: i,
-                    ruleStart: queryParamStart.length + name.length + 1,
+                    ruleStart: i + queryParamStart.length + name.length + 1,
                 };
                 i += queryParamStart.length + name.length;
                 parameterExpansion = new QueryParameterExpansion(name);
@@ -404,12 +412,12 @@ function parseStringManipulations(rules) {
     return manipulations;
 }
 
-function parseReplacePattern(str) {
+export function parseReplacePattern(str) {
     let counter = 0;
     for (let i = 0; i < str.length; i++) {
         if (str.charAt(i) === "\\") {
             counter++;
-        } else if ((str.charAt(i) === "/" && counter === 0) || counter % 1) {
+        } else if (str.charAt(i) === "/" && counter % 2 === 0) {
             return [str.substring(0, i), str.substring(i + 1)];
         } else {
             counter = 0;

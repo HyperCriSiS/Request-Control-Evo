@@ -114,3 +114,18 @@ test("exact-request drafts preserve the inspected request path and query", () =>
         path: ["/pixel.gif?id=123"],
     });
 });
+
+test("inspection-generated drafts do not claim user-owned groups or legacy tags", () => {
+    const rule = buildInspectionBlockRule(
+        {
+            pageUrl: "https://example.com/",
+            request: { url: "https://tracker.example/pixel", type: "image" },
+            scope: "host",
+        },
+        "uuid-ungrouped"
+    );
+
+    expect(rule.group).toBeUndefined();
+    expect(rule.tag).toBeUndefined();
+    expect(rule.active).toBe(false);
+});

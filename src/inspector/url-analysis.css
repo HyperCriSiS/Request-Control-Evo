@@ -1,0 +1,52 @@
+/* This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
+
+.url-analysis {
+    margin-top: 1rem;
+    padding: 0.85rem;
+    border: 1px solid var(--border);
+    border-radius: 0.65rem;
+    background: rgba(127, 127, 127, 0.06);
+}
+
+.url-analysis-head {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+}
+
+.url-findings {
+    display: grid;
+    gap: 0.45rem;
+    margin-top: 0.65rem;
+}
+
+.url-finding {
+    display: grid;
+    grid-template-columns: minmax(7rem, auto) 1fr;
+    align-items: baseline;
+    gap: 0.7rem;
+    line-height: 1.35;
+}
+
+.url-finding code {
+    overflow-wrap: anywhere;
+}
+
+.inspection-limit-warning {
+    margin: 0.5rem 0;
+}
+
+@media (max-width: 42em) {
+    .url-analysis-head {
+        align-items: stretch;
+        flex-direction: column;
+    }
+
+    .url-finding {
+        grid-template-columns: 1fr;
+        gap: 0.2rem;
+    }
+}

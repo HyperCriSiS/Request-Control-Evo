@@ -13,11 +13,12 @@ test("buildSuggestedFilterRule creates a disabled, scoped parameter filter", () 
         uuid: "uuid-1",
         action: "filter",
         active: false,
-        tag: "assisted",
         pattern: { scheme: "https", host: ["example.com"], path: ["/article*"] },
         paramsFilter: { values: ["utm_source"] },
         skipRedirectionFilter: true,
     });
+    expect(rule.group).toBeUndefined();
+    expect(rule.tag).toBeUndefined();
 });
 
 test("buildSuggestedFilterRule keeps redirect parsing enabled for unwrap suggestions", () => {

@@ -74,7 +74,8 @@ export function summarizeInspection(session) {
         if (classification.trackingHint && classification.hostname) {
             trackingDomains.add(classification.hostname);
         }
-        if (request.effect) {
+        const affected = Boolean(request.effect || request.diagnostics?.length);
+        if (affected) {
             summary.affected += 1;
         }
 
@@ -97,7 +98,7 @@ export function summarizeInspection(session) {
         domain.total += 1;
         domain.firstParty += classification.firstParty ? 1 : 0;
         domain.thirdParty += classification.thirdParty ? 1 : 0;
-        domain.affected += request.effect ? 1 : 0;
+        domain.affected += affected ? 1 : 0;
         domain.trackingHint ||= classification.trackingHint;
         domain.types[request.type] = (domain.types[request.type] || 0) + 1;
     }
@@ -129,8 +130,6 @@ export function buildInspectionBlockRule({ pageUrl, request, scope }, uuid) {
         active: false,
         title: `Inspection draft: ${target.hostname}`,
         description: describeScope(scope, target.hostname, request.type),
-        tag: "inspection",
-        group: "Inspection",
     };
 
     switch (scope) {

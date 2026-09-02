@@ -344,6 +344,29 @@ test("query parser - set when value", () => {
     expect(parser.href).toBe("https://domain.com/foo?foo=foo#hash");
 });
 
+test("query parser - set later parameter without changing earlier values", () => {
+    const parser = new QueryParser("https://domain.com/foo?a=1&b=2&c=3#hash");
+    parser.set("b", "updated");
+    expect(parser.href).toBe("https://domain.com/foo?a=1&b=updated&c=3#hash");
+});
+
+test("query parser - finds exact parameter after a similarly named parameter", () => {
+    const parser = new QueryParser("https://domain.com/foo?bb=1&b=2#hash");
+    expect(parser.get("b")).toBe("2");
+    parser.set("b", "updated");
+    expect(parser.href).toBe("https://domain.com/foo?bb=1&b=updated#hash");
+});
+
+test("query parser - set later empty and repeated parameters conservatively", () => {
+    const emptyParser = new QueryParser("https://domain.com/foo?a=1&b=&c=3#hash");
+    emptyParser.set("b", "updated");
+    expect(emptyParser.href).toBe("https://domain.com/foo?a=1&b=updated&c=3#hash");
+
+    const repeatedParser = new QueryParser("https://domain.com/foo?a=1&b=2&b=3#hash");
+    repeatedParser.set("b", "updated");
+    expect(repeatedParser.href).toBe("https://domain.com/foo?a=1&b=updated&b=3#hash");
+});
+
 test("query parser - set when has query parameter same begin", () => {
     const parser = new QueryParser("https://domain.com/foo?fooo=bar#hash");
     parser.set("foo", "foo");
