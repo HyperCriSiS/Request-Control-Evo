@@ -1,16 +1,18 @@
-# Branching workflow
+# Branching and release workflow
 
 ## Long-lived branch
 
-`master` is the long-lived product/integration branch for this fork.
+`master` is the only long-lived product/integration branch for this fork.
 
-The existing `dev`, `modernization`, `tmp` and historical release/promotion branches are legacy working branches, not a model for new development. Do not create new permanent integration, module, feature or staging branches.
+`dev`, `modernization`, `tmp` and historical release/promotion branches are legacy working branches. They are not valid bases for new development. After the 1.20 consolidation, new work starts from `master` and returns to `master` through a short-lived change branch or a deliberately small direct maintenance commit.
 
-Upstream synchronization is a separate concern from feature isolation. Upstream changes should be integrated deliberately; they do not require a permanent branch per module or subsystem.
+Until the one-time 1.20 consolidation is complete, `dev` contains the current RC integration state and may receive only consolidation or release-blocking fixes. This is a temporary migration exception, not a second long-lived integration branch.
+
+Upstream synchronization is separate from feature isolation. Upstream changes are integrated deliberately into `master`; they do not require a permanent branch per module or subsystem.
 
 ## Change branches
 
-Use one short-lived branch per logical change / pull request:
+Use one short-lived branch per logical change / pull request when isolation is useful:
 
 - `feature/<name>` — new functionality
 - `fix/<name>` — bug fixes
@@ -19,14 +21,22 @@ Use one short-lived branch per logical change / pull request:
 - `docs/<name>` — documentation / roadmap
 - `chore/<name>` — CI, dependencies, build, release preparation
 - `hotfix/<name>` — urgent fixes
-- `release/<version>` — temporary release stabilization only
+- `release/<version>` — temporary stabilization only when a release genuinely needs isolation
 
-Create branches from the current `master`, merge them back into `master`, then delete them. Avoid duplicate `-v2`, `-final`, `-clean` branches unless a temporary recovery situation genuinely requires them; prefer updating or replacing the existing PR branch.
+Create branches from current `master`, merge them back into `master`, then delete them. Avoid duplicate `-v2`, `-final`, `-clean` or promotion branches; update the existing change branch instead. Stacked pull requests are allowed only when unfinished work genuinely depends on another unfinished pull request and must be collapsed after integration.
 
-Stacked pull requests are allowed when unfinished work genuinely depends on another unfinished pull request. The stack must be collapsed back into `master` and its branches removed after integration.
+## Roadmap authority
 
-## Roadmap and releases
+The authoritative `ROADMAP.md` lives on `master`. Copies on change branches are provisional until merged.
 
-The authoritative roadmap must live on `master`. A roadmap copy on a feature, release or docs branch is never the source of truth.
+## Release authority
 
-Use Git tags/releases for permanent version history. `release/*` branches are temporary and should be removed after the release is complete.
+Branch membership does not define published stability. Git tags and GitHub releases do.
+
+- Pushes to `master` run CI but **never publish a release implicitly**.
+- Prereleases are started explicitly with the Release workflow on `master`; the workflow creates the next `X.Y.Z-rc.N` tag.
+- Stable releases are started explicitly with the Release workflow on `master` only after the roadmap's hands-on/security gates and explicit user approval are satisfied.
+- Mozilla signing/publishing is Stable-only and remains subject to the configured AMO credentials.
+- `CHANGELOG.md` must stop saying `Unreleased` for the target version before a Stable release is allowed to publish.
+
+This keeps one integration branch without weakening release gates.
