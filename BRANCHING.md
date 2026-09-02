@@ -27,7 +27,9 @@ Create branches from current `master`, merge them back into `master`, then delet
 
 ## Roadmap authority
 
-The authoritative `ROADMAP.md` lives on `master`. Copies on change branches are provisional until merged.
+During the one-time 1.20 consolidation exception, `dev/ROADMAP.md` is authoritative for the current 1.20 RC status because the validated RC implementation still resides on `dev`. `master/ROADMAP.md` continues to describe the integrated/stable line and must not pretend the 1.20 code has already been consolidated.
+
+After the 1.20 consolidation, `master/ROADMAP.md` resumes sole authority and branch-local copies are provisional until merged.
 
 ## Release authority
 
