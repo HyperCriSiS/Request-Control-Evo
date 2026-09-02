@@ -25,6 +25,7 @@ The extension must stay local-first. There is no remote executable code, no brow
 - Referer diagnostics never persist Referer values.
 - External research/curation sources are processed only in the rules repository, never at extension runtime.
 - Wormhole Observatory transport remains deferred, local-first and review-only.
+- `master` is the sole long-lived integration branch; Git tags/releases define published stability, and release publication is always explicit/manual.
 
 ## Completed modernization phases
 
@@ -153,8 +154,22 @@ RC6 hands-on validation exposed the blocking issues above. Do **not** use RC6 fo
 - [x] Publish a fresh prerelease from the final validated post-RC5 code state before Stable promotion.
 - [ ] Firefox/Waterfox desktop hands-on on the final prerelease: popup sizing; Inspector start/reload/capture/render/stop; integrated URL findings; Breakage Check; Referer mode/exact-host exception; fixed Type vs Group/category model; long Rules strings/checkbox alignment; Imports; Official updates; selective editing; local-rule preservation.
 - [ ] Firefox Android hands-on on the final prerelease: popup; Referer controls; Inspector navigation; large package; expand/collapse; sparse selection; repeated taps; update reconciliation; scrolling/touch; localized strings; Rules selection/action sheet.
-- [ ] Promote to `master` only after desktop + Android hands-on gates pass and the user explicitly approves stable promotion.
-- [ ] Replace changelog `Unreleased` only at approved stable promotion.
+- [x] Decouple repository integration from publication: `master` is the sole long-lived integration branch; merging validated RC code to `master` does **not** publish Stable.
+- [x] Stable and prerelease publication are manual release-workflow actions from `master`; no push to `master` may create a release implicitly.
+- [ ] Publish Stable `1.20.0` only after desktop + Android hands-on gates pass and the user explicitly approves the Stable release.
+- [ ] Replace changelog `Unreleased` only at approved Stable release preparation.
+
+## Software-Engineering-Framework assurance follow-up — non-blocking unless a defect is found
+
+The RC7 functional regressions cover the highest-risk changed paths. The broader Browser Extension Assurance matrix is tracked separately so generic hardening does not silently expand the 1.20 release scope. Any concrete defect found here becomes release-blocking according to severity.
+
+- [ ] Verify extension disable → re-enable and background-page restart/reinitialization without stale listeners or duplicated runtime state.
+- [ ] Verify Firefox private-window policy when private access is allowed and when it is denied; private-only rule semantics must remain correct.
+- [ ] Exercise many-tabs/many-frames navigation, including SPA history changes and full reloads, while Inspector remains bounded to its selected tab.
+- [ ] Exercise restricted/CSP-heavy pages and hostile page DOM/CSS; extension pages and popup/Inspector rendering must remain isolated from page styling.
+- [ ] Verify upgrade from representative pre-1.18/pre-1.19 storage snapshots, malformed/partial stored state, and managed-package reconciliation without rule loss.
+- [ ] Verify storage/quota failure handling for bounded diagnostic state and large managed imports; failure must degrade safely without corrupting persistent rules.
+- [x] Optional-permission revoke/deny testing is not applicable to the current manifest because Request Control declares no `optional_permissions`; required browser-API absence remains capability/error-path coverage instead.
 
 ## Adaptive Parameter Intelligence experiment — dormant prototype complete
 
@@ -192,4 +207,4 @@ This does **not** gate 1.20 stable and belongs under Inspector architecture. The
 
 ## Completion condition for 1.20.0
 
-Stable `1.20.0` is ready only when a prerelease newer than RC6 passes the corrected Firefox/Waterfox desktop and Firefox Android hands-on gates, the 1.20 changelog accurately reflects the final structure, no current release-blocking security finding exists, and the user explicitly approves stable promotion.
+Stable `1.20.0` is ready only when a prerelease newer than RC6 passes the corrected Firefox/Waterfox desktop and Firefox Android hands-on gates, the 1.20 changelog accurately reflects the final structure, no current release-blocking security finding exists, and the user explicitly approves Stable publication. `master` may contain the unreleased validated integration state before that approval; tags/releases, not branch membership, define published stability.
