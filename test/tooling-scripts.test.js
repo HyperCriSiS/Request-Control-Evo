@@ -50,13 +50,13 @@ test("build lint resolves the manifest-versioned archive without shell substitut
     expect(defaultArchivePath().replaceAll("\\", "/")).toBe(expected);
 });
 
-test("manual dev release dispatch advances the RC and cannot publish to Mozilla", async () => {
+test("manual master release dispatch advances the RC and keeps prereleases off Mozilla", async () => {
     const workflow = await readFile(
         join(process.cwd(), ".github", "workflows", "release.yml"),
         "utf8"
     );
 
-    expect(workflow).toContain('if [[ "$GITHUB_REF_NAME" != "dev" ]]');
+    expect(workflow).toContain('if [[ "$GITHUB_REF_NAME" != "master" ]]');
     expect(workflow).toContain('git tag --list "$VERSION-rc.*"');
     expect(workflow).toContain('RC_NUMBER=$((MAX_RC + 1))');
     expect(workflow).toContain('TAG="$VERSION-rc.$RC_NUMBER"');
