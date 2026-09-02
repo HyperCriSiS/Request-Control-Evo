@@ -4,9 +4,7 @@
 
 `master` is the only long-lived product/integration branch for this fork.
 
-`dev`, `modernization`, `tmp` and historical release/promotion branches are legacy working branches. They are not valid bases for new development. After the 1.20 consolidation, new work starts from `master` and returns to `master` through a short-lived change branch or a deliberately small direct maintenance commit.
-
-Until the one-time 1.20 consolidation is complete, `dev` contains the current RC integration state and may receive only consolidation or release-blocking fixes. This is a temporary migration exception, not a second long-lived integration branch.
+`dev`, `modernization`, `tmp` and historical release/promotion branches are legacy working branches. They are not valid bases for new development. New work starts from current `master` and returns to `master` through a short-lived change branch or a deliberately small direct maintenance commit.
 
 Upstream synchronization is separate from feature isolation. Upstream changes are integrated deliberately into `master`; they do not require a permanent branch per module or subsystem.
 
@@ -27,9 +25,7 @@ Create branches from current `master`, merge them back into `master`, then delet
 
 ## Roadmap authority
 
-During the one-time 1.20 consolidation exception, `dev/ROADMAP.md` is authoritative for the current 1.20 RC status because the validated RC implementation still resides on `dev`. `master/ROADMAP.md` continues to describe the integrated/stable line and must not pretend the 1.20 code has already been consolidated.
-
-After the 1.20 consolidation, `master/ROADMAP.md` resumes sole authority and branch-local copies are provisional until merged.
+`master/ROADMAP.md` is the sole authoritative roadmap. Copies on short-lived branches are provisional until merged.
 
 ## Release authority
 
