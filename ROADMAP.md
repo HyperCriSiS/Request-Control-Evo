@@ -1,6 +1,6 @@
 # Request Control Evo — Roadmap
 
-**Status: `1.20.0-rc.7` is the current corrected hands-on candidate after the RC6 feedback block. Automated release/security gates are green; stable 1.20.0 remains blocked on Firefox/Waterfox desktop and Firefox Android hands-on validation plus explicit user approval.**
+**Status: `1.20.0-rc.7` is the current corrected hands-on candidate after the RC6 feedback block, and `master` now contains the validated 1.20 integration state. Automated release/security gates are green; stable 1.20.0 remains blocked on Firefox/Waterfox desktop and Firefox Android hands-on validation plus explicit user approval.**
 
 This file is the binding source of truth for project progress. Do not infer completion from code alone when a gate below explicitly requires physical browser/device testing.
 
@@ -155,6 +155,8 @@ RC6 hands-on validation exposed the blocking issues above. Do **not** use RC6 fo
 - [ ] Firefox/Waterfox desktop hands-on on the final prerelease: popup sizing; Inspector start/reload/capture/render/stop; integrated URL findings; Breakage Check; Referer mode/exact-host exception; fixed Type vs Group/category model; long Rules strings/checkbox alignment; Imports; Official updates; selective editing; local-rule preservation.
 - [ ] Firefox Android hands-on on the final prerelease: popup; Referer controls; Inspector navigation; large package; expand/collapse; sparse selection; repeated taps; update reconciliation; scrolling/touch; localized strings; Rules selection/action sheet.
 - [x] Decouple repository integration from publication: `master` is the sole long-lived integration branch; merging validated RC code to `master` does **not** publish Stable.
+- [x] Consolidate the validated 1.20 RC integration history onto `master` via PR #62; post-consolidation Build #482 is green on `e0ba40c2657cfbe64738771aafaf9f6b1ce002d6`.
+- [x] Remove fully merged legacy branch refs after consolidation while preserving active Dependabot and any branch with commits not reachable from `master`.
 - [x] Stable and prerelease publication are manual release-workflow actions from `master`; no push to `master` may create a release implicitly.
 - [ ] Publish Stable `1.20.0` only after desktop + Android hands-on gates pass and the user explicitly approves the Stable release.
 - [ ] Replace changelog `Unreleased` only at approved Stable release preparation.
