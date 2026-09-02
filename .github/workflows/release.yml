@@ -1,14 +1,16 @@
 name: Release
 
 on:
-  push:
-    branches:
-      - master
-    paths:
-      - manifest.json
-      - .github/workflows/release.yml
-      - .github/actions/setup-pandoc/action.yml
   workflow_dispatch:
+    inputs:
+      channel:
+        description: Release channel
+        required: true
+        type: choice
+        default: prerelease
+        options:
+          - prerelease
+          - stable
 
 permissions:
   contents: write
@@ -30,21 +32,23 @@ jobs:
 
       - name: Resolve release version
         id: version
+        env:
+          CHANNEL: ${{ inputs.channel }}
         run: |
           VERSION=$(node -p "require('./manifest.json').version")
           if [[ ! "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-            echo "Manifest version '$VERSION' is not a stable SemVer base version; skipping release."
-            echo "release=false" >> "$GITHUB_OUTPUT"
-            exit 0
+            echo "Manifest version '$VERSION' is not a stable SemVer base version."
+            exit 1
           fi
 
-          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" && "$GITHUB_REF_NAME" != "master" ]]; then
-            if [[ "$GITHUB_REF_NAME" != "dev" ]]; then
-              echo "Manual prereleases are only allowed from dev; got '$GITHUB_REF_NAME'."
-              exit 1
-            fi
+          if [[ "$GITHUB_REF_NAME" != "master" ]]; then
+            echo "Releases are only allowed from master; got '$GITHUB_REF_NAME'."
+            exit 1
+          fi
 
-            git fetch --tags --force
+          git fetch --tags --force
+
+          if [[ "$CHANNEL" == "prerelease" ]]; then
             MAX_RC=0
             while IFS= read -r EXISTING_TAG; do
               if [[ "$EXISTING_TAG" =~ ^${VERSION}-rc\.([0-9]+)$ ]]; then
@@ -59,24 +63,25 @@ jobs:
             TAG="$VERSION-rc.$RC_NUMBER"
             PRERELEASE=true
             RELEASE_NAME="Request Control $VERSION RC $RC_NUMBER"
-          else
-            if [[ "$GITHUB_REF_NAME" != "master" ]]; then
-              echo "Stable releases are only allowed from master; got '$GITHUB_REF_NAME'."
+          elif [[ "$CHANNEL" == "stable" ]]; then
+            if grep -Fq "## [$VERSION] - Unreleased" CHANGELOG.md; then
+              echo "CHANGELOG.md still marks $VERSION as Unreleased; refusing Stable publication."
               exit 1
             fi
             TAG="$VERSION"
             PRERELEASE=false
             RELEASE_NAME="Request Control $VERSION"
+          else
+            echo "Unsupported release channel '$CHANNEL'."
+            exit 1
           fi
 
-          echo "release=true" >> "$GITHUB_OUTPUT"
           echo "version=$VERSION" >> "$GITHUB_OUTPUT"
           echo "tag=$TAG" >> "$GITHUB_OUTPUT"
           echo "prerelease=$PRERELEASE" >> "$GITHUB_OUTPUT"
           echo "release_name=$RELEASE_NAME" >> "$GITHUB_OUTPUT"
 
       - name: Check existing tag and release
-        if: steps.version.outputs.release == 'true'
         id: existing
         env:
           GH_TOKEN: ${{ github.token }}
@@ -95,7 +100,7 @@ jobs:
           fi
 
       - name: Checkout existing release tag for recovery
-        if: steps.version.outputs.release == 'true' && steps.existing.outputs.tag == 'true' && steps.existing.outputs.release == 'false'
+        if: steps.existing.outputs.tag == 'true' && steps.existing.outputs.release == 'false'
         env:
           TAG: ${{ steps.version.outputs.tag }}
           VERSION: ${{ steps.version.outputs.version }}
@@ -105,11 +110,11 @@ jobs:
           test "$TAG_VERSION" = "$VERSION"
 
       - name: Install Pandoc
-        if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'false'
+        if: steps.existing.outputs.release == 'false'
         uses: ./.github/actions/setup-pandoc
 
       - name: Verify and build release artifact
-        if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'false'
+        if: steps.existing.outputs.release == 'false'
         run: |
           npm ci
           npm test -- --ci
@@ -118,7 +123,7 @@ jobs:
           npm run lint-build
 
       - name: Create unsigned XPI test artifact
-        if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'false'
+        if: steps.existing.outputs.release == 'false'
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
@@ -129,7 +134,7 @@ jobs:
           cmp "$ZIP" "$XPI"
 
       - name: Create release tag
-        if: steps.version.outputs.release == 'true' && steps.existing.outputs.tag == 'false' && steps.existing.outputs.release == 'false'
+        if: steps.existing.outputs.tag == 'false' && steps.existing.outputs.release == 'false'
         env:
           TAG: ${{ steps.version.outputs.tag }}
         run: |
@@ -139,7 +144,7 @@ jobs:
           git push origin "$TAG"
 
       - name: Extract release notes
-        if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'false'
+        if: steps.existing.outputs.release == 'false'
         env:
           VERSION: ${{ steps.version.outputs.version }}
         run: |
@@ -160,7 +165,7 @@ jobs:
           PY
 
       - name: Create GitHub release
-        if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'false'
+        if: steps.existing.outputs.release == 'false'
         uses: softprops/action-gh-release@v3
         with:
           tag_name: ${{ steps.version.outputs.tag }}
@@ -172,19 +177,19 @@ jobs:
           body_path: release-notes.md
 
       - name: Sign and publish to Mozilla Add-ons
-        if: steps.version.outputs.release == 'true' && steps.version.outputs.prerelease == 'false' && steps.existing.outputs.release == 'false' && env.WEB_EXT_API_KEY != '' && env.WEB_EXT_API_SECRET != ''
+        if: steps.version.outputs.prerelease == 'false' && steps.existing.outputs.release == 'false' && env.WEB_EXT_API_KEY != '' && env.WEB_EXT_API_SECRET != ''
         run: npm run deploy
         env:
           WEB_EXT_CHANNEL: listed
 
       - name: Note skipped Mozilla signing
-        if: steps.version.outputs.release == 'true' && steps.version.outputs.prerelease == 'false' && steps.existing.outputs.release == 'false' && (env.WEB_EXT_API_KEY == '' || env.WEB_EXT_API_SECRET == '')
+        if: steps.version.outputs.prerelease == 'false' && steps.existing.outputs.release == 'false' && (env.WEB_EXT_API_KEY == '' || env.WEB_EXT_API_SECRET == '')
         run: echo "Mozilla signing skipped because WEB_EXT_API_KEY/WEB_EXT_API_SECRET are not configured." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Note prerelease distribution
-        if: steps.version.outputs.release == 'true' && steps.version.outputs.prerelease == 'true' && steps.existing.outputs.release == 'false'
+        if: steps.version.outputs.prerelease == 'true' && steps.existing.outputs.release == 'false'
         run: echo "GitHub prerelease only; Mozilla signing and publishing intentionally skipped." >> "$GITHUB_STEP_SUMMARY"
 
       - name: Note existing release
-        if: steps.version.outputs.release == 'true' && steps.existing.outputs.release == 'true'
+        if: steps.existing.outputs.release == 'true'
         run: echo "Release ${{ steps.version.outputs.tag }} already exists; nothing to publish." >> "$GITHUB_STEP_SUMMARY"
