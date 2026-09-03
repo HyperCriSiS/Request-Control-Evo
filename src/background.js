@@ -5,6 +5,7 @@
 import { ALL_URLS, createRequestFilters } from "./main/api.js";
 import { RequestController } from "./main/control.js";
 import { migrateManagedSourceState } from "./main/catalog.js";
+import { normalizeStoredState } from "./main/storage-state.js";
 import { InspectionSessionLimiter } from "./main/inspection/session-limiter.js";
 import { InspectionCaptureRuntime } from "./main/inspection/runtime.js";
 import { InspectionStore } from "./main/inspection/store.js";
@@ -66,9 +67,11 @@ browser.tabs.onRemoved.addListener(onInspectionTabRemoved);
 
 async function bootstrap() {
     let options = await browser.storage.local.get(storageKeys);
-    const managedMigration = migrateManagedSourceState(options.rules || [], options.imports || {});
+    const normalizedState = normalizeStoredState(options);
+    options = normalizedState.options;
+    const managedMigration = migrateManagedSourceState(options.rules, options.imports);
     const legacyMetadataMigration = migrateLegacyTagsToGroups(managedMigration.rules);
-    if (managedMigration.changed || legacyMetadataMigration.changed) {
+    if (normalizedState.changed || managedMigration.changed || legacyMetadataMigration.changed) {
         await browser.storage.local.set({
             rules: legacyMetadataMigration.rules,
             imports: managedMigration.imports,

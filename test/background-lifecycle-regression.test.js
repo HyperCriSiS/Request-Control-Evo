@@ -49,6 +49,21 @@ test("inspection start, stop, clear, and tab removal control the session limiter
     expect(background.match(/inspectionLimiter\.stop\(tabId\)/g)).toHaveLength(3);
 });
 
+test("background bootstrap normalizes persisted state before migrations and runtime init", () => {
+    expect(background).toContain('import { normalizeStoredState } from "./main/storage-state.js"');
+
+    const normalizeIndex = background.indexOf("const normalizedState = normalizeStoredState(options)");
+    const managedMigrationIndex = background.indexOf("migrateManagedSourceState(options.rules, options.imports)");
+    const initIndex = background.indexOf("init(options, generation)");
+
+    expect(normalizeIndex).toBeGreaterThan(-1);
+    expect(managedMigrationIndex).toBeGreaterThan(normalizeIndex);
+    expect(initIndex).toBeGreaterThan(managedMigrationIndex);
+    expect(background).toContain(
+        "normalizedState.changed || managedMigration.changed || legacyMetadataMigration.changed"
+    );
+});
+
 test("background bootstrap applies the non-destructive legacy tag to group fallback before runtime init", () => {
     expect(background).toContain('import { migrateLegacyTagsToGroups } from "./options/legacy-metadata.js"');
     expect(background).toContain("migrateLegacyTagsToGroups(managedMigration.rules)");
