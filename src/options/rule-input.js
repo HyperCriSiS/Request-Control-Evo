@@ -613,8 +613,10 @@ class RuleInput extends HTMLElement {
             setButtonChecked(this.querySelector(`.origin-matcher[value=${this.rule.pattern.origin}]`), true);
         }
 
-        if (this.rule.pattern.incognito) {
+        if (typeof this.rule.pattern.incognito === "boolean") {
             this.querySelector("#incognito").value = this.rule.pattern.incognito.toString();
+        } else {
+            this.querySelector("#incognito").value = "";
         }
 
         if (!this.rule.types || this.rule.types.length === 0) {
