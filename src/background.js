@@ -65,23 +65,32 @@ bootstrap();
 browser.runtime.onMessage.addListener(onRuntimeMessage);
 browser.tabs.onRemoved.addListener(onInspectionTabRemoved);
 
-async function bootstrap() {
-    let options = await browser.storage.local.get(storageKeys);
-    const normalizedState = normalizeStoredState(options);
-    options = normalizedState.options;
-    const managedMigration = migrateManagedSourceState(options.rules, options.imports);
+async function loadOptions() {
+    const stored = await browser.storage.local.get(storageKeys);
+    const normalizedState = normalizeStoredState(stored);
+    const managedMigration = migrateManagedSourceState(
+        normalizedState.options.rules,
+        normalizedState.options.imports
+    );
     const legacyMetadataMigration = migrateLegacyTagsToGroups(managedMigration.rules);
+    const options = {
+        ...normalizedState.options,
+        rules: legacyMetadataMigration.rules,
+        imports: managedMigration.imports,
+    };
+
     if (normalizedState.changed || managedMigration.changed || legacyMetadataMigration.changed) {
         await browser.storage.local.set({
-            rules: legacyMetadataMigration.rules,
-            imports: managedMigration.imports,
+            rules: options.rules,
+            imports: options.imports,
         });
-        options = {
-            ...options,
-            rules: legacyMetadataMigration.rules,
-            imports: managedMigration.imports,
-        };
     }
+
+    return options;
+}
+
+async function bootstrap() {
+    const options = await loadOptions();
     browser.storage.onChanged.addListener(onOptionsChanged);
     const generation = ++initGeneration;
     init(options, generation);
@@ -143,7 +152,7 @@ function onOptionsChanged(changes) {
         browser.webRequest.onBeforeRequest.removeListener(listeners.pop());
     }
     browser.webRequest.onBeforeRequest.removeListener(controlListener);
-    browser.storage.local.get(storageKeys).then((options) => {
+    loadOptions().then((options) => {
         if (generation === initGeneration) {
             init(options, generation);
         }

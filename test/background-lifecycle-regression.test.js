@@ -49,19 +49,21 @@ test("inspection start, stop, clear, and tab removal control the session limiter
     expect(background.match(/inspectionLimiter\.stop\(tabId\)/g)).toHaveLength(3);
 });
 
-test("background bootstrap normalizes persisted state before migrations and runtime init", () => {
+test("bootstrap and option-change reinitialization share normalized persisted state loading", () => {
     expect(background).toContain('import { normalizeStoredState } from "./main/storage-state.js"');
 
-    const normalizeIndex = background.indexOf("const normalizedState = normalizeStoredState(options)");
-    const managedMigrationIndex = background.indexOf("migrateManagedSourceState(options.rules, options.imports)");
-    const initIndex = background.indexOf("init(options, generation)");
+    const loadOptions = functionBody("loadOptions", "bootstrap");
+    const bootstrap = functionBody("bootstrap", "init");
+    const optionChanges = functionBody("onOptionsChanged", "addRequestListeners");
 
-    expect(normalizeIndex).toBeGreaterThan(-1);
-    expect(managedMigrationIndex).toBeGreaterThan(normalizeIndex);
-    expect(initIndex).toBeGreaterThan(managedMigrationIndex);
-    expect(background).toContain(
+    expect(loadOptions).toContain("const normalizedState = normalizeStoredState(stored)");
+    expect(loadOptions).toContain("migrateManagedSourceState(");
+    expect(loadOptions).toContain("migrateLegacyTagsToGroups(managedMigration.rules)");
+    expect(loadOptions).toContain(
         "normalizedState.changed || managedMigration.changed || legacyMetadataMigration.changed"
     );
+    expect(bootstrap).toContain("const options = await loadOptions()");
+    expect(optionChanges).toContain("loadOptions().then((options) =>");
 });
 
 test("background bootstrap applies the non-destructive legacy tag to group fallback before runtime init", () => {
