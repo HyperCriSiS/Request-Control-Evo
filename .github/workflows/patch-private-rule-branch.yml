@@ -1,0 +1,94 @@
+name: Patch private rule branch
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          ref: master
+          fetch-depth: 0
+      - name: Patch feature branch and remove helper
+        shell: bash
+        run: |
+          set -euo pipefail
+          git fetch origin '+refs/heads/fix/private-rule-semantics:refs/remotes/origin/fix/private-rule-semantics'
+          git worktree add /tmp/private-rule origin/fix/private-rule-semantics
+
+          cd /tmp/private-rule
+          python <<'PY'
+          from pathlib import Path
+
+          path = Path("src/options/rule-input.js")
+          text = path.read_text()
+          old = '''        if (this.rule.pattern.incognito) {
+                      this.querySelector("#incognito").value = this.rule.pattern.incognito.toString();
+                  }
+          '''
+          new = '''        if (typeof this.rule.pattern.incognito === "boolean") {
+                      this.querySelector("#incognito").value = this.rule.pattern.incognito.toString();
+                  } else {
+                      this.querySelector("#incognito").value = "";
+                  }
+          '''
+          if old not in text:
+              raise SystemExit("Expected incognito editor block not found")
+          path.write_text(text.replace(old, new, 1))
+          PY
+
+          cat > test/private-browsing-rule.test.js <<'EOF'
+          import fs from "node:fs";
+
+          import { createRequestFilters } from "../src/main/api.js";
+
+          function requestFilterFor(incognito) {
+              const pattern = { allUrls: true };
+              if (typeof incognito === "boolean") {
+                  pattern.incognito = incognito;
+              }
+              return createRequestFilters({ pattern, action: "block" })[0];
+          }
+
+          test("request filters preserve private-only, regular-only, and spanning rule semantics", () => {
+              expect(requestFilterFor(true).incognito).toBe(true);
+              expect(requestFilterFor(false).incognito).toBe(false);
+              expect(requestFilterFor(undefined).incognito).toBeUndefined();
+          });
+
+          test("rule editor restores explicit false and resets absent private-window state", () => {
+              const source = fs.readFileSync(new URL("../src/options/rule-input.js", import.meta.url), "utf8");
+
+              expect(source).toContain('typeof this.rule.pattern.incognito === "boolean"');
+              expect(source).toContain('this.querySelector("#incognito").value = this.rule.pattern.incognito.toString()');
+              expect(source).toContain('this.querySelector("#incognito").value = ""');
+          });
+
+          test("Firefox private access remains user-controlled rather than forced by the manifest", () => {
+              const manifest = JSON.parse(
+                  fs.readFileSync(new URL("../manifest.json", import.meta.url), "utf8")
+              );
+
+              expect(manifest.incognito).toBeUndefined();
+          });
+          EOF
+
+          git rm .github/workflows/apply-private-rule-semantics.yml
+          git diff --check
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/options/rule-input.js test/private-browsing-rule.test.js
+          git commit -m "Preserve private-window rule semantics"
+          git push origin HEAD:fix/private-rule-semantics
+
+          cd "$GITHUB_WORKSPACE"
+          git rm .github/workflows/patch-private-rule-branch.yml
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "Remove one-time private rule branch patcher"
+          git push origin HEAD:master
