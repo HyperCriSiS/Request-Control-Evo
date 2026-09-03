@@ -79,6 +79,62 @@ test("Inspection runtime records request errors and keeps listeners while anothe
     expect(before.size).toBe(0);
 });
 
+test("Inspection runtime stays bounded to selected tabs while capturing their frames", () => {
+    const { before, completed, runtime } = runtimeFixture();
+    runtime.start(42, { pageUrl: "https://selected.test/start", title: "Selected" });
+
+    for (let index = 0; index < 1000; index += 1) {
+        before.emit({
+            tabId: 100 + index,
+            requestId: `noise-${index}`,
+            url: `https://noise-${index}.test/resource.js`,
+            type: "script",
+            frameId: index % 4,
+            parentFrameId: 0,
+        });
+        completed.emit({
+            tabId: 100 + index,
+            requestId: `noise-${index}`,
+            statusCode: 200,
+        });
+    }
+
+    before.emit({
+        tabId: 42,
+        requestId: "selected-subframe",
+        url: "https://third-party.test/frame.js",
+        method: "GET",
+        type: "script",
+        frameId: 9,
+        parentFrameId: 0,
+        documentUrl: "https://selected.test/start",
+    });
+    before.emit({
+        tabId: 42,
+        requestId: "selected-navigation",
+        url: "https://selected.test/next",
+        method: "GET",
+        type: "main_frame",
+        frameId: 0,
+        parentFrameId: -1,
+    });
+
+    const snapshot = runtime.get(42);
+    expect(snapshot.requests).toHaveLength(2);
+    expect(snapshot.requests[0]).toMatchObject({
+        requestId: "selected-subframe",
+        frameId: 9,
+        parentFrameId: 0,
+    });
+    expect(snapshot.requests[1]).toMatchObject({
+        requestId: "selected-navigation",
+        frameId: 0,
+        parentFrameId: -1,
+    });
+    expect(snapshot.pageUrl).toBe("https://selected.test/next");
+    expect(runtime.get(100)).toBeNull();
+});
+
 test("Inspection runtime expiry, clear, and tab removal release listeners after the final active session", () => {
     const { before, runtime } = runtimeFixture();
 
