@@ -49,28 +49,15 @@ test("inspection start, stop, clear, and tab removal control the session limiter
     expect(background.match(/inspectionLimiter\.stop\(tabId\)/g)).toHaveLength(3);
 });
 
-test("bootstrap and option-change reinitialization share normalized persisted state loading", () => {
-    expect(background).toContain('import { normalizeStoredState } from "./main/storage-state.js"');
+test("bootstrap and option-change reinitialization share the repaired persisted-state loader", () => {
+    expect(background).toContain('import { loadAndRepairStoredState } from "./main/storage-state.js"');
 
     const loadOptions = functionBody("loadOptions", "bootstrap");
     const bootstrap = functionBody("bootstrap", "init");
     const optionChanges = functionBody("onOptionsChanged", "addRequestListeners");
 
-    expect(loadOptions).toContain("const normalizedState = normalizeStoredState(stored)");
-    expect(loadOptions).toContain("migrateManagedSourceState(");
-    expect(loadOptions).toContain("migrateLegacyTagsToGroups(managedMigration.rules)");
-    expect(loadOptions).toContain(
-        "normalizedState.changed || managedMigration.changed || legacyMetadataMigration.changed"
-    );
+    expect(loadOptions).toContain("loadAndRepairStoredState(browser.storage.local, storageKeys");
+    expect(loadOptions).toContain("onWriteError: () => notifier.error()");
     expect(bootstrap).toContain("const options = await loadOptions()");
     expect(optionChanges).toContain("loadOptions().then((options) =>");
-});
-
-test("background bootstrap applies the non-destructive legacy tag to group fallback before runtime init", () => {
-    expect(background).toContain('import { migrateLegacyTagsToGroups } from "./options/legacy-metadata.js"');
-    expect(background).toContain("migrateLegacyTagsToGroups(managedMigration.rules)");
-    expect(background).toContain("rules: legacyMetadataMigration.rules");
-    expect(background.indexOf("migrateLegacyTagsToGroups(managedMigration.rules)")).toBeLessThan(
-        background.indexOf("init(options, generation)")
-    );
 });

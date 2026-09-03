@@ -4,12 +4,10 @@
 
 import { ALL_URLS, createRequestFilters } from "./main/api.js";
 import { RequestController } from "./main/control.js";
-import { migrateManagedSourceState } from "./main/catalog.js";
-import { normalizeStoredState } from "./main/storage-state.js";
+import { loadAndRepairStoredState } from "./main/storage-state.js";
 import { InspectionSessionLimiter } from "./main/inspection/session-limiter.js";
 import { InspectionCaptureRuntime } from "./main/inspection/runtime.js";
 import { InspectionStore } from "./main/inspection/store.js";
-import { migrateLegacyTagsToGroups } from "./options/legacy-metadata.js";
 import { guardian } from "./main/guardian.js";
 import { NavigationAdapter } from "./main/navigation.js";
 import {
@@ -66,27 +64,9 @@ browser.runtime.onMessage.addListener(onRuntimeMessage);
 browser.tabs.onRemoved.addListener(onInspectionTabRemoved);
 
 async function loadOptions() {
-    const stored = await browser.storage.local.get(storageKeys);
-    const normalizedState = normalizeStoredState(stored);
-    const managedMigration = migrateManagedSourceState(
-        normalizedState.options.rules,
-        normalizedState.options.imports
-    );
-    const legacyMetadataMigration = migrateLegacyTagsToGroups(managedMigration.rules);
-    const options = {
-        ...normalizedState.options,
-        rules: legacyMetadataMigration.rules,
-        imports: managedMigration.imports,
-    };
-
-    if (normalizedState.changed || managedMigration.changed || legacyMetadataMigration.changed) {
-        await browser.storage.local.set({
-            rules: options.rules,
-            imports: options.imports,
-        });
-    }
-
-    return options;
+    return loadAndRepairStoredState(browser.storage.local, storageKeys, {
+        onWriteError: () => notifier.error(),
+    });
 }
 
 async function bootstrap() {

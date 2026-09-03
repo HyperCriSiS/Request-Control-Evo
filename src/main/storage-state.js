@@ -2,6 +2,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
+import { migrateManagedSourceState } from "./catalog.js";
+import { migrateLegacyTagsToGroups } from "../options/legacy-metadata.js";
+
 function isRecord(value) {
     return Boolean(value) && typeof value === "object" && !Array.isArray(value);
 }
@@ -58,4 +61,36 @@ export function normalizeStoredState(options = {}) {
         },
         changed: source !== options || rules.changed || imports.changed,
     };
+}
+
+export async function loadAndRepairStoredState(storage, keys, { onWriteError = () => {} } = {}) {
+    const stored = await storage.get(keys);
+    const normalizedState = normalizeStoredState(stored);
+    const managedMigration = migrateManagedSourceState(
+        normalizedState.options.rules,
+        normalizedState.options.imports
+    );
+    const legacyMetadataMigration = migrateLegacyTagsToGroups(managedMigration.rules);
+    const options = {
+        ...normalizedState.options,
+        rules: legacyMetadataMigration.rules,
+        imports: managedMigration.imports,
+    };
+
+    if (normalizedState.changed || managedMigration.changed || legacyMetadataMigration.changed) {
+        try {
+            await storage.set({
+                rules: options.rules,
+                imports: options.imports,
+            });
+        } catch (error) {
+            try {
+                onWriteError(error);
+            } catch {
+                // Reporting must not turn a recoverable storage write failure into a startup failure.
+            }
+        }
+    }
+
+    return options;
 }
