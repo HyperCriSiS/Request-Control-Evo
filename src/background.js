@@ -4,11 +4,10 @@
 
 import { ALL_URLS, createRequestFilters } from "./main/api.js";
 import { RequestController } from "./main/control.js";
-import { migrateManagedSourceState } from "./main/catalog.js";
+import { loadAndRepairStoredState } from "./main/storage-state.js";
 import { InspectionSessionLimiter } from "./main/inspection/session-limiter.js";
 import { InspectionCaptureRuntime } from "./main/inspection/runtime.js";
 import { InspectionStore } from "./main/inspection/store.js";
-import { migrateLegacyTagsToGroups } from "./options/legacy-metadata.js";
 import { guardian } from "./main/guardian.js";
 import { NavigationAdapter } from "./main/navigation.js";
 import {
@@ -64,21 +63,14 @@ bootstrap();
 browser.runtime.onMessage.addListener(onRuntimeMessage);
 browser.tabs.onRemoved.addListener(onInspectionTabRemoved);
 
+async function loadOptions() {
+    return loadAndRepairStoredState(browser.storage.local, storageKeys, {
+        onWriteError: () => notifier.error(),
+    });
+}
+
 async function bootstrap() {
-    let options = await browser.storage.local.get(storageKeys);
-    const managedMigration = migrateManagedSourceState(options.rules || [], options.imports || {});
-    const legacyMetadataMigration = migrateLegacyTagsToGroups(managedMigration.rules);
-    if (managedMigration.changed || legacyMetadataMigration.changed) {
-        await browser.storage.local.set({
-            rules: legacyMetadataMigration.rules,
-            imports: managedMigration.imports,
-        });
-        options = {
-            ...options,
-            rules: legacyMetadataMigration.rules,
-            imports: managedMigration.imports,
-        };
-    }
+    const options = await loadOptions();
     browser.storage.onChanged.addListener(onOptionsChanged);
     const generation = ++initGeneration;
     init(options, generation);
@@ -140,7 +132,7 @@ function onOptionsChanged(changes) {
         browser.webRequest.onBeforeRequest.removeListener(listeners.pop());
     }
     browser.webRequest.onBeforeRequest.removeListener(controlListener);
-    browser.storage.local.get(storageKeys).then((options) => {
+    loadOptions().then((options) => {
         if (generation === initGeneration) {
             init(options, generation);
         }
