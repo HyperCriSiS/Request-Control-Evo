@@ -1,6 +1,7 @@
 import fs from "node:fs";
 
 import { createRequestFilters } from "../src/main/api.js";
+import { privateWindowEditorValue } from "../src/options/rule-editor-state.js";
 
 function requestFilterFor(incognito) {
     const pattern = { allUrls: true };
@@ -16,12 +17,11 @@ test("request filters preserve private-only, regular-only, and spanning rule sem
     expect(requestFilterFor(undefined).incognito).toBeUndefined();
 });
 
-test("rule editor restores explicit false and resets absent private-window state", () => {
-    const source = fs.readFileSync(new URL("../src/options/rule-input.js", import.meta.url), "utf8");
-
-    expect(source).toContain('typeof this.rule.pattern.incognito === "boolean"');
-    expect(source).toContain('this.querySelector("#incognito").value = this.rule.pattern.incognito.toString()');
-    expect(source).toContain('this.querySelector("#incognito").value = ""');
+test("rule editor preserves all three private-window states", () => {
+    expect(privateWindowEditorValue({ incognito: true })).toBe("true");
+    expect(privateWindowEditorValue({ incognito: false })).toBe("false");
+    expect(privateWindowEditorValue({})).toBe("");
+    expect(privateWindowEditorValue()).toBe("");
 });
 
 test("Firefox private access remains user-controlled rather than forced by the manifest", () => {
