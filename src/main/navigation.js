@@ -95,7 +95,12 @@ export class NavigationAdapter {
             }
 
             this.pendingTargets.set(details.tabId, fallback);
-            await this.navigate(details.tabId, fallback);
+            try {
+                await this.navigate(details.tabId, fallback);
+            } catch (error) {
+                this.rollbackPendingTarget(details.tabId, fallback);
+                throw error;
+            }
             return { action: "block", target: fallback };
         }
 
@@ -109,7 +114,12 @@ export class NavigationAdapter {
             const target = `https://${details.url.slice("http://".length)}`;
             this.notify(entry.rule, request, target);
             this.pendingTargets.set(details.tabId, target);
-            await this.navigate(details.tabId, target);
+            try {
+                await this.navigate(details.tabId, target);
+            } catch (error) {
+                this.rollbackPendingTarget(details.tabId, target, details.url);
+                throw error;
+            }
             return { action: "secure", target };
         }
 
@@ -137,13 +147,32 @@ export class NavigationAdapter {
         this.pendingTargets.set(details.tabId, target);
 
         if (applied.action === "filter" && sameOrigin(details.url, target)) {
-            await this.replaceHistory(details.tabId, target);
+            try {
+                await this.replaceHistory(details.tabId, target);
+            } catch (error) {
+                this.rollbackPendingTarget(details.tabId, target, details.url);
+                throw error;
+            }
             this.lastAllowedUrl.set(details.tabId, target);
             return { action: "replace", target };
         }
 
-        await this.navigate(details.tabId, target);
+        try {
+            await this.navigate(details.tabId, target);
+        } catch (error) {
+            this.rollbackPendingTarget(details.tabId, target, details.url);
+            throw error;
+        }
         return { action: "redirect", target };
+    }
+
+    rollbackPendingTarget(tabId, target, currentUrl = null) {
+        if (this.pendingTargets.get(tabId) === target) {
+            this.pendingTargets.delete(tabId);
+        }
+        if (currentUrl) {
+            this.lastAllowedUrl.set(tabId, currentUrl);
+        }
     }
 }
 
