@@ -30,6 +30,15 @@ export class InspectionStore {
         return this.snapshot(tabId);
     }
 
+    updatePage(tabId, pageUrl) {
+        const session = this.sessions.get(tabId);
+        if (!session?.active || typeof pageUrl !== "string" || pageUrl.length === 0) {
+            return false;
+        }
+        session.pageUrl = pageUrl;
+        return true;
+    }
+
     stop(tabId) {
         const session = this.sessions.get(tabId);
         if (!session) {
