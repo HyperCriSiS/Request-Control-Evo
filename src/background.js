@@ -237,6 +237,7 @@ async function onHistoryStateUpdated(details) {
 
     if (isSiteDisabledForRequest({ ...details, type: "main_frame" }, details.url, disabledSiteHosts)) {
         topLevelUrls.set(details.tabId, details.url);
+        inspectionRuntime.updatePage(details.tabId, details.url);
         navigation.commit(details.tabId, details.url);
         return;
     }
@@ -254,8 +255,10 @@ async function onHistoryStateUpdated(details) {
         });
         if (!result || result.action === "whitelist") {
             topLevelUrls.set(details.tabId, details.url);
+            inspectionRuntime.updatePage(details.tabId, details.url);
         } else if (result.action === "replace") {
             topLevelUrls.set(details.tabId, result.target);
+            inspectionRuntime.updatePage(details.tabId, result.target);
         }
     } catch {
         notifier.error();
