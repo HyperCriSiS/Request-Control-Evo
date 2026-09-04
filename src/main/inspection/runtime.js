@@ -25,6 +25,10 @@ export class InspectionCaptureRuntime {
         return this.store.snapshot(tabId);
     }
 
+    updatePage(tabId, pageUrl) {
+        return this.store.updatePage(tabId, pageUrl);
+    }
+
     stop(tabId) {
         const snapshot = this.store.stop(tabId);
         this.cleanupListeners();
