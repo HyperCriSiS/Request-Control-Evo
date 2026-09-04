@@ -154,3 +154,27 @@ test("Inspection runtime expiry, clear, and tab removal release listeners after 
     expect(before.size).toBe(0);
     expect(runtime.get(3)).toBeNull();
 });
+
+test("Inspection runtime tracks SPA page changes only for the active selected tab", () => {
+    const { before, runtime } = runtimeFixture();
+    runtime.start(42, { pageUrl: "https://selected.test/start" });
+
+    expect(runtime.updatePage(99, "https://noise.test/spa")).toBe(false);
+    expect(runtime.get(42).pageUrl).toBe("https://selected.test/start");
+
+    expect(runtime.updatePage(42, "https://selected.test/spa-route")).toBe(true);
+    before.emit({
+        tabId: 42,
+        requestId: "spa-request",
+        url: "https://cdn.example.test/app.js",
+        type: "script",
+        frameId: 0,
+    });
+
+    expect(runtime.get(42).pageUrl).toBe("https://selected.test/spa-route");
+    expect(runtime.get(99)).toBeNull();
+
+    runtime.stop(42);
+    expect(runtime.updatePage(42, "https://selected.test/after-stop")).toBe(false);
+    expect(runtime.get(42).pageUrl).toBe("https://selected.test/spa-route");
+});
