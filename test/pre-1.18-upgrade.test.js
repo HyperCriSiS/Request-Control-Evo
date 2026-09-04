@@ -6,15 +6,19 @@ const fixture = JSON.parse(
     fs.readFileSync(new URL("./fixtures/pre-1.18-storage.json", import.meta.url), "utf8")
 );
 
+function clone(value) {
+    return JSON.parse(JSON.stringify(value));
+}
+
 test("real 1.17-style storage upgrades without rule, order, or local-edit loss", async () => {
     const writes = [];
     const storage = {
         async get(keys) {
             expect(keys).toEqual(["rules", "imports", "disabled"]);
-            return structuredClone(fixture);
+            return clone(fixture);
         },
         async set(value) {
-            writes.push(structuredClone(value));
+            writes.push(clone(value));
         },
     };
 
