@@ -5,6 +5,7 @@
 import { classifyInspectionRequest } from "../analysis/inspection.js";
 
 export const MAX_INSPECTION_REQUESTS = 2500;
+export const MAX_INSPECTION_DIAGNOSTICS_PER_REQUEST = 16;
 
 export class InspectionStore {
     constructor(maxRequests = MAX_INSPECTION_REQUESTS) {
@@ -143,7 +144,8 @@ export class InspectionStore {
         const safeDiagnostic = { ...diagnostic };
         const record = session.requestIndex.get(requestId);
         if (record) {
-            if (!record.diagnostics.some((item) => sameDiagnostic(item, safeDiagnostic))) {
+            if (record.diagnostics.length < MAX_INSPECTION_DIAGNOSTICS_PER_REQUEST &&
+                !record.diagnostics.some((item) => sameDiagnostic(item, safeDiagnostic))) {
                 record.diagnostics.push(safeDiagnostic);
             }
             return;
@@ -159,7 +161,8 @@ export class InspectionStore {
             pending = [];
             session.pendingDiagnostics.set(requestId, pending);
         }
-        if (!pending.some((item) => sameDiagnostic(item, safeDiagnostic))) {
+        if (pending.length < MAX_INSPECTION_DIAGNOSTICS_PER_REQUEST &&
+            !pending.some((item) => sameDiagnostic(item, safeDiagnostic))) {
             pending.push(safeDiagnostic);
         }
     }
