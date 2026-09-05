@@ -1,6 +1,6 @@
 # Request Control Evo — Roadmap
 
-**Status: `1.20.0-rc.7` is the current corrected hands-on candidate after the RC6 feedback block, and `master` now contains the validated 1.20 integration state. Automated release/security gates are green; stable 1.20.0 remains blocked on Firefox/Waterfox desktop and Firefox Android hands-on validation plus explicit user approval.**
+**Status: `1.20.0-rc.8` is the current final hands-on candidate after the post-RC7 Software-Engineering-Framework hardening. It is tagged from exact green `master` commit `f64eeddbab703d0285569508f2c315dfe2ef6608`. Stable 1.20.0 remains blocked on Firefox/Waterfox desktop and Firefox Android hands-on validation plus explicit user approval.**
 
 This file is the binding source of truth for project progress. Do not infer completion from code alone when a gate below explicitly requires physical browser/device testing.
 
@@ -146,6 +146,7 @@ All 19 current Official package payloads were re-read from the canonical rules r
 - [x] Publish a fresh prerelease newer than RC6 only from an exact green candidate: `1.20.0-rc.7` from `c87197c17036ac193b86088832041bf05d26a99d`.
 
 - [x] RC7 verification: Release workflow #15 passed tests/lint/build/lint-build on the exact tagged candidate; annotated tag resolves to `c87197c17036ac193b86088832041bf05d26a99d`; byte-identical ZIP/XPI are 260,315 bytes with SHA-256 `332042c6ea2f9ffbc287bed1f29c098a7dfc3c04103e4fb93acb2eb54f611ed2`; Mozilla publishing was intentionally skipped.
+- [x] RC8 verification: Release workflow #16 passed tests/lint/build/lint-build on exact `master` commit `f64eeddbab703d0285569508f2c315dfe2ef6608`; annotated tag `1.20.0-rc.8` resolves to that commit; byte-identical ZIP/XPI are 265,770 bytes with SHA-256 `887c96e9496fc249470cade725a8cec048882c6f6c05e3e3774448ae3008ef8a`; GitHub prerelease publication succeeded and Mozilla signing/publishing was intentionally skipped.
 
 ## Hands-on release gates — blocking
 
@@ -163,7 +164,7 @@ RC6 hands-on validation exposed the blocking issues above. Do **not** use RC6 fo
 
 ## Software-Engineering-Framework assurance follow-up — non-blocking unless a defect is found
 
-The RC7 functional regressions cover the highest-risk changed paths. The broader Browser Extension Assurance matrix is tracked separately so generic hardening does not silently expand the 1.20 release scope. Any concrete defect found here becomes release-blocking according to severity.
+The post-RC7 hardening now covers the highest-risk changed paths plus the automatable Browser Extension Assurance follow-up. Remaining unchecked items in this block require real Firefox/browser policy behavior that unit and integration mocks cannot prove. Any concrete defect found there becomes release-blocking according to severity.
 
 - [x] Extension disable → re-enable and repeated background reinitialization are regression-covered without stale listeners or duplicated runtime state; listener reconciliation is idempotent and disabled-state reinitialization clears mutable runtime state.
 - [x] Automated private-window rule semantics preserve `incognito: true`, `incognito: false` and the unconstrained state end-to-end, while the manifest leaves private access under Firefox/user control.
@@ -174,7 +175,7 @@ The RC7 functional regressions cover the highest-risk changed paths. The broader
 - [x] Representative real pre-1.18 storage plus existing pre-1.19/1.19→1.20, malformed/partial-state and managed-package reconciliation tests preserve rules, order, disabled state and local modifications without rule loss.
 - [x] Diagnostic and storage/quota boundaries are explicit: Inspector request/pending state is bounded, diagnostics are capped per request, Managed Import rules+metadata persist in one storage operation, and quota/storage rejection propagates before any UI rebuild or second partial write.
 - [x] Optional-permission revoke/deny testing is not applicable to the current manifest because Request Control declares no `optional_permissions`.
-- [ ] Audit required browser-API absence/partial-support paths across declared build targets; unsupported capabilities must degrade explicitly rather than fail during background bootstrap.
+- [x] Required browser-API capability handling is explicit for the sole currently packaged Firefox/Waterfox MV2 runtime: missing core APIs fail closed with a named unsupported-environment error before notifier/background side effects; operation-level protected-page failures degrade through the existing rollback paths; the DNR compiler remains non-shipping until a separate runtime manifest/build exists.
 
 ## Adaptive Parameter Intelligence experiment — dormant prototype complete
 
