@@ -28,6 +28,23 @@ test("import state persists rules and metadata in one storage operation", async 
     expect(calls).toEqual([{ rules, imports }]);
 });
 
+test("quota/storage rejection propagates without a second partial write", async () => {
+    const failure = new Error("QuotaExceededError");
+    const calls = [];
+    const storage = {
+        set: async (payload) => {
+            calls.push(payload);
+            throw failure;
+        },
+    };
+    const rules = [{ uuid: "one" }];
+    const imports = { source: { imported: { uuids: ["one"] } } };
+
+    await expect(persistImportState(storage, rules, imports)).rejects.toBe(failure);
+
+    expect(calls).toEqual([{ rules, imports }]);
+});
+
 test("managed import updates UI only after atomic persistence", () => {
     const body = functionBody("applyManagedImport", "markLegacyImportedRules");
     const persist = body.indexOf("await persistImportState(browser.storage.local, reconciliation.rules, imports)");

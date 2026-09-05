@@ -87,3 +87,48 @@ test("pending effects cannot exceed or outlive the request cap", () => {
         requests: [{ requestId: "request-1", effect: { action: "block" } }],
     });
 });
+
+test("pending diagnostics stay bounded per request and are released by capture or stop", () => {
+    const store = new InspectionStore(2);
+    store.start(21, { pageUrl: "https://example.com/" });
+
+    for (let i = 0; i < 32; i += 1) {
+        store.markDiagnostic(21, "request-1", {
+            kind: "referer",
+            effect: "trimmed",
+            mode: "balanced",
+            targetHost: `target-${i}.example`,
+        });
+    }
+
+    const pending = store.sessions.get(21).pendingDiagnostics.get("request-1");
+    expect(pending).toHaveLength(16);
+
+    store.capture({
+        tabId: 21,
+        requestId: "request-1",
+        url: "https://example.com/a",
+        type: "script",
+    });
+
+    expect(store.sessions.get(21).pendingDiagnostics.size).toBe(0);
+    expect(store.snapshot(21).requests[0].diagnostics).toHaveLength(16);
+
+    store.markDiagnostic(21, "request-2", {
+        kind: "referer",
+        effect: "removed",
+        mode: "same-origin",
+        targetHost: "other.example",
+    });
+    expect(store.sessions.get(21).pendingDiagnostics.size).toBe(1);
+
+    store.stop(21);
+    store.markDiagnostic(21, "request-3", {
+        kind: "referer",
+        effect: "removed",
+        mode: "no-referrer",
+        targetHost: "ignored.example",
+    });
+
+    expect(store.sessions.get(21).pendingDiagnostics.size).toBe(0);
+});
