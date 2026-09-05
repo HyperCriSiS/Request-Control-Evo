@@ -165,13 +165,16 @@ RC6 hands-on validation exposed the blocking issues above. Do **not** use RC6 fo
 
 The RC7 functional regressions cover the highest-risk changed paths. The broader Browser Extension Assurance matrix is tracked separately so generic hardening does not silently expand the 1.20 release scope. Any concrete defect found here becomes release-blocking according to severity.
 
-- [ ] Verify extension disable → re-enable and background-page restart/reinitialization without stale listeners or duplicated runtime state.
-- [ ] Verify Firefox private-window policy when private access is allowed and when it is denied; private-only rule semantics must remain correct.
-- [ ] Exercise many-tabs/many-frames navigation, including SPA history changes and full reloads, while Inspector remains bounded to its selected tab.
-- [ ] Exercise restricted/CSP-heavy pages and hostile page DOM/CSS; extension pages and popup/Inspector rendering must remain isolated from page styling.
-- [ ] Verify upgrade from representative pre-1.18/pre-1.19 storage snapshots, malformed/partial stored state, and managed-package reconciliation without rule loss.
-- [ ] Verify storage/quota failure handling for bounded diagnostic state and large managed imports; failure must degrade safely without corrupting persistent rules.
-- [x] Optional-permission revoke/deny testing is not applicable to the current manifest because Request Control declares no `optional_permissions`; required browser-API absence remains capability/error-path coverage instead.
+- [x] Extension disable → re-enable and repeated background reinitialization are regression-covered without stale listeners or duplicated runtime state; listener reconciliation is idempotent and disabled-state reinitialization clears mutable runtime state.
+- [x] Automated private-window rule semantics preserve `incognito: true`, `incognito: false` and the unconstrained state end-to-end, while the manifest leaves private access under Firefox/user control.
+- [ ] Physical Firefox verification remains required with private access explicitly allowed and denied; the browser-level access policy cannot be inferred from unit tests.
+- [x] Many-tabs/many-frames navigation, selected-tab Inspector isolation, full reloads and SPA `pushState`/`replaceState` page-context updates are regression-covered.
+- [x] Automated restricted/CSP/hostile-page boundaries are covered: Request Control injects no content-script UI/CSS into page DOM, and denied page-script/navigation operations roll back pending navigation state cleanly.
+- [ ] Physical Firefox restricted/CSP-page smoke testing remains open because actual browser-protected-page behavior cannot be reproduced by unit mocks alone.
+- [x] Representative real pre-1.18 storage plus existing pre-1.19/1.19→1.20, malformed/partial-state and managed-package reconciliation tests preserve rules, order, disabled state and local modifications without rule loss.
+- [x] Diagnostic and storage/quota boundaries are explicit: Inspector request/pending state is bounded, diagnostics are capped per request, Managed Import rules+metadata persist in one storage operation, and quota/storage rejection propagates before any UI rebuild or second partial write.
+- [x] Optional-permission revoke/deny testing is not applicable to the current manifest because Request Control declares no `optional_permissions`.
+- [ ] Audit required browser-API absence/partial-support paths across declared build targets; unsupported capabilities must degrade explicitly rather than fail during background bootstrap.
 
 ## Adaptive Parameter Intelligence experiment — dormant prototype complete
 
