@@ -20,6 +20,7 @@ import { showChangelog } from "./changelog-dialog.js";
 import { OPTION_CHANGE_ICON, OPTION_SHOW_COUNTER } from "./constants.js";
 import { showRuleTestDialog } from "./rule-tester.js";
 import { normalizeImportSource } from "./import-source.js";
+import { persistImportState } from "./import-storage.js";
 
 const COMMUNITY_REPOSITORY = "HyperCriSiS/requestcontrol-rules";
 const OFFICIAL_CATALOG_URL = "https://raw.githubusercontent.com/HyperCriSiS/requestcontrol-rules/main/official/catalog.json";
@@ -210,7 +211,9 @@ document.addEventListener("rule-ui-order-changed", async (e) => {
 
 document.addEventListener("rule-import-deleted", onImportSourceDeleted);
 
-document.addEventListener("rule-import-delete-imported", onRemoveImportedRules);
+document.addEventListener("rule-import-delete-imported", (e) => {
+    onRemoveImportedRules(e).catch(showAlertPopup);
+});
 
 document.addEventListener("rule-import-show-imported", (e) => {
     const { uuids } = e.target.data.imported;
@@ -273,10 +276,6 @@ async function applyManagedImport(input) {
     rules = markLegacyImportedRules(rules, data.imported, source);
     const reconciliation = await reconcileManagedRules(rules, rulesToImport, source);
 
-    await browser.storage.local.set({ rules: reconciliation.rules });
-    document.querySelectorAll("rule-list").forEach((list) => list.removeAll());
-    createRuleInputs(reconciliation.rules);
-
     const managedUuids = reconciliation.rules
         .filter((rule) => rule.source && rule.source.id === source.id)
         .map((rule) => rule.uuid);
@@ -302,7 +301,9 @@ async function applyManagedImport(input) {
         delete imports[previousKey];
     }
 
-    await browser.storage.local.set({ imports });
+    await persistImportState(browser.storage.local, reconciliation.rules, imports);
+    document.querySelectorAll("rule-list").forEach((list) => list.removeAll());
+    createRuleInputs(reconciliation.rules);
     input.dataset.importKey = src;
     input.data = imports[src];
     refreshOfficialUpdateState();
@@ -675,25 +676,25 @@ async function onImportSourceDeleted(e) {
 
 async function onRemoveImportedRules(e) {
     const input = e.target;
-    const { rules } = await browser.storage.local.get("rules");
-
-    if (rules) {
-        const { uuids } = input.data.imported;
-        const newRules = rules.filter(({ uuid }) => !uuids.includes(uuid));
-        await browser.storage.local.set({ rules: newRules });
-        document.querySelectorAll("rule-list").forEach((list) => list.removeAll());
-        createRuleInputs(newRules);
-    }
     const src = input.source;
-    const { imports } = await browser.storage.local.get("imports");
+    const { rules = [], imports = {} } = await browser.storage.local.get(["rules", "imports"]);
+    const importedUuids = Array.isArray(input.data?.imported?.uuids)
+        ? new Set(input.data.imported.uuids)
+        : new Set();
+    const newRules = rules.filter(({ uuid }) => !importedUuids.has(uuid));
+    const nextImports = { ...imports };
 
-    if (imports && src in imports) {
-        const { data } = input;
+    if (src in nextImports) {
+        const data = { ...nextImports[src] };
         delete data.imported;
-        imports[src] = data;
-        browser.storage.local.set({ imports });
+        nextImports[src] = data;
     }
-    input.data = {};
+
+    await persistImportState(browser.storage.local, newRules, nextImports);
+
+    document.querySelectorAll("rule-list").forEach((list) => list.removeAll());
+    createRuleInputs(newRules);
+    input.data = nextImports[src] || {};
 }
 
 function createImportInput(src, data) {

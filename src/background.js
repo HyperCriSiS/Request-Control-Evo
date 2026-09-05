@@ -4,6 +4,7 @@
 
 import { ALL_URLS, createRequestFilters } from "./main/api.js";
 import { RequestController } from "./main/control.js";
+import { clearRuntimeState, reconcileListener } from "./main/background-lifecycle.js";
 import { loadAndRepairStoredState } from "./main/storage-state.js";
 import { InspectionSessionLimiter } from "./main/inspection/session-limiter.js";
 import { InspectionCaptureRuntime } from "./main/inspection/runtime.js";
@@ -85,19 +86,15 @@ function init(options, generation = initGeneration) {
         onReferrerProtectionEffect,
         (details) => isSiteDisabledForRequest(details, topLevelUrls.get(details.tabId), disabledSiteHosts)
     );
+    const enabled = !options.disabled;
+    reconcileListener(browser.tabs.onRemoved, onTabRemoved, enabled);
+    reconcileListener(browser.webNavigation.onCommitted, onNavigation, enabled);
+    reconcileListener(browser.webNavigation.onHistoryStateUpdated, onHistoryStateUpdated, enabled);
+
     if (options.disabled) {
-        browser.tabs.onRemoved.removeListener(onTabRemoved);
-        browser.webNavigation.onCommitted.removeListener(onNavigation);
-        browser.webNavigation.onHistoryStateUpdated.removeListener(onHistoryStateUpdated);
         notifier.disabledState();
-        records.clear();
-        controller.requests.clear();
-        navigation.clear();
-        topLevelUrls.clear();
+        clearRuntimeState({ records, controller, navigation, topLevelUrls });
     } else {
-        browser.tabs.onRemoved.addListener(onTabRemoved);
-        browser.webNavigation.onCommitted.addListener(onNavigation);
-        browser.webNavigation.onHistoryStateUpdated.addListener(onHistoryStateUpdated);
         notifier.enabledState();
         addRequestListeners(options.rules);
         navigation.setRules(options.rules);
@@ -240,6 +237,7 @@ async function onHistoryStateUpdated(details) {
 
     if (isSiteDisabledForRequest({ ...details, type: "main_frame" }, details.url, disabledSiteHosts)) {
         topLevelUrls.set(details.tabId, details.url);
+        inspectionRuntime.updatePage(details.tabId, details.url);
         navigation.commit(details.tabId, details.url);
         return;
     }
@@ -257,8 +255,10 @@ async function onHistoryStateUpdated(details) {
         });
         if (!result || result.action === "whitelist") {
             topLevelUrls.set(details.tabId, details.url);
+            inspectionRuntime.updatePage(details.tabId, details.url);
         } else if (result.action === "replace") {
             topLevelUrls.set(details.tabId, result.target);
+            inspectionRuntime.updatePage(details.tabId, result.target);
         }
     } catch {
         notifier.error();
