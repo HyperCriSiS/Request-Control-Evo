@@ -1,0 +1,67 @@
+name: Patch RC8 roadmap
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Patch roadmap branch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git fetch origin master
+          git switch -c docs/rc8-roadmap-sync origin/master
+          python <<'PY'
+          from pathlib import Path
+          p = Path("ROADMAP.md")
+          s = p.read_text()
+          old_status = "**Status: `1.20.0-rc.7` is the current corrected hands-on candidate after the RC6 feedback block, and `master` now contains the validated 1.20 integration state. Automated release/security gates are green; stable 1.20.0 remains blocked on Firefox/Waterfox desktop and Firefox Android hands-on validation plus explicit user approval.**"
+          new_status = "**Status: `1.20.0-rc.8` is the current final hands-on candidate after the post-RC7 Software-Engineering-Framework hardening. It is tagged from exact green `master` commit `f64eeddbab703d0285569508f2c315dfe2ef6608`. Stable 1.20.0 remains blocked on Firefox/Waterfox desktop and Firefox Android hands-on validation plus explicit user approval.**"
+          if old_status not in s:
+              raise SystemExit("expected RC7 status line missing")
+          s = s.replace(old_status, new_status, 1)
+
+          rc7 = "- [x] RC7 verification: Release workflow #15 passed tests/lint/build/lint-build on the exact tagged candidate; annotated tag resolves to `c87197c17036ac193b86088832041bf05d26a99d`; byte-identical ZIP/XPI are 260,315 bytes with SHA-256 `332042c6ea2f9ffbc287bed1f29c098a7dfc3c04103e4fb93acb2eb54f611ed2`; Mozilla publishing was intentionally skipped."
+          rc8 = "- [x] RC8 verification: Release workflow #16 passed tests/lint/build/lint-build on exact `master` commit `f64eeddbab703d0285569508f2c315dfe2ef6608`; annotated tag `1.20.0-rc.8` resolves to that commit; byte-identical ZIP/XPI are 265,770 bytes with SHA-256 `887c96e9496fc249470cade725a8cec048882c6f6c05e3e3774448ae3008ef8a`; GitHub prerelease publication succeeded and Mozilla signing/publishing was intentionally skipped."
+          if rc8 not in s:
+              if rc7 not in s:
+                  raise SystemExit("expected RC7 verification line missing")
+              s = s.replace(rc7, rc7 + "\n" + rc8, 1)
+
+          old_intro = "The RC7 functional regressions cover the highest-risk changed paths. The broader Browser Extension Assurance matrix is tracked separately so generic hardening does not silently expand the 1.20 release scope. Any concrete defect found here becomes release-blocking according to severity."
+          new_intro = "The post-RC7 hardening now covers the highest-risk changed paths plus the automatable Browser Extension Assurance follow-up. Remaining unchecked items in this block require real Firefox/browser policy behavior that unit and integration mocks cannot prove. Any concrete defect found there becomes release-blocking according to severity."
+          if old_intro not in s:
+              raise SystemExit("expected assurance intro missing")
+          s = s.replace(old_intro, new_intro, 1)
+
+          old_api = "- [ ] Audit required browser-API absence/partial-support paths across declared build targets; unsupported capabilities must degrade explicitly rather than fail during background bootstrap."
+          new_api = "- [x] Required browser-API capability handling is explicit for the sole currently packaged Firefox/Waterfox MV2 runtime: missing core APIs fail closed with a named unsupported-environment error before notifier/background side effects; operation-level protected-page failures degrade through the existing rollback paths; the DNR compiler remains non-shipping until a separate runtime manifest/build exists."
+          if old_api not in s:
+              raise SystemExit("expected browser API assurance line missing")
+          s = s.replace(old_api, new_api, 1)
+          p.write_text(s)
+          PY
+          rm .github/workflows/patch-rc8-roadmap.yml
+          git add ROADMAP.md .github/workflows/patch-rc8-roadmap.yml
+          git commit -m "Record RC8 and completed automated assurance"
+          git push origin HEAD:refs/heads/docs/rc8-roadmap-sync
+      - name: Remove one-time workflow from master
+        if: always()
+        run: |
+          git fetch origin master
+          git switch master
+          git reset --hard origin/master
+          rm -f .github/workflows/patch-rc8-roadmap.yml
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "Remove one-time RC8 roadmap patcher"
+            git push origin master
+          fi
