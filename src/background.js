@@ -5,7 +5,10 @@
 import { ALL_URLS, createRequestFilters } from "./main/api.js";
 import { RequestController } from "./main/control.js";
 import { clearRuntimeState, reconcileListener } from "./main/background-lifecycle.js";
-import { assertBrowserApis, REQUIRED_FIREFOX_MV2_BACKGROUND_APIS } from "./main/browser-capabilities.js";
+import {
+    assertBrowserApis,
+    REQUIRED_FIREFOX_MV2_BACKGROUND_APIS,
+} from "./main/browser-capabilities.js";
 import { loadAndRepairStoredState } from "./main/storage-state.js";
 import { InspectionSessionLimiter } from "./main/inspection/session-limiter.js";
 import { InspectionCaptureRuntime } from "./main/inspection/runtime.js";
@@ -221,174 +224,114 @@ function onNavigation(details) {
     if (details.frameId !== 0 || !records.has(details.tabId)) {
         return;
     }
+    const isServerRedirect = details.transitionQualifiers.includes("server_redirect");
+    const keep = records.getLastRedirectRecords(details.tabId, details.url, isServerRedirect);
 
-    notifier.clear(details.tabId);
-    records.clear(details.tabId);
+    if (keep.length > 0) {
+        records.setTabRecords(details.tabId, keep);
+        notifier.notify(details.tabId, keep[keep.length - 1].rule.constructor.icon, keep.length);
+    } else {
+        records.removeTabRecords(details.tabId);
+        notifier.clear(details.tabId);
+    }
 }
 
-function onHistoryStateUpdated(details) {
+async function onHistoryStateUpdated(details) {
     if (details.frameId !== 0) {
         return;
     }
-    navigation.handle(details).then((result) => {
-        const pageUrl = result?.target || details.url;
-        topLevelUrls.set(details.tabId, pageUrl);
-        inspectionRuntime.updatePage(details.tabId, pageUrl);
-    }).catch(() => notifier.error());
+
+    if (isSiteDisabledForRequest({ ...details, type: "main_frame" }, details.url, disabledSiteHosts)) {
+        topLevelUrls.set(details.tabId, details.url);
+        inspectionRuntime.updatePage(details.tabId, details.url);
+        navigation.commit(details.tabId, details.url);
+        return;
+    }
+
+    let tab;
+    try {
+        tab = await browser.tabs.get(details.tabId);
+    } catch {
+        return;
+    }
+
+    try {
+        const result = await navigation.handle(details, {
+            incognito: Boolean(tab.incognito),
+        });
+        if (!result || result.action === "whitelist") {
+            topLevelUrls.set(details.tabId, details.url);
+            inspectionRuntime.updatePage(details.tabId, details.url);
+        } else if (result.action === "replace") {
+            topLevelUrls.set(details.tabId, result.target);
+            inspectionRuntime.updatePage(details.tabId, result.target);
+        }
+    } catch {
+        notifier.error();
+    }
+}
+
+function replaceHistoryState(tabId, url) {
+    const code = `history.replaceState(history.state, "", ${JSON.stringify(url)});`;
+    return browser.tabs.executeScript(tabId, {
+        code,
+        frameId: 0,
+    });
 }
 
 function onTabRemoved(tabId) {
-    records.clear(tabId);
-    controller.clear(tabId);
-    navigation.remove(tabId);
+    records.removeTabRecords(tabId);
+    navigation.removeTab(tabId);
     topLevelUrls.delete(tabId);
 }
 
 function onInspectionTabRemoved(tabId) {
-    inspectionLimiter.remove(tabId);
+    guardian.stop(tabId);
+    inspectionLimiter.stop(tabId);
     inspectionRuntime.remove(tabId);
-    guardian.remove(tabId);
+    topLevelUrls.delete(tabId);
 }
 
-function onRuntimeMessage(message, sender) {
-    if (!message || typeof message !== "object") {
+function onRuntimeMessage(message) {
+    if (message === null || typeof message === "undefined") {
+        return records.getTabRecords();
+    }
+
+    const guardianResult = guardian.handleMessage(message);
+    if (guardianResult !== undefined) {
+        return guardianResult;
+    }
+
+    if (!message || message.namespace !== "inspection") {
         return undefined;
     }
 
-    if (message.type === "request-control:inspection") {
-        return handleInspectionMessage(message, sender);
-    }
-    if (message.type === "request-control:guardian") {
-        return handleGuardianMessage(message, sender);
-    }
-    if (message.type === "request-control:site-exceptions") {
-        return handleSiteExceptionsMessage(message, sender);
-    }
-    return undefined;
-}
-
-async function handleInspectionMessage(message, sender) {
-    const tabId = resolveMessageTabId(message, sender);
+    const tabId = Number(message.tabId);
     if (!Number.isInteger(tabId) || tabId < 0) {
-        return { ok: false, error: "invalid-tab" };
+        return Promise.resolve({ error: "invalid-tab" });
     }
 
-    if (message.action === "start") {
-        let tab = null;
-        try {
-            tab = await browser.tabs.get(tabId);
-        } catch {
-            return { ok: false, error: "invalid-tab" };
+    switch (message.action) {
+        case "start": {
+            const snapshot = inspectionRuntime.start(tabId, {
+                pageUrl: message.pageUrl || "",
+                title: message.title || "",
+            });
+            inspectionLimiter.start(tabId);
+            guardian.start(tabId);
+            return Promise.resolve(snapshot);
         }
-        const snapshot = inspectionRuntime.start(tabId, { pageUrl: tab.url || "", title: tab.title || "" });
-        inspectionLimiter.start(tabId);
-        guardian.start(tabId);
-        return { ok: true, snapshot };
+        case "get":
+            return Promise.resolve(inspectionRuntime.get(tabId));
+        case "stop":
+            inspectionLimiter.stop(tabId);
+            guardian.stop(tabId);
+            return Promise.resolve(inspectionRuntime.stop(tabId));
+        case "clear":
+            return Promise.resolve(inspectionRuntime.clear(tabId));
+        default:
+            return Promise.resolve({ error: "unknown-action" });
     }
-    if (message.action === "snapshot") {
-        return { ok: true, snapshot: inspectionRuntime.snapshot(tabId) };
-    }
-    if (message.action === "clear") {
-        return { ok: true, snapshot: inspectionRuntime.clear(tabId) };
-    }
-    if (message.action === "stop") {
-        inspectionLimiter.stop(tabId);
-        guardian.stop(tabId);
-        return { ok: true, snapshot: inspectionRuntime.stop(tabId) };
-    }
-    return { ok: false, error: "invalid-action" };
-}
-
-function handleGuardianMessage(message, sender) {
-    const tabId = resolveMessageTabId(message, sender);
-    if (!Number.isInteger(tabId) || tabId < 0) {
-        return { ok: false, error: "invalid-tab" };
-    }
-    if (message.action === "snapshot") {
-        return { ok: true, snapshot: guardian.snapshot(tabId) };
-    }
-    return { ok: false, error: "invalid-action" };
-}
-
-async function handleSiteExceptionsMessage(message, sender) {
-    const tabId = resolveMessageTabId(message, sender);
-    let tab = null;
-    if (Number.isInteger(tabId) && tabId >= 0) {
-        try {
-            tab = await browser.tabs.get(tabId);
-        } catch {
-            tab = null;
-        }
-    }
-    const targetUrl = typeof message.url === "string" ? message.url : tab?.url;
-    if (!targetUrl) {
-        return { ok: false, error: "invalid-tab" };
-    }
-    const targetHost = normalizeSiteHosts([targetUrl])[0];
-    if (!targetHost) {
-        return { ok: false, error: "invalid-host" };
-    }
-
-    const options = await loadOptions();
-    if (message.action === "status") {
-        const suppressed = message.ruleUuid
-            ? Boolean(compileRuleSiteExceptions(options.ruleSiteExceptions).get(message.ruleUuid)?.has(targetHost))
-            : false;
-        return {
-            ok: true,
-            host: targetHost,
-            siteDisabled: normalizeSiteHosts(options.disabledSiteHosts).includes(targetHost),
-            ruleSuppressed: suppressed,
-        };
-    }
-    if (message.action === "set-site-disabled") {
-        const hosts = new Set(normalizeSiteHosts(options.disabledSiteHosts));
-        if (message.disabled) {
-            hosts.add(targetHost);
-        } else {
-            hosts.delete(targetHost);
-        }
-        await browser.storage.local.set({ disabledSiteHosts: [...hosts] });
-        return { ok: true, host: targetHost, siteDisabled: hosts.has(targetHost) };
-    }
-    if (message.action === "set-rule-suppressed") {
-        if (!message.ruleUuid) {
-            return { ok: false, error: "invalid-rule" };
-        }
-        const exceptions = compileRuleSiteExceptions(options.ruleSiteExceptions);
-        const hosts = new Set(exceptions.get(message.ruleUuid) || []);
-        if (message.suppressed) {
-            hosts.add(targetHost);
-        } else {
-            hosts.delete(targetHost);
-        }
-        const next = {};
-        for (const [uuid, values] of exceptions.entries()) {
-            if (uuid !== message.ruleUuid && values.size) {
-                next[uuid] = [...values];
-            }
-        }
-        if (hosts.size) {
-            next[message.ruleUuid] = [...hosts];
-        }
-        await browser.storage.local.set({ ruleSiteExceptions: next });
-        return { ok: true, host: targetHost, ruleSuppressed: hosts.has(targetHost) };
-    }
-    return { ok: false, error: "invalid-action" };
-}
-
-function replaceHistoryState(tabId, url) {
-    return browser.tabs.executeScript(tabId, {
-        code: `history.replaceState(history.state, document.title, ${JSON.stringify(url)})`,
-        runAt: "document_start",
-    });
-}
-
-function resolveMessageTabId(message, sender) {
-    if (Number.isInteger(message.tabId)) {
-        return message.tabId;
-    }
-    return sender?.tab?.id;
 }
 
 function onReferrerProtectionEffect(details, diagnostic) {
