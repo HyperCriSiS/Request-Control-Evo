@@ -3,6 +3,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { OPTION_CHANGE_ICON, OPTION_SHOW_COUNTER } from "../options/constants.js";
+import { assertRequiredBrowserRuntime } from "../main/browser-capabilities.js";
+
+assertRequiredBrowserRuntime(globalThis.browser);
 
 const DISABLED_ICON = "/icons/icon-disabled.svg";
 const DEFAULT_ICON = "/icons/icon.svg";

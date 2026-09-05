@@ -37,6 +37,13 @@ test("main-frame source context advances on committed, bypassed, or accepted nav
     expect(background).toContain("navigation.commit(tab.id, tab.url)");
 });
 
+test("SPA history navigation keeps active Inspector page context synchronized", () => {
+    const historyNavigation = functionBody("onHistoryStateUpdated", "replaceHistoryState");
+
+    expect(historyNavigation).toContain("inspectionRuntime.updatePage(details.tabId, details.url)");
+    expect(historyNavigation).toContain("inspectionRuntime.updatePage(details.tabId, result.target)");
+});
+
 test("stale option reads cannot rebuild listeners after a newer configuration", () => {
     expect(background).toContain("let initGeneration = 0");
     expect(background).toContain("const generation = ++initGeneration");

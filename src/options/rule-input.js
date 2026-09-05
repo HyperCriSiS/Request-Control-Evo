@@ -6,6 +6,7 @@ import { createRequestFilters, createRule, isTLDHostPattern } from "../main/api.
 import { onToggleButtonChange, setButtonChecked, setButtonDisabled, toggleHidden } from "../util/ui-helpers.js";
 import { uuid } from "../util/uuid.js";
 import { decodeLegacyMetadata } from "./legacy-metadata.js";
+import { privateWindowEditorValue } from "./rule-editor-state.js";
 
 const isMobile = window.matchMedia("(max-width: 35em)").matches;
 
@@ -613,9 +614,7 @@ class RuleInput extends HTMLElement {
             setButtonChecked(this.querySelector(`.origin-matcher[value=${this.rule.pattern.origin}]`), true);
         }
 
-        if (this.rule.pattern.incognito) {
-            this.querySelector("#incognito").value = this.rule.pattern.incognito.toString();
-        }
+        this.querySelector("#incognito").value = privateWindowEditorValue(this.rule.pattern);
 
         if (!this.rule.types || this.rule.types.length === 0) {
             this.setAnyType(true);
