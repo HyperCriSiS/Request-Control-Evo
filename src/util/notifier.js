@@ -3,6 +3,12 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/. */
 
 import { OPTION_CHANGE_ICON, OPTION_SHOW_COUNTER } from "../options/constants.js";
+import {
+    assertBrowserApis,
+    REQUIRED_FIREFOX_MV2_NOTIFIER_APIS,
+} from "../main/browser-capabilities.js";
+
+assertBrowserApis(globalThis.browser, REQUIRED_FIREFOX_MV2_NOTIFIER_APIS, "notifier");
 
 const DISABLED_ICON = "/icons/icon-disabled.svg";
 const DEFAULT_ICON = "/icons/icon.svg";
