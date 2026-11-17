@@ -1,9 +1,7 @@
 |BuildStatus|
 
-Request Control Evo - Firefox extension
+Request Control Evo - Firefox extension - EXPERIMENTAL
 ---------------------------------------
-
-# EXPERIMENTAL
 
 An extension to control HTTP requests. Provides front-end for Firefox
 `webRequest.onBeforeRequest`_ API for HTTP request management.
